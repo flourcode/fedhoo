@@ -3504,7 +3504,7 @@ const App = {
     this._syncSankey();
   },
 
-  drillToSubAgency(name) {
+  drillToSubAgency(name, preventRender = false) {
     this.drillState.level = 2;
     this.drillState.currentSubAgency = name;
     this.drillState.path = this.drillState.path.slice(0, 1);
@@ -3955,7 +3955,7 @@ if (this.bubbleChartType === 'treemap') {
       this._pendingDrillScroll = false;
       requestAnimationFrame(() => requestAnimationFrame(() => {
         setTimeout(() => {
-          App.scrollToPanel(targetPanel);
+          DOM.get(targetPanel)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 450);
       }));
     }
