@@ -4074,7 +4074,6 @@ selectAgencySuggestion(name, inputId, boxId) {
       `<div class="chat-msg-user">${Html.escapeHtml(message)}</div>`
     );
 
-    // Create loader row
     const loaderId = 'chat-' + Date.now();
     historyEl.insertAdjacentHTML('beforeend', `
       <div class="chat-msg-arti" id="${loaderId}">
@@ -4082,14 +4081,15 @@ selectAgencySuggestion(name, inputId, boxId) {
       </div>`);
     historyEl.scrollTop = historyEl.scrollHeight;
 
-    // Disable chat input during response
     const chatInput = DOM.get('chatInput');
     const chatSend  = DOM.get('chatSendBtn');
     if (chatInput) chatInput.disabled = true;
     if (chatSend)  chatSend.disabled  = true;
 
-    // Build history for context
     this.aiState.history.push({ role: 'user', content: message });
+
+    const chatAbort = new AbortController();
+    const chatTimeout = setTimeout(() => chatAbort.abort(), 30000);
 
     try {
       const res = await fetch(this.AI_ENDPOINT, {
@@ -4108,9 +4108,11 @@ selectAgencySuggestion(name, inputId, boxId) {
           },
           history: this.aiState.history.slice(-6),
           question: message
-        })
+        }),
+        signal: chatAbort.signal
       });
 
+      clearTimeout(chatTimeout);
       if (!res.ok) throw new Error(`Error ${res.status}`);
 
       const textTarget = DOM.get(`${loaderId}-text`);
@@ -4119,7 +4121,6 @@ selectAgencySuggestion(name, inputId, boxId) {
         res,
         (fullText) => {
           this.aiState.history.push({ role: 'model', content: fullText });
-          // Inject copy button below this response
           const msgEl = DOM.get(loaderId);
           if (msgEl) {
             const copyId = `${loaderId}-copy`;
@@ -4140,8 +4141,10 @@ selectAgencySuggestion(name, inputId, boxId) {
         }
       );
     } catch(e) {
+      clearTimeout(chatTimeout);
       const textTarget = DOM.get(`${loaderId}-text`);
-      if (textTarget) textTarget.innerHTML = `<span style="color:var(--crit-text)">Connection lost. Try again.</span>`;
+      const msg = (e.name === 'AbortError') ? 'Arti took too long. Try a shorter question.' : 'Connection lost. Try again.';
+      if (textTarget) textTarget.innerHTML = `<span style="color:var(--crit-text)">${Html.escapeHtml(msg)}</span>`;
       if (chatInput) chatInput.disabled = false;
       if (chatSend)  chatSend.disabled  = false;
     }
@@ -5204,12 +5207,12 @@ selectAgencySuggestion(name, inputId, boxId) {
         this.runSearch(lastQuery);
       } else {
         // Cold visitor — show hero AND fire default search so there's something to see
-        DOM.show('searchHero');
+        if (!this.searchData.loaded) DOM.show('searchHero');
         DOM.get('searchInput').value = DEFAULT_QUERY;
         this.runSearch(DEFAULT_QUERY);
       }
     } catch(e) {
-      DOM.show('searchHero');
+      if (!this.searchData.loaded) DOM.show('searchHero');
     }
 
     // Render recent searches
@@ -5263,6 +5266,14 @@ selectAgencySuggestion(name, inputId, boxId) {
       resizeTimer = setTimeout(() => {
         if (App.searchData.loaded && App._chartView !== 'sankey') App.renderBubbleChart();
       }, 200);
+    });
+
+    // Safari iOS: when page resumes from background, prevent hero flash if data is loaded
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && App.searchData.loaded) {
+        DOM.hide('searchHero');
+        DOM.show('resultsGrid');
+      }
     });
 
     // Preload D3
