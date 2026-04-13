@@ -197,7 +197,6 @@ a, button, input, select { touch-action: manipulation; }
 .contract-vendor  {
   font-size: var(--text-sm); font-weight: 700;
   color: var(--text-primary); letter-spacing: -0.01em;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .contract-agency  {
   font-size: var(--text-xs); color: var(--text-tertiary);
@@ -1173,17 +1172,14 @@ a, button, input, select { touch-action: manipulation; }
       <div class="contract-list" id="recentList"></div>
     </div>
 
-    <!-- PIPELINE PATTERNS CARD -->
-    <div class="app-card wide hidden" id="pipelineCard">
+    <!-- EXPIRING SOON CARD -->
+    <div class="app-card wide hidden" id="expiringCard">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;">
-        <div>
-          <h2 class="card-title">Expiring Contract Patterns</h2>
-          <p class="card-desc" style="margin:0;font-size:var(--text-xs);color:var(--text-tertiary);">Sorted by days remaining. Renewal and bridge contracts flagged.</p>
-        </div>
-        <button class="export-btn" onclick="App.exportPipelineCSV()" title="Export expiring contract patterns to CSV">Export CSV</button>
+        <h2 class="card-title" style="margin:0;">Expiring Soon</h2>
       </div>
-      <div class="contract-list" id="pipelineList"></div>
+      <div class="contract-list" id="expiringList"></div>
     </div>
+
 
     <!-- SUBAWARDS CARD -->
     <div class="app-card wide hidden" id="subawardsCard">
@@ -3296,7 +3292,7 @@ const App = {
       this.renderBubbleChart();
       this.renderBridge();
       this.renderPrimes();
-      this.renderPipeline();
+      this.renderExpiring();
       this.renderRecent();
 
       // Clear sub-sankey stale state before async fetch
@@ -4195,18 +4191,11 @@ selectAgencySuggestion(name, inputId, boxId) {
         const end = new Date(c['End Date']);
         return end > now && end <= cutoff && (parseFloat(c['Award Amount'])||0) > 50000;
       })
-      .sort((a, b) => {
-        const dA = (new Date(a['End Date']) - now) / 86400000;
-        const dB = (new Date(b['End Date']) - now) / 86400000;
-        const sA = (parseFloat(a['Award Amount'])||0) / Math.max(dA, 1);
-        const sB = (parseFloat(b['Award Amount'])||0) / Math.max(dB, 1);
-        return sB - sA;
-      });
+      .sort((a, b) => new Date(a['End Date']) - new Date(b['End Date']));
 
     const list = DOM.get('expiringList');
     const card = DOM.get('expiringCard');
     if (!list || !card) return;
-
     if (!expiring.length) { card.classList.add('hidden'); return; }
     card.classList.remove('hidden');
 
@@ -4214,25 +4203,37 @@ selectAgencySuggestion(name, inputId, boxId) {
     const render = (all) => {
       const items = all ? expiring : expiring.slice(0, SHOW);
       list.innerHTML = items.map(c => {
-        const end = new Date(c['End Date']);
+        const end  = new Date(c['End Date']);
         const days = Math.ceil((end - now) / 86400000);
-        const vendor = c['Recipient Name'] || 'Unknown Vendor';
-        const agency = Utils.cleanAgency(c['Awarding Sub Agency'] || c['Awarding Agency'] || '');
-        const desc = (c['Description'] || '').slice(0, 120);
-        const url = c['generated_internal_id']
+        const urgencyStyle = days <= 30
+          ? 'color:rgb(160,60,20);font-weight:700;'
+          : days <= 60 ? 'color:var(--warn-text);font-weight:600;' : '';
+        const vendor  = c['Recipient Name'] || 'Unknown Vendor';
+        const agency  = Utils.cleanAgency(c['Awarding Agency'] || '');
+        const desc    = (c['Description'] || '').slice(0, 120);
+        const naics   = c['NAICS'] ? (typeof c['NAICS'] === 'object' ? c['NAICS'].code : c['NAICS']) : '';
+        const state   = c['pop_state_code'] || '';
+        const city    = c['pop_city_name'] ? Utils.titleCase(c['pop_city_name']) : '';
+        const place   = [city, state].filter(Boolean).join(', ');
+        const vehicle = Utils.detectVehicle(c);
+        const setAside = VehicleDetector.getSetAsideLabel(c['Type of Set Aside'] || '');
+        const meta    = [place, naics ? `NAICS ${naics}` : ''].filter(Boolean).join(' · ');
+        const url     = c['generated_internal_id']
           ? `https://www.usaspending.gov/award/${c['generated_internal_id']}`
           : c['Award ID'] ? `https://www.usaspending.gov/search/?hash=&keyword=${encodeURIComponent(c['Award ID'])}` : '';
-        const vehicle = Utils.detectVehicle(c);
-        return `<div class="contract-row">
-          <div class="contract-body">
+        const leftHtml = `<div class="contract-body">
             <div class="contract-vendor">${Html.escapeHtml(vendor)}</div>
             <div class="contract-agency">${Html.escapeHtml(agency)}</div>
-            ${vehicle ? `<span class="vehicle-tag">${Html.escapeHtml(vehicle)}</span>` : ''}
-            ${desc ? `<div class="contract-desc">${Html.escapeHtml(desc)}</div>` : ''}
-          </div>
+            ${vehicle  ? `<span class="vehicle-tag">${Html.escapeHtml(vehicle)}</span>` : ''}
+            ${setAside ? `<span class="vehicle-tag" style="background:var(--go-bg);color:var(--go-text);">${Html.escapeHtml(setAside)}</span>` : ''}
+            ${desc     ? `<div class="contract-desc">${Html.escapeHtml(desc)}</div>` : ''}
+            ${meta     ? `<div class="contract-agency" style="margin-top:2px;color:var(--text-quaternary);">${Html.escapeHtml(meta)}</div>` : ''}
+          </div>`;
+        return `<div class="contract-row">
+          ${leftHtml}
           <div class="contract-right">
             <span class="contract-amount">${Utils.money(c['Award Amount'])}</span>
-            <span class="contract-urgency">${days}d left</span>
+            <span class="contract-urgency" style="${urgencyStyle}">${days}d</span>
             ${url ? `<a href="${url}" target="_blank" rel="noopener" class="contract-view">View →</a>` : ''}
           </div>
         </div>`;
@@ -4261,7 +4262,6 @@ selectAgencySuggestion(name, inputId, boxId) {
     const list = DOM.get('recentList');
     const card = DOM.get('recentCard');
     if (!list || !card) return;
-
     if (!recent.length) { card.classList.add('hidden'); return; }
     card.classList.remove('hidden');
 
@@ -4269,33 +4269,36 @@ selectAgencySuggestion(name, inputId, boxId) {
     const render = (all) => {
       const items = all ? recent : recent.slice(0, SHOW);
       list.innerHTML = items.map(c => {
-        const start = new Date(c['Start Date']);
+        const start   = new Date(c['Start Date']);
         const daysAgo = Math.floor((now - start) / 86400000);
-        const ago = daysAgo === 0 ? 'Today' : daysAgo === 1 ? 'Yesterday'
-          : daysAgo <= 7 ? `${daysAgo}d ago` : daysAgo <= 30 ? `${Math.ceil(daysAgo/7)}w ago`
+        const ago = daysAgo === 0 ? 'Today'
+          : daysAgo === 1 ? 'Yesterday'
+          : daysAgo <= 7  ? `${daysAgo}d ago`
+          : daysAgo <= 30 ? `${Math.ceil(daysAgo/7)}w ago`
           : `${Math.floor(daysAgo/30)}mo ago`;
-        const vendor = c['Recipient Name'] || 'Unknown Vendor';
-        const agency = Utils.cleanAgency(c['Awarding Sub Agency'] || c['Awarding Agency'] || '');
-        const desc = (c['Description'] || '').slice(0, 120);
-        const url = c['generated_internal_id']
+        const vendor  = c['Recipient Name'] || 'Unknown Vendor';
+        const agency  = Utils.cleanAgency(c['Awarding Agency'] || '');
+        const desc    = (c['Description'] || '').slice(0, 120);
+        const naics   = c['NAICS'] ? (typeof c['NAICS'] === 'object' ? c['NAICS'].code : c['NAICS']) : '';
+        const state   = c['pop_state_code'] || '';
+        const city    = c['pop_city_name'] ? Utils.titleCase(c['pop_city_name']) : '';
+        const place   = [city, state].filter(Boolean).join(', ');
+        const vehicle = Utils.detectVehicle(c);
+        const setAside = VehicleDetector.getSetAsideLabel(c['Type of Set Aside'] || '');
+        const meta    = [place, naics ? `NAICS ${naics}` : ''].filter(Boolean).join(' · ');
+        const url     = c['generated_internal_id']
           ? `https://www.usaspending.gov/award/${c['generated_internal_id']}`
           : c['Award ID'] ? `https://www.usaspending.gov/search/?hash=&keyword=${encodeURIComponent(c['Award ID'])}` : '';
-        const vehicle = Utils.detectVehicle(c);
-        const naics = c['NAICS'] ? (typeof c['NAICS'] === 'object' ? c['NAICS'].code : c['NAICS']) : '';
-        const state = c['pop_state_code'] || '';
-        const city  = c['pop_city_name'] ? Utils.titleCase(c['pop_city_name']) : '';
-        const place = [city, state].filter(Boolean).join(', ');
-        const setAside = VehicleDetector.getSetAsideLabel(c['Type of Set Aside'] || '');
-        const meta = [place, naics ? `NAICS ${naics}` : ''].filter(Boolean).join(' · ');
-        return `<div class="contract-row">
-          <div class="contract-body">
+        const leftHtml = `<div class="contract-body">
             <div class="contract-vendor">${Html.escapeHtml(vendor)}</div>
             <div class="contract-agency">${Html.escapeHtml(agency)}</div>
-            ${vehicle ? `<span class="vehicle-tag">${Html.escapeHtml(vehicle)}</span>` : ''}
+            ${vehicle  ? `<span class="vehicle-tag">${Html.escapeHtml(vehicle)}</span>` : ''}
             ${setAside ? `<span class="vehicle-tag" style="background:var(--go-bg);color:var(--go-text);">${Html.escapeHtml(setAside)}</span>` : ''}
-            ${desc ? `<div class="contract-desc">${Html.escapeHtml(desc)}</div>` : ''}
-            ${meta ? `<div class="contract-agency" style="margin-top:2px;">${Html.escapeHtml(meta)}</div>` : ''}
-          </div>
+            ${desc     ? `<div class="contract-desc">${Html.escapeHtml(desc)}</div>` : ''}
+            ${meta     ? `<div class="contract-agency" style="margin-top:2px;color:var(--text-quaternary);">${Html.escapeHtml(meta)}</div>` : ''}
+          </div>`;
+        return `<div class="contract-row">
+          ${leftHtml}
           <div class="contract-right">
             <span class="contract-amount">${Utils.money(c['Award Amount'])}</span>
             <span class="contract-date">${ago}</span>
