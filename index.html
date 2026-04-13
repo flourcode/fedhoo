@@ -4021,10 +4021,10 @@ selectAgencySuggestion(name, inputId, boxId) {
 
     const userContext = (this.artiContext || '').trim();
     const territoryScope = this.territory && this.SECTORS[this.territory]
-      ? `This market is scoped to ${this.SECTORS[this.territory].label} agencies only. `
+      ? `Market scoped to ${this.SECTORS[this.territory].label} agencies. `
       : '';
-    // Crisp briefing prompt, compass heading, not a GTM plan
-    const objective = `${territoryScope}${userContext ? `The seller says: "${userContext}". ` : ''}You are a sharp federal BD analyst giving a 60-second pre-meeting briefing. Respond in 3-5 sentences maximum. Lead with the single most important fact about this market, the biggest opportunity, the dominant incumbent, or the most urgent expiring contract. Then give one specific recommended move. Use real names and real dollar figures. No headers, no bullet points, no plans, just a direct briefing like a colleague who pulled the file before the meeting.`;
+    // Send objective as clean user context only — Lambda handles the prompt structure
+    const objective = userContext ? `${territoryScope}${userContext}` : (territoryScope || null);
 
     try {
       const artiAbort = new AbortController();
@@ -4138,7 +4138,7 @@ selectAgencySuggestion(name, inputId, boxId) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           request_type: 'govhoo_chat',
-          market_data: {
+          market_data: this._artiPayloadCache || {
             query: this.currentQuery,
             total_value: this.searchData.active.reduce((s,c)=>s+(parseFloat(c['Award Amount'])||0),0),
             contract_count: this.searchData.active.length,
@@ -4147,6 +4147,7 @@ selectAgencySuggestion(name, inputId, boxId) {
               'Award Amount':c['Award Amount'],'End Date':c['End Date']
             }))
           },
+          objective: (this.artiContext || '').trim() || null,
           history: this.aiState.history.slice(-6),
           question: message
         }),
