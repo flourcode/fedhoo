@@ -4472,22 +4472,23 @@ selectAgencySuggestion(name, inputId, boxId) {
       list.innerHTML = items.map(s => {
         const prime = s['Prime Recipient Name'] || 'Unknown Prime';
         const sub   = s['Sub-Awardee Name'] || 'Unknown Sub';
-        const agency = Utils.cleanAgency(s['Awarding Sub Agency'] || s['Awarding Agency'] || '');
+        const agency = Utils.cleanAgency(s['Awarding Agency'] || s['Awarding Sub Agency'] || '');
         const url = s['prime_award_generated_internal_id']
           ? `https://www.usaspending.gov/award/${s['prime_award_generated_internal_id']}`
           : '';
         const subDate = s['Sub-Award Date'] ? new Date(s['Sub-Award Date']).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '';
-        const subDesc = (s['Description'] || '').slice(0, 100);
-        const subState = s['pop_state_code'] || '';
-        const subNaics = s['NAICS'] ? (typeof s['NAICS'] === 'object' ? s['NAICS'].code : s['NAICS']) : '';
-        const subMeta = [subState, subNaics ? `NAICS ${subNaics}` : ''].filter(Boolean).join(' · ');
+        const naicsObj = s['NAICS'];
+        const naicsDesc = naicsObj && typeof naicsObj === 'object' && naicsObj.description
+          ? Utils.titleCase(naicsObj.description.split('(')[0].trim().toLowerCase())
+          : '';
+        const naicsCode = naicsObj && typeof naicsObj === 'object' ? naicsObj.code : (naicsObj || '');
+        const meta = naicsDesc || (naicsCode ? `NAICS ${naicsCode}` : '');
         return `<div class="contract-row">
           <div class="contract-body">
             <div class="contract-vendor">${Html.escapeHtml(sub)}</div>
             <div class="contract-agency">via ${Html.escapeHtml(prime)}</div>
             <div class="contract-agency">${Html.escapeHtml(agency)}</div>
-            ${subDesc ? `<div class="contract-desc">${Html.escapeHtml(subDesc)}</div>` : ''}
-            ${subMeta ? `<div class="contract-agency" style="margin-top:2px;color:var(--text-quaternary);">${Html.escapeHtml(subMeta)}</div>` : ''}
+            ${meta ? `<div class="contract-agency" style="margin-top:2px;color:var(--text-quaternary);">${Html.escapeHtml(meta)}</div>` : ''}
           </div>
           <div class="contract-right">
             <span class="contract-amount">${Utils.money(s['Sub-Award Amount'])}</span>
