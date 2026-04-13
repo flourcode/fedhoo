@@ -1149,6 +1149,9 @@ a, button, input, select { touch-action: manipulation; }
         <button class="bubble-toggle-btn" data-mode="vendors" id="bubbleToggleVendors">Prime</button>
       </div>
 
+      <!-- Monthly award cadence dots -->
+      <div id="monthlyDotsPanel" class="hidden" style="margin:14px 0 0;"></div>
+
       <div style="font-size:var(--text-xs);color:var(--text-quaternary);margin-top:14px;">
         Top 100 contracts by obligated value · active funding past 12 months · USASpending.gov
       </div>
@@ -3323,6 +3326,7 @@ const App = {
 
       // Render chart
       this.renderBubbleChart();
+      this.renderMonthlyDots();
       this.renderBridge();
       this.renderPrimes();
       this.renderExpiring();
@@ -3362,6 +3366,7 @@ const App = {
     DOM.hide('bubbleBreadcrumb');
     DOM.hide('chartTabs');   // hide Treemap / Sankey tabs, nothing to switch to
     DOM.hide('chartDots');   // hide swipe dots too
+    DOM.get('monthlyDotsPanel')?.classList.add('hidden');
 
     // Remove viewport height clipping so empty state isn't cut off
     const vp = DOM.get('chartViewport');
@@ -3547,6 +3552,72 @@ const App = {
       html += `<button class="breadcrumb-item ${isLast ? 'active' : ''}" ${isLast ? '' : `onclick="App.drillToLevel(${i + 1})"`}>${Html.escapeHtml(step.name)}</button>`;
     });
     inner.innerHTML = html;
+  },
+
+  renderMonthlyDots() {
+    const container = DOM.get('monthlyDotsPanel');
+    if (!container) return;
+    const data = this.searchData.active || [];
+    if (!data.length) { container.classList.add('hidden'); return; }
+
+    const now = new Date();
+    const months = [];
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push({
+        key: `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`,
+        label: d.toLocaleDateString('en-US',{month:'short'}).toUpperCase().slice(0,3),
+        year: String(d.getFullYear()).slice(2),
+        count: 0, amount: 0
+      });
+    }
+    data.forEach(c => {
+      if (!c['Start Date']) return;
+      const d = new Date(c['Start Date']);
+      if (isNaN(d)) return;
+      const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+      const m = months.find(m => m.key === key);
+      if (m) { m.count++; m.amount += parseFloat(c['Award Amount'])||0; }
+    });
+    if (!months.some(m => m.count > 0)) { container.classList.add('hidden'); return; }
+
+    const maxAmt = Math.max(...months.map(m => m.amount), 1);
+    const maxCnt = Math.max(...months.map(m => m.count), 1);
+    const peak   = months.reduce((b, m) => m.amount > b.amount ? m : b, months[0]);
+    const isDark = document.documentElement.classList.contains('dark');
+
+    // vocaLICIOUS colors
+    const accentColor  = isDark ? '#9B98C8' : '#46446E'; // --accent
+    const dimColor     = isDark ? 'rgba(172,170,212,0.25)' : 'rgba(70,68,110,0.15)'; // --accent-dim muted
+    const labelPeak    = isDark ? '#9B98C8' : '#46446E';
+    const labelInactive= isDark ? 'rgba(172,170,212,0.5)' : 'rgba(70,68,110,0.35)';
+
+    const vw = 400, h = 36, padX = 16, step = (vw - padX*2) / 11;
+    const centerY = h / 2 - 3;
+    const dotMaxR = 5, dotMinR = 1.5;
+
+    let svg = `<svg viewBox="0 0 ${vw} ${h}" style="display:block;width:100%;height:auto;overflow:visible;" preserveAspectRatio="xMidYMid meet">`;
+    months.forEach((m, i) => {
+      const cx = padX + i * step;
+      const isPeak = m === peak && m.amount > 0;
+      if (m.count === 0) {
+        svg += `<circle cx="${cx}" cy="${centerY}" r="${dotMinR}" fill="${dimColor}"/>`;
+      } else {
+        const r = dotMinR + (m.amount / maxAmt) * (dotMaxR - dotMinR);
+        const opacity = isPeak ? 1 : 0.35 + (m.count / maxCnt) * 0.45;
+        svg += `<circle cx="${cx}" cy="${centerY}" r="${r.toFixed(1)}" fill="${isPeak ? accentColor : accentColor}" opacity="${opacity.toFixed(2)}"/>`;
+        if (isPeak) {
+          svg += `<text x="${cx}" y="${centerY - dotMaxR - 3}" text-anchor="middle" font-size="5.5" font-weight="700" fill="${labelPeak}" opacity="0.8" font-family="'Google Sans Flex',sans-serif">Peak</text>`;
+        }
+      }
+      const isJan = m.label === 'JAN';
+      const lc = isPeak ? labelPeak : labelInactive;
+      const fw = isPeak ? '700' : '500';
+      svg += `<text x="${cx}" y="${h - 1}" text-anchor="middle" font-size="6.5" font-weight="${fw}" fill="${lc}" font-family="'Google Sans Flex',sans-serif">${m.label}${isJan ? `<tspan font-size="5" opacity="0.7"> '${m.year}</tspan>` : ''}</text>`;
+    });
+    svg += '</svg>';
+    container.innerHTML = svg;
+    container.classList.remove('hidden');
   },
 
   renderBubbleChart() {
