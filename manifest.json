@@ -1,6 +1,6 @@
 {
-  "name": "Govhoo — Free Federal Contract Search",
-  "short_name": "Govhoo",
+  "name": "Fedhoo — Free Federal Contract Search",
+  "short_name": "fedhoo",
   "description": "Search federal contract awards, find who won government contracts, and visualize agency spending — free.",
   "start_url": "/",
   "display": "standalone",
