@@ -796,15 +796,21 @@ a, button, input, select { touch-action: manipulation; }
 .bubble-tooltip-meta { color: var(--text-tertiary); font-size: var(--text-xs); margin-top: 3px; }
 
 /* Breadcrumb */
-.breadcrumb-row { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.breadcrumb-row { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; }
 .breadcrumb-item {
-  padding: 3px 8px; border-radius: var(--radius-sm); border: none;
-  background: transparent; color: var(--text-secondary); font-size: var(--text-sm);
+  padding: 3px 10px; border-radius: 9999px;
+  border: 1px solid var(--border-inner);
+  background: var(--bg-hover); color: var(--text-secondary);
+  font-size: var(--text-xs); font-weight: 600;
   cursor: pointer; transition: var(--transition); font-family: var(--font);
 }
-.breadcrumb-item:hover { background: var(--bg-hover); }
-.breadcrumb-item.active { color: var(--text-primary); font-weight: 600; cursor: default; background: transparent; }
-.breadcrumb-sep { color: var(--text-quaternary); font-size: var(--text-sm); }
+.breadcrumb-item:hover { background: var(--accent-dim); color: var(--btn-bg); border-color: var(--btn-bg); }
+.breadcrumb-item.root { background: var(--bg-app); }
+.breadcrumb-item.active {
+  background: var(--btn-bg); color: #fff;
+  border-color: transparent; cursor: default;
+}
+.breadcrumb-sep { color: var(--text-quaternary); font-size: var(--text-xs); padding: 0 1px; }
 
 /* ── ARTI CARD specific ── */
 .input-group { margin-bottom: 14px; }
@@ -1100,11 +1106,10 @@ a, button, input, select { touch-action: manipulation; }
           <div class="market-hero-number" id="marketHeroNumber"></div>
           <p class="card-desc" style="margin-bottom:0;display:none;" id="marketCardDesc"></p>
         </div>
-        <button class="btn-secondary hidden" id="resetDrillBtn" onclick="App.resetDrill()">↑ Back</button>
       </div>
 
-      <!-- Breadcrumb -->
-      <div class="hidden" id="bubbleBreadcrumb" style="margin-top:8px;">
+      <!-- Breadcrumb — shown when drilled in -->
+      <div class="hidden" id="bubbleBreadcrumb">
         <div class="breadcrumb-row" id="bubbleBreadcrumbInner"></div>
       </div>
 
@@ -3473,7 +3478,6 @@ const App = {
       this.renderBubbleChart();
       this._syncSankey();
     }
-    DOM.hide('resetDrillBtn');
     DOM.hide('bubbleBreadcrumb');
     this.renderBubbleBreadcrumb();
   },
@@ -3485,7 +3489,6 @@ const App = {
     this.searchData.active = (this.searchData.baseline || this.searchData.raw).filter(a =>
       (a['Awarding Agency'] || '') === name || (a['Awarding Sub Agency'] || '') === name
     );
-    DOM.show('resetDrillBtn');
 
     // Inject agency context into Arti input
     const ctx = DOM.get('artiContextInput');
@@ -3510,7 +3513,6 @@ const App = {
     this.searchData.active = (this.searchData.baseline || this.searchData.raw).filter(a =>
       (a['Awarding Sub Agency'] || '') === name || (a['Awarding Office'] || '') === name
     );
-    DOM.show('resetDrillBtn');
     if (!preventRender) this.renderBubbleChart();
     this.renderBubbleBreadcrumb();
     this._syncSankey();
@@ -3540,14 +3542,23 @@ const App = {
 
   renderBubbleBreadcrumb() {
     const path = this.drillState.path;
-    if (!path || path.length === 0) { DOM.hide('bubbleBreadcrumb'); return; }
-    DOM.show('bubbleBreadcrumb');
     const inner = DOM.get('bubbleBreadcrumbInner');
-    let html = `<button class="breadcrumb-item" onclick="App.resetDrill()">All</button>`;
+    if (!inner) return;
+    if (!path || path.length === 0) {
+      DOM.hide('bubbleBreadcrumb');
+      return;
+    }
+    DOM.show('bubbleBreadcrumb');
+    // Root chip with back arrow
+    let html = `<button class="breadcrumb-item root" onclick="App.resetDrill()">← All ${(this.currentQuery || '').toUpperCase()}</button>`;
     path.forEach((step, i) => {
       html += `<span class="breadcrumb-sep">›</span>`;
       const isLast = i === path.length - 1;
-      html += `<button class="breadcrumb-item ${isLast ? 'active' : ''}" ${isLast ? '' : `onclick="App.drillToLevel(${i + 1})"`}>${Html.escapeHtml(step.name)}</button>`;
+      if (isLast) {
+        html += `<button class="breadcrumb-item active">${Html.escapeHtml(Utils.cleanAgency(step.name))}</button>`;
+      } else {
+        html += `<button class="breadcrumb-item" onclick="App.drillToLevel(${i + 1})">${Html.escapeHtml(Utils.cleanAgency(step.name))}</button>`;
+      }
     });
     inner.innerHTML = html;
   },
@@ -3732,7 +3743,8 @@ if (this.bubbleChartType === 'treemap') {
         .attr('rx', d => getRadius(d.x1 - d.x0, d.y1 - d.y0))
         .attr('fill', (d, i) => bubbleColors[i % bubbleColors.length])
         .attr('opacity', 0.85) 
-        .style('transition', 'opacity 0.2s ease, fill 0.2s ease'); 
+        .style('transition', 'opacity 0.15s ease, filter 0.15s ease')
+        .style('cursor', d => effective !== 'vendors' ? 'pointer' : 'default'); 
 
       cells
         .on('mouseover.modern', function(event, d) {
@@ -3845,7 +3857,8 @@ if (this.bubbleChartType === 'treemap') {
         .attr('r', d => d.r)
         .attr('fill', (d, i) => bubbleColors[i % bubbleColors.length])
         .attr('opacity', 0.85) // Base opacity
-        .style('transition', 'opacity 0.2s ease, fill 0.2s ease'); // Smooth fading
+        .style('transition', 'opacity 0.15s ease, filter 0.15s ease')
+        .style('cursor', d => effective !== 'vendors' ? 'pointer' : 'default'); // Smooth fading
 
       nodes
         .on('mouseover.modern', function(event, d) {
