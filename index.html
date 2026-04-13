@@ -1150,7 +1150,7 @@ a, button, input, select { touch-action: manipulation; }
       </div>
 
       <!-- Monthly award cadence dots -->
-      <div id="monthlyDotsPanel" class="hidden" style="margin:14px 0 0;"></div>
+      <div id="monthlyDotsPanel" class="hidden" style="margin:10px 0 0;"></div>
 
       <div style="font-size:var(--text-xs);color:var(--text-quaternary);margin-top:14px;">
         Top 100 contracts by obligated value · active funding past 12 months · USASpending.gov
@@ -3592,9 +3592,9 @@ const App = {
     const labelPeak    = isDark ? '#9B98C8' : '#46446E';
     const labelInactive= isDark ? 'rgba(172,170,212,0.5)' : 'rgba(70,68,110,0.35)';
 
-    const vw = 400, h = 36, padX = 16, step = (vw - padX*2) / 11;
-    const centerY = h / 2 - 3;
-    const dotMaxR = 5, dotMinR = 1.5;
+    const vw = 400, h = 26, padX = 16, step = (vw - padX*2) / 11;
+    const centerY = h / 2 - 4;
+    const dotMaxR = 3.5, dotMinR = 1;
 
     let svg = `<svg viewBox="0 0 ${vw} ${h}" style="display:block;width:100%;height:auto;overflow:visible;" preserveAspectRatio="xMidYMid meet">`;
     months.forEach((m, i) => {
@@ -3604,16 +3604,16 @@ const App = {
         svg += `<circle cx="${cx}" cy="${centerY}" r="${dotMinR}" fill="${dimColor}"/>`;
       } else {
         const r = dotMinR + (m.amount / maxAmt) * (dotMaxR - dotMinR);
-        const opacity = isPeak ? 1 : 0.35 + (m.count / maxCnt) * 0.45;
-        svg += `<circle cx="${cx}" cy="${centerY}" r="${r.toFixed(1)}" fill="${isPeak ? accentColor : accentColor}" opacity="${opacity.toFixed(2)}"/>`;
+        const opacity = isPeak ? 1 : 0.3 + (m.count / maxCnt) * 0.45;
+        svg += `<circle cx="${cx}" cy="${centerY}" r="${r.toFixed(1)}" fill="${accentColor}" opacity="${opacity.toFixed(2)}"/>`;
         if (isPeak) {
-          svg += `<text x="${cx}" y="${centerY - dotMaxR - 3}" text-anchor="middle" font-size="5.5" font-weight="700" fill="${labelPeak}" opacity="0.8" font-family="'Google Sans Flex',sans-serif">Peak</text>`;
+          svg += `<text x="${cx}" y="${centerY - dotMaxR - 2}" text-anchor="middle" font-size="4.5" font-weight="600" fill="${labelPeak}" opacity="0.6" font-family="'Google Sans Flex',sans-serif">peak</text>`;
         }
       }
       const isJan = m.label === 'JAN';
       const lc = isPeak ? labelPeak : labelInactive;
-      const fw = isPeak ? '700' : '500';
-      svg += `<text x="${cx}" y="${h - 1}" text-anchor="middle" font-size="6.5" font-weight="${fw}" fill="${lc}" font-family="'Google Sans Flex',sans-serif">${m.label}${isJan ? `<tspan font-size="5" opacity="0.7"> '${m.year}</tspan>` : ''}</text>`;
+      const fw = isPeak ? '600' : '400';
+      svg += `<text x="${cx}" y="${h - 0}" text-anchor="middle" font-size="5.5" font-weight="${fw}" fill="${lc}" font-family="'Google Sans Flex',sans-serif">${m.label}${isJan ? `<tspan font-size="4.5" opacity="0.6"> '${m.year}</tspan>` : ''}</text>`;
     });
     svg += '</svg>';
     container.innerHTML = svg;
