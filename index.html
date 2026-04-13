@@ -948,6 +948,9 @@ a, button, input, select { touch-action: manipulation; }
 .footer-explainer {
   display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
   margin-top: 12px;
+  column-span: all; -webkit-column-span: all;
+  break-inside: avoid; -webkit-column-break-inside: avoid;
+  display: inline-grid; width: 100%;
 }
 .footer-explainer-col {
   background: var(--bg-app); border: 1px solid var(--border);
