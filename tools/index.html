@@ -48,7 +48,7 @@
 <!-- Performance -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300..900;1,300..900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap" rel="stylesheet">
 <!-- Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-T343V4RFHV"></script>
 <script>
@@ -105,7 +105,7 @@ gtag('config', 'G-T343V4RFHV');
   --radius-xs: 8px;
   --shadow:    0 1px 3px rgba(44,41,51,0.06);
   --shadow-sm: 0 1px 2px rgba(44,41,51,0.05);
-  --font: 'Rubik', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font: 'Google Sans Flex', -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
   --transition: all 0.16s cubic-bezier(0.4,0,0.2,1);
   --safe-top:    env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -219,14 +219,6 @@ a, button, input, select { touch-action: manipulation; }
 }
 .hdr-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
 .header-label { font-size: var(--text-sm); font-weight: 600; color: var(--text-tertiary); }
-.back-link {
-  font-size: var(--text-sm); font-weight: 600; color: var(--text-secondary);
-  text-decoration: none; display: inline-flex; align-items: center; gap: 3px;
-  padding: 0 12px; height: 36px; border-radius: var(--radius-sm);
-  background: var(--bg-app); border: 1px solid var(--border);
-  transition: var(--transition);
-}
-.back-link:hover { background: var(--bg-hover); color: var(--text-primary); }
 
 /* Jump nav — simple dropdown */
 .jump-select {
@@ -502,7 +494,6 @@ input[type=range]::-moz-range-thumb  { height: 18px; width: 18px; border-radius:
   .toast-wrap { bottom: 14px; left: 10px; right: 10px; }
   .toast { transform: translateY(110%); max-width: 100%; }
   .toast.show { transform: translateY(0); }
-  .back-link span { display: none; }
 }
 .hidden { display: none !important; }
 
@@ -827,13 +818,10 @@ input[type=range]::-moz-range-thumb  { height: 18px; width: 18px; border-radius:
 <header class="site-header">
   <div class="header-top">
     <a href="/" class="logo-link">Fedhoo.</a>
+    <div style="flex:1;"></div>
     <button class="hdr-btn" id="darkToggleBtn" onclick="toggleDark()" title="Toggle dark mode" aria-label="Toggle dark mode">
       <svg id="darkToggleIcon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
     </button>
-    <a href="/" class="back-link">
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M9 2.5L4.5 7 9 11.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <span>← Fedhoo</span>
-    </a>
   </div>
   <div class="jump-wrap">
     <select class="jump-select" id="jumpSelect">
@@ -868,7 +856,7 @@ input[type=range]::-moz-range-thumb  { height: 18px; width: 18px; border-radius:
 </header>
 <div class="page-wrap">
   <div class="page-header">
-    <h1 class="page-title">Govhoo Mini Tools</h1>
+    <h1 class="page-title">Fedhoo Tools</h1>
     <p class="page-sub">Free tools for Sellers and Sales Managers.</p>
   </div>
 
@@ -1525,8 +1513,8 @@ input[type=range]::-moz-range-thumb  { height: 18px; width: 18px; border-radius:
 </div><!-- /page-wrap -->
 
 <footer class="site-footer">
-  <a href="../" class="footer-back">← Back to Govhoo</a>
-  <div class="footer-copy">© 2026 Govhoo.com — Federal Market Intelligence for BD &amp; Sales Teams</div>
+  <a href="../" class="footer-back">← Back to Fedhoo</a>
+  <div class="footer-copy">© 2026 Fedhoo.com — Federal Market Intelligence for BD &amp; Sales Teams</div>
 </footer>
 
 <script>
@@ -2019,7 +2007,7 @@ async function runSideHustle() {
     const data = await res.json();
     if (!res.ok || data.error) throw new Error(data.error || 'Request failed');
 
-    // AskArti lambda wraps in data.launchPlan; govhoo returns flat
+    // AskArti lambda wraps in data.launchPlan; fedhoo returns flat
     const plan = data.launchPlan || data;
     const s = plan.strategy || {};
     const tl = plan.timeline || {};
