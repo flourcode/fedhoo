@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0A0F0D">
+  <title>Install Govhoo | Add to Home Screen</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0A0F0D;
+      --bg-card: rgba(168, 181, 176, 0.05);
+      --border: rgba(168, 181, 176, 0.1);
+      --text: #E8ECE9;
+      --text-dim: rgba(192, 200, 196, 0.55);
+      --text-mid: rgba(192, 200, 196, 0.75);
+      --brand: #5B9F80;
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    html { background: var(--bg); }
+
+    body {
+      font-family: 'Google Sans Flex', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 2rem 1.25rem;
+      padding-top: max(2rem, env(safe-area-inset-top, 0));
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      color: var(--text-dim);
+      text-decoration: none;
+      font-size: 0.9rem;
+      margin-bottom: 2rem;
+      transition: color 0.15s;
+    }
+    .back-link:hover { color: var(--text); }
+    .back-link svg { width: 16px; height: 16px; }
+
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+      color: var(--text-dim);
+      font-size: 1.05rem;
+      margin-bottom: 2.5rem;
+      line-height: 1.5;
+    }
+
+    .platform-tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .tab {
+      padding: 0.6rem 1.25rem;
+      border-radius: 100px;
+      border: none;
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      background: var(--bg-card);
+      color: var(--text-dim);
+      transition: all 0.2s;
+    }
+    .tab:hover { color: var(--text-mid); }
+    .tab.active {
+      background: var(--brand);
+      color: #fff;
+    }
+
+    .platform { display: none; }
+    .platform.active { display: block; }
+
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .step {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      padding: 1.25rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+
+    .step-num {
+      flex-shrink: 0;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(91, 159, 128, 0.15);
+      color: var(--brand);
+      font-weight: 600;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .step-content h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 0.3rem;
+    }
+
+    .step-content p {
+      color: var(--text-mid);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .icon-inline {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      background: rgba(168, 181, 176, 0.1);
+      border-radius: 5px;
+      vertical-align: middle;
+      margin: 0 2px;
+    }
+    .icon-inline svg { width: 14px; height: 14px; }
+
+    .benefits {
+      margin-top: 2.5rem;
+      padding: 1.5rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+
+    .benefits h2 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+
+    .benefit-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      margin-bottom: 0.85rem;
+    }
+    .benefit-item:last-child { margin-bottom: 0; }
+
+    .benefit-check {
+      flex-shrink: 0;
+      color: var(--brand);
+      margin-top: 2px;
+    }
+
+    .benefit-item p {
+      color: var(--text-mid);
+      font-size: 0.9rem;
+      line-height: 1.45;
+    }
+    .benefit-item strong {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .faq {
+      margin-top: 2.5rem;
+    }
+    .faq h2 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+    .faq-item {
+      padding: 1rem 1.25rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 0.75rem;
+    }
+    .faq-item h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 0.35rem;
+    }
+    .faq-item p {
+      color: var(--text-mid);
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 480px) {
+      body { padding: 1.5rem 1rem; }
+      h1 { font-size: 1.5rem; }
+      .step { padding: 1rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="/" class="back-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+      Back to Govhoo
+    </a>
+
+    <h1>Install Govhoo</h1>
+    <p class="subtitle">Add Govhoo to your home screen for a fullscreen, app-like experience. No app store needed — it loads fresh from the web every time.</p>
+
+    <div class="platform-tabs">
+      <button class="tab active" onclick="showPlatform('iphone')">iPhone</button>
+      <button class="tab" onclick="showPlatform('android')">Android</button>
+      <button class="tab" onclick="showPlatform('desktop')">Desktop</button>
+    </div>
+
+    <!-- iPhone -->
+    <div id="iphone" class="platform active">
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <h3>Open in Safari</h3>
+            <p>Go to <strong>govhoo.com</strong> in Safari. This won't work from Chrome or other browsers on iPhone — only Safari supports Add to Home Screen.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <h3>Tap the Share button</h3>
+            <p>Tap the share icon <span class="icon-inline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v12M5 12l7-7 7 7"/><rect x="4" y="17" width="16" height="2" rx="1" fill="currentColor" stroke="none"/></svg></span> at the bottom of your screen (or top, on iPad).</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <h3>Add to Home Screen</h3>
+            <p>Scroll down in the share sheet and tap <strong>Add to Home Screen</strong>. You may need to scroll past the first row of app icons to find it.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <h3>Tap Add</h3>
+            <p>Confirm the name (Govhoo) and tap <strong>Add</strong>. The app icon will appear on your home screen — tap it to launch fullscreen.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Android -->
+    <div id="android" class="platform">
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <h3>Open in Chrome</h3>
+            <p>Go to <strong>govhoo.com</strong> in Chrome.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <h3>Tap the menu</h3>
+            <p>Tap the three-dot menu <strong>⋮</strong> in the top-right corner of Chrome.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <h3>Install app</h3>
+            <p>Tap <strong>Install app</strong> or <strong>Add to Home screen</strong> (wording varies by device).</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <h3>Confirm</h3>
+            <p>Tap <strong>Install</strong>. Govhoo will appear in your app drawer and home screen, launching fullscreen like a native app.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Desktop -->
+    <div id="desktop" class="platform">
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <h3>Open in Chrome or Edge</h3>
+            <p>Go to <strong>govhoo.com</strong> in Chrome or Microsoft Edge.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <h3>Click the install icon</h3>
+            <p>Look for the install icon in the address bar (a monitor with a down arrow), or open the menu and click <strong>Install Govhoo</strong>.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <h3>Confirm</h3>
+            <p>Click <strong>Install</strong>. Govhoo will open in its own window and appear in your dock, taskbar, or Start menu.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Benefits -->
+    <div class="benefits">
+      <h2>What you get</h2>
+      <div class="benefit-item">
+        <span class="benefit-check"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 13l4 4L19 7"/></svg></span>
+        <p><strong>Fullscreen experience</strong> — no browser bars, feels like a native app</p>
+      </div>
+      <div class="benefit-item">
+        <span class="benefit-check"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 13l4 4L19 7"/></svg></span>
+        <p><strong>One-tap launch</strong> — right from your home screen or dock</p>
+      </div>
+      <div class="benefit-item">
+        <span class="benefit-check"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 13l4 4L19 7"/></svg></span>
+        <p><strong>Always up to date</strong> — loads fresh content every time, no manual updates</p>
+      </div>
+      <div class="benefit-item">
+        <span class="benefit-check"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 13l4 4L19 7"/></svg></span>
+        <p><strong>No storage bloat</strong> — uses virtually no space on your device</p>
+      </div>
+    </div>
+
+    <!-- FAQ -->
+    <div class="faq">
+      <h2>Common questions</h2>
+      <div class="faq-item">
+        <h3>Will I get an old version if you update the site?</h3>
+        <p>No. Govhoo loads fresh from the web every time you open it — you'll always have the latest version automatically.</p>
+      </div>
+      <div class="faq-item">
+        <h3>Is this the same as downloading an app?</h3>
+        <p>It's similar in feel but lighter. There's no app store download, no large install, and no permissions to grant. It's just a shortcut that opens Govhoo in fullscreen mode.</p>
+      </div>
+      <div class="faq-item">
+        <h3>How do I uninstall it?</h3>
+        <p>Same as any app — long-press the icon and delete it. On desktop, right-click and choose Uninstall.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function showPlatform(id) {
+      document.querySelectorAll('.platform').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      event.currentTarget.classList.add('active');
+    }
+
+    // Auto-detect platform
+    (function() {
+      const ua = navigator.userAgent;
+      if (/android/i.test(ua)) showTab('android');
+      else if (/iPad|iPhone|iPod/.test(ua)) showTab('iphone');
+      else if (!/Mobi/.test(ua)) showTab('desktop');
+
+      function showTab(id) {
+        document.querySelectorAll('.platform').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        document.querySelectorAll('.tab').forEach(t => {
+          if (t.textContent.toLowerCase().includes(id === 'iphone' ? 'iphone' : id)) t.classList.add('active');
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Govhoo API — Federal Contract Data</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0f0f0f;--bg-card:#171717;--bg-code:#0a0a0a;
+  --border:rgba(255,255,255,0.08);--border-b:rgba(255,255,255,0.15);
+  --text:#e8e6e1;--dim:#888;--dimmer:#555;
+  --accent:#9878A0;--accent-d:rgba(152,120,160,0.15);
+  --green:#4ade80;--green-d:rgba(74,222,128,0.1);
+  --amber:#fbbf24;--red:#f87171;
+  --mono:'JetBrains Mono',monospace;--sans:'Inter',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{background:var(--bg);color:var(--text);font-family:var(--sans);}
+body{min-height:100vh;}
+.layout{display:grid;grid-template-columns:270px 1fr;min-height:100vh;}
+.sidebar{background:var(--bg-card);border-right:1px solid var(--border);padding:2rem 1.5rem;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column;gap:1.75rem;}
+.main{padding:2.5rem 3rem;max-width:860px;}
+.logo{font-family:var(--mono);font-size:1.05rem;font-weight:700;letter-spacing:-0.02em;}
+.logo span{color:var(--accent);}
+.nav-label{font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--dimmer);margin-bottom:.4rem;}
+.nav-link{display:block;font-size:.82rem;color:var(--dim);padding:.32rem 0 .32rem .7rem;cursor:pointer;border-left:2px solid transparent;transition:all .12s;}
+.nav-link:hover,.nav-link.active{color:var(--text);border-left-color:var(--accent);}
+.page-title{font-size:1.7rem;font-weight:700;letter-spacing:-.03em;margin-bottom:.5rem;}
+.page-sub{color:var(--dim);font-size:.87rem;line-height:1.7;margin-bottom:2.25rem;max-width:560px;}
+.section{margin-bottom:2.75rem;scroll-margin-top:2rem;}
+.section-title{font-size:1.03rem;font-weight:700;letter-spacing:-.02em;margin-bottom:.7rem;padding-bottom:.7rem;border-bottom:1px solid var(--border);}
+.code-block{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin:.9rem 0;}
+.code-header{display:flex;align-items:center;justify-content:space-between;padding:.5rem 1rem;background:rgba(255,255,255,.025);border-bottom:1px solid var(--border);}
+.code-lang{font-family:var(--mono);font-size:.67rem;color:var(--dimmer);text-transform:uppercase;letter-spacing:.08em;}
+.copy-btn{font-family:var(--mono);font-size:.67rem;color:var(--dim);background:none;border:1px solid var(--border);border-radius:4px;padding:2px 8px;cursor:pointer;transition:all .12s;}
+.copy-btn:hover{color:var(--text);border-color:var(--border-b);}
+.copy-btn.copied{color:var(--green);border-color:rgba(74,222,128,.3);}
+pre{padding:1.2rem 1rem;overflow-x:auto;font-family:var(--mono);font-size:.76rem;line-height:1.75;}
+.kw{color:#c678dd;}.str{color:#98c379;}.cmt{color:#4b5263;font-style:italic;}.val{color:#d19a66;}.fn{color:#61afef;}.num{color:#e5c07b;}
+.pt{width:100%;border-collapse:collapse;font-size:.81rem;margin:.7rem 0 1.1rem;}
+.pt th{text-align:left;padding:.42rem .7rem;font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;color:var(--dimmer);border-bottom:1px solid var(--border);}
+.pt td{padding:.52rem .7rem;border-bottom:1px solid rgba(255,255,255,.035);vertical-align:top;line-height:1.5;}
+.pt tr:last-child td{border-bottom:none;}
+.pn{font-family:var(--mono);font-size:.76rem;color:var(--accent);}
+.py{font-family:var(--mono);font-size:.69rem;color:var(--amber);}
+.pr{font-family:var(--mono);font-size:.65rem;color:var(--red);}
+.po{font-family:var(--mono);font-size:.65rem;color:var(--dimmer);}
+.pd{color:var(--dim);}
+.info-box{background:var(--accent-d);border:1px solid rgba(152,120,160,.22);border-radius:8px;padding:.85rem 1.1rem;font-size:.82rem;color:var(--dim);line-height:1.6;margin:.7rem 0 1.2rem;}
+.info-box strong{color:var(--text);}
+.ep{display:inline-flex;align-items:center;font-family:var(--mono);font-size:.67rem;background:var(--accent-d);color:var(--accent);border:1px solid rgba(152,120,160,.28);border-radius:4px;padding:2px 9px;margin-bottom:.85rem;}
+code{font-family:var(--mono);font-size:.81em;color:var(--accent);background:var(--accent-d);padding:1px 5px;border-radius:3px;}
+.demo-card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:1.1rem;}
+.demo-header{padding:.8rem 1.1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:.6rem;}
+.demo-title{font-weight:600;font-size:.86rem;}
+.demo-body{padding:1rem 1.1rem;}
+.demo-row{display:flex;gap:.6rem;margin-bottom:.6rem;align-items:center;flex-wrap:wrap;}
+.di{flex:1;min-width:130px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:6px;padding:.52rem .7rem;font-family:var(--mono);font-size:.79rem;color:var(--text);outline:none;transition:border-color .12s;}
+.di:focus{border-color:var(--accent);}
+.ds{background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:6px;padding:.52rem .7rem;font-family:var(--mono);font-size:.79rem;color:var(--text);outline:none;cursor:pointer;}
+.db{background:var(--accent);color:#fff;border:none;border-radius:6px;padding:0 1rem;height:33px;font-size:.79rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:opacity .12s;font-family:var(--sans);}
+.db:hover{opacity:.85;}.db:disabled{opacity:.35;cursor:not-allowed;}
+.do{background:var(--bg-code);border:1px solid var(--border);border-radius:6px;padding:.85rem .95rem;font-family:var(--mono);font-size:.75rem;line-height:1.75;color:var(--dim);min-height:90px;max-height:360px;overflow-y:auto;white-space:pre-wrap;word-break:break-word;margin-top:.6rem;}
+.do.loading{color:var(--accent);}.do.error{color:var(--red);}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 5px var(--green);flex-shrink:0;}
+.dot.loading{background:var(--amber);box-shadow:0 0 5px var(--amber);animation:blink .9s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+@media(max-width:768px){.layout{grid-template-columns:1fr;}.sidebar{position:static;height:auto;}.main{padding:1.5rem;}}
+</style>
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar">
+  <div>
+    <div class="logo">govhoo<span>.</span>api</div>
+    <div style="font-size:.69rem;color:var(--dimmer);margin-top:4px;font-family:var(--mono);">federal contract data</div>
+  </div>
+  <div>
+    <div class="nav-label">Getting Started</div>
+    <span class="nav-link active" onclick="nav(this,'overview')">Overview</span>
+    <span class="nav-link" onclick="nav(this,'base-url')">Base URL</span>
+    <span class="nav-link" onclick="nav(this,'rate-limits')">Rate Limits</span>
+    <span class="nav-link" onclick="nav(this,'allowlist')">Allowed Endpoints</span>
+  </div>
+  <div>
+    <div class="nav-label">Endpoints</div>
+    <span class="nav-link" onclick="nav(this,'search-awards')">Search Awards</span>
+    <span class="nav-link" onclick="nav(this,'by-agency')">Top Agencies</span>
+    <span class="nav-link" onclick="nav(this,'by-vendor')">Top Vendors</span>
+    <span class="nav-link" onclick="nav(this,'by-naics')">By NAICS Code</span>
+    <span class="nav-link" onclick="nav(this,'over-time')">Spending Over Time</span>
+    <span class="nav-link" onclick="nav(this,'subawards')">Subawards</span>
+    <span class="nav-link" onclick="nav(this,'recipient')">Company Lookup</span>
+  </div>
+  <div>
+    <div class="nav-label">Live Demo</div>
+    <span class="nav-link" onclick="nav(this,'demo')">Try it now</span>
+  </div>
+  <div style="margin-top:auto;">
+    <div style="font-size:.69rem;color:var(--dimmer);line-height:1.8;">
+      Data from <a href="https://api.usaspending.gov" target="_blank" style="color:var(--dim);">USASpending.gov</a><br>
+      Built by <a href="https://govhoo.com" target="_blank" style="color:var(--accent);">Govhoo</a>
+    </div>
+  </div>
+</aside>
+
+<main class="main">
+
+<div id="overview" class="section">
+  <div class="page-title">Govhoo API</div>
+  <p class="page-sub">A single POST endpoint that proxies the USASpending.gov federal contracts database. Query award data, agency spending, vendor concentration, subcontracts, and spending trends — without dealing with CORS or USASpending's raw request format directly.</p>
+  <div class="info-box"><strong>No API key required.</strong> The proxy is publicly accessible. All data is sourced directly from <a href="https://usaspending.gov" target="_blank" style="color:var(--accent);">USASpending.gov</a> — the official federal spending database maintained by the U.S. Treasury. Data reflects contracts reported by federal agencies.</div>
+</div>
+
+<div id="base-url" class="section">
+  <div class="section-title">Base URL</div>
+  <p style="color:var(--dim);font-size:.85rem;margin-bottom:.9rem;">All requests are <code>POST</code> with <code>Content-Type: application/json</code>. No auth headers needed.</p>
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang">endpoint</span></div>
+    <pre><span class="str">https://76unm1rlj0.execute-api.us-east-1.amazonaws.com/default/grumpy2</span></pre>
+  </div>
+  <p style="color:var(--dim);font-size:.82rem;margin-top:.7rem;">Every request body must include <code>request_type: "usaspending_proxy"</code>, an <code>endpoint</code> path, and a <code>payload</code> object forwarded to USASpending.</p>
+</div>
+
+<div id="rate-limits" class="section">
+  <div class="section-title">Rate Limits</div>
+  <table class="pt">
+    <thead><tr><th>Window</th><th>Limit</th><th>Response</th></tr></thead>
+    <tbody>
+      <tr><td class="pn">Per hour</td><td class="py">500 requests</td><td class="pd">HTTP 429 with <code>Retry-After</code> (seconds)</td></tr>
+      <tr><td class="pn">Per minute</td><td class="py">80 requests</td><td class="pd">HTTP 429, retry after 60s</td></tr>
+      <tr><td class="pn">Timeout</td><td class="py">15 seconds</td><td class="pd">HTTP 504 if USASpending doesn't respond</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div id="allowlist" class="section">
+  <div class="section-title">Allowed Endpoints</div>
+  <p style="color:var(--dim);font-size:.84rem;margin-bottom:.9rem;">The proxy enforces an allowlist. Only these paths are permitted in the <code>endpoint</code> field — anything else returns HTTP 400.</p>
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang">allowlist</span></div>
+    <pre><span class="str">/search/spending_by_award/</span>
+<span class="str">/search/spending_by_category/</span>
+<span class="str">/search/spending_over_time/</span>
+<span class="str">/awards/</span>
+<span class="str">/references/agency/</span>
+<span class="str">/agency/</span>
+<span class="str">/autocomplete/awarding_agency/</span>
+<span class="str">/autocomplete/recipient/</span>
+<span class="str">/recipient/</span>
+<span class="str">/transactions/</span>
+<span class="str">/subawards/</span></pre>
+  </div>
+</div>
+
+<div id="search-awards" class="section">
+  <div class="section-title">Search Awards</div>
+  <div class="ep">POST · /search/spending_by_award/</div>
+  <p style="color:var(--dim);font-size:.84rem;margin-bottom:.9rem;">Search federal contract awards by keyword, agency, NAICS, PSC, or date range. Returns up to 100 results per page sorted by amount.</p>
+  <table class="pt">
+    <thead><tr><th>Field</th><th>Type</th><th></th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td class="pn">filters.time_period</td><td class="py">array</td><td class="pr">required</td><td class="pd">Array of <code>{"start_date","end_date"}</code> in <code>YYYY-MM-DD</code>.</td></tr>
+      <tr><td class="pn">filters.award_type_codes</td><td class="py">array</td><td class="pr">required</td><td class="pd"><code>["A","B","C","D"]</code> for contracts only.</td></tr>
+      <tr><td class="pn">filters.keywords</td><td class="py">array</td><td class="po">optional</td><td class="pd">1–2 word terms matched against descriptions.</td></tr>
+      <tr><td class="pn">filters.agencies</td><td class="py">array</td><td class="po">optional</td><td class="pd"><code>[{"type":"awarding","tier":"toptier","name":"..."}]</code></td></tr>
+      <tr><td class="pn">filters.naics_codes</td><td class="py">object</td><td class="po">optional</td><td class="pd"><code>{"require":["541512"]}</code> — 6-digit codes.</td></tr>
+      <tr><td class="pn">filters.psc_codes</td><td class="py">array</td><td class="po">optional</td><td class="pd">4-character PSC codes: <code>["D307"]</code></td></tr>
+      <tr><td class="pn">limit</td><td class="py">number</td><td class="po">optional</td><td class="pd">1–100. Default 100.</td></tr>
+      <tr><td class="pn">sort / order</td><td class="py">string</td><td class="po">optional</td><td class="pd"><code>"Award Amount"</code> / <code>"desc"</code></td></tr>
+    </tbody>
+  </table>
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang">javascript</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+    <pre><span class="kw">const</span> res = <span class="kw">await</span> <span class="fn">fetch</span>(<span class="str">'https://76unm1rlj0.execute-api.us-east-1.amazonaws.com/default/grumpy2'</span>, {
+  method: <span class="str">'POST'</span>,
+  headers: { <span class="str">'Content-Type'</span>: <span class="str">'application/json'</span> },
+  body: <span class="fn">JSON.stringify</span>({
+    request_type: <span class="str">'usaspending_proxy'</span>,
+    endpoint: <span class="str">'/search/spending_by_award/'</span>,
+    payload: {
+      filters: {
+        time_period: [{ start_date: <span class="str">'2024-04-01'</span>, end_date: <span class="str">'2025-04-01'</span> }],
+        award_type_codes: [<span class="str">'A'</span>,<span class="str">'B'</span>,<span class="str">'C'</span>,<span class="str">'D'</span>],
+        keywords: [<span class="str">'zero trust'</span>]
+      },
+      fields: [<span class="str">'Award ID'</span>,<span class="str">'Recipient Name'</span>,<span class="str">'Awarding Agency'</span>,
+               <span class="str">'Award Amount'</span>,<span class="str">'Start Date'</span>,<span class="str">'End Date'</span>,<span class="str">'Description'</span>],
+      limit: <span class="num">10</span>, sort: <span class="str">'Award Amount'</span>, order: <span class="str">'desc'</span>
+    }
+  })
+});
+<span class="kw">const</span> { results } = <span class="kw">await</span> res.<span class="fn">json</span>();</pre>
+  </div>
+</div>
+
+<div id="by-agency" class="section">
+  <div class="section-title">Top Agencies by Spend</div>
+  <div class="ep">POST · /search/spending_by_category/awarding_agency</div>
+  <p style="color:var(--dim);font-size:.84rem;margin-bottom:.9rem;">Aggregate spend grouped by awarding agency. Returns a ranked list useful for market sizing and territory planning.</p>
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang">javascript</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+    <pre><span class="kw">const</span> res = <span class="kw">await</span> <span class="fn">fetch</span>(PROXY, {
+  method: <span class="str">'POST'</span>, headers: { <span class="str">'Content-Type'</span>: <span class="str">'application/json'</span> },
+  body: <span class="fn">JSON.stringify</span>({
+    request_type: <span class="str">'usaspending_proxy'</span>,
+    endpoint: <span class="str">'/search/spending_by_category/awarding_agency'</span>,
+    payload: {
+      category: <span class="str">'awarding_agency'</span>,
+      filters: {
+        time_period: [{ start_date: <span class="str">'2024-04-01'</span>, end_date: <span class="str">'2025-04-01'</span> }],
+        award_type_codes: [<span class="str">'A'</span>,<span class="str">'B'</span>,<span class="str">'C'</span>,<span class="str">'D'</span>],
+        keywords: [<span class="str">'cloud'</span>]
+      },
+      limit: <span class="num">10</span>
+    }
+  })
+});
+<span class="kw">const</span> { results } = <span class="kw">await</span> res.<span class="fn">json</span>();
+<span class="cmt">// [{ name: "Dept of Defense", aggregated_amount: 2100000000 }, ...]</span></pre>
+  </div>
+</div>
+
+<div id="by-vendor" class="section">
+  <div class="section-title">Top Vendors by Spend</div>
+  <div class="ep">POST · /search/spending_by_category/recipient_duns</div>
+  <p style="color:var(--dim);font-size:.84rem;margin-bottom:.9rem;">Identify the top prime contractors in a market by total obligations. Useful for competitive landscape analysis.</p>
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang">javascript</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+    <pre><span class="kw">const</span> res = <span class="kw">await</span> <span class="fn">fetch</span>(PROXY, {
+  method: <span class="str">'POST'</span>, headers: { <span class="str">'Content-Type'</span>: <span class="str">'application/json'</span> },
+  body: <span class="fn">JSON.stringify</span>({
+    request_type: <span class="str">'usaspending_proxy'</span>,
+    endpoint: <span class="str">'/search/spending_by_category/recipient_duns'</span>,
+    payload: {
+      category: <span class="str">'recipient_duns'</span>,
+      filters: {
+        time_period: [{ start_date: <span class="str">'2024-04-01'</span>, end_date: <span class="str">'2025-04-01'</span> }],
+        award_type_codes: [<span class="str">'A'</span>,<span class="str">'B'</span>,<span class="str">'C'</span>,<span class="str">'D'</span>],
+        agencies: [{ type: <span class="str">'awarding'</span>, tier: <span class="str">'toptier'</span>, name: <span class="str">'Department of Defense'</span> }],
+        keywords: [<span class="str">'cybersecurity'</span>]
+      },
+      limit: <span class="num">10</span>
+    }
+  })
+});
+<span class="kw">const</span> { results } = <span class="kw">await</span> res.<span class="fn">json</span>();
+<span class="cmt">// [{ name: "LEIDOS INC", aggregated_amount: 340000000 }, ...]</span></pre>
+  </div>
+</div>
+
+<div id="by-naics" class="section">
+  <div class="section-title">Spending by NAICS Code</div>
+  <div class="ep">POST · /search/spending_by_category/naics</div>
+  <p style="color:var(--dim);font-size:.84rem;margin-bottom:.9rem;">Break down spend by NAICS industry code. Useful for understanding what categories of work an agency or market is buying.</p>
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang">javascript</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+    <pre><span class="kw">const</span> res = <span class="kw">await</span> <span class="fn">fetch</span>(PROXY, {
+  method: <span class="str">'POST'</span>, headers: { <span class="str">'Content-Type'</span>: <span class="str">'application/json'</span> },
+  body: <span class="fn">JSON.stringify</span>({
+    request_type: <span class="str">'usaspending_proxy'</span>,
+    endpoint: <span class="str">'/search/spending_by_category/naics'</span>,
+    payload: {
+      category: <span class="str">'naics'</span>,
+      filters: {
+        time_period: [{ start_date: <span class="str">'2024-04-01'</span>, end_date: <span class="str">'2025-04-01'</span> }],
+        award_type_codes: [<span class="str">'A'</span>,<span class="str">'B'</span>,<span class="str">'C'</span>,<span class="str">'D'</span>],
+        agencies: [{ type: <span class="str">'awarding'</span>, tier: <span class="str">'toptier'</span>,
+                     name: <span class="str">'Department of Veterans Affairs'</span> }]
+      },
+      limit: <span class="num">10</span>
+    }
+  })
+});
+<span class="kw">const</span> { results } = <span class="kw">await</span> res.<span class="fn">json</span>();
+<span class="cmt">// [{ code: "541512", description: "Computer Systems Design", aggregated_amount: 1200000000 }]</span></pre>
+  </div>
+</div>
+
+<div id="over-time" class="section">
+  <div class="section-title">Spending Over Time</div>
+  <div class="ep">POST · /search/spending_over_time/</div>
+  <p style="color:var(--dim);font-size:.84rem;margin-bottom:.9rem;">Obligation totals grouped by fiscal year, quarter, or month. Use this to show market growth trends or seasonal buying patterns.</p>
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang">javascript</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+    <pre><span class="kw">const</span> res = <span class="kw">await</span> <span class="fn">fetch</span>(PROXY, {
+  method: <span class="str">'POST'</span>, headers: { <span class="str">'Content-Type'</span>: <span class="str">'application/json'</span> },
+  body: <span class="fn">JSON.stringify</span>({
+    request_type: <span class="str">'usaspending_proxy'</span>,
+    endpoint: <span class="str">'/search/spending_over_time/'</span>,
+    payload: {
+      group: <span class="str">'fiscal_year'</span>, <span class="cmt">// or 'quarter' or 'month'</span>
+      filters: {
+        time_period: [{ start_date: <span class="str">'2020-10-01'</span>, end_date: <span class="str">'2025-04-01'</span> }],
+        award_type_codes: [<span class="str">'A'</span>,<span class="str">'B'</span>,<span class="str">'C'</span>,<span class="str">'D'</span>],
+        keywords: [<span class="str">'artificial intelligence'</span>]
+      }
+    }
+  })
+});
+<span class="kw">const</span> { results } = <span class="kw">await</span> res.<span class="fn">json</span>();
+<span class="cmt">// [{ time_period: { fiscal_year: "2024" }, aggregated_amount: 4200000000 }, ...]</span></pre>
+  </div>
+</div>
+
+<div id="subawards" class="section">
+  <div class="section-title">Subawards</div>
+  <div class="ep">POST · /search/spending_by_award/ (subawards: true)</div>
+  <p style="color:var(--dim);font-size:.84rem;margin-bottom:.9rem;">Search subcontracts — awards made by primes to smaller vendors. Add <code>subawards: true</code> to the payload. Useful for identifying teaming and channel partner activity.</p>
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang">javascript</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+    <pre><span class="kw">const</span> res = <span class="kw">await</span> <span class="fn">fetch</span>(PROXY, {
+  method: <span class="str">'POST'</span>, headers: { <span class="str">'Content-Type'</span>: <span class="str">'application/json'</span> },
+  body: <span class="fn">JSON.stringify</span>({
+    request_type: <span class="str">'usaspending_proxy'</span>,
+    endpoint: <span class="str">'/search/spending_by_award/'</span>,
+    payload: {
+      subawards: <span class="kw">true</span>,
+      filters: {
+        time_period: [{ start_date: <span class="str">'2024-04-01'</span>, end_date: <span class="str">'2025-04-01'</span> }],
+        award_type_codes: [<span class="str">'A'</span>,<span class="str">'B'</span>,<span class="str">'C'</span>,<span class="str">'D'</span>],
+        keywords: [<span class="str">'cloud'</span>]
+      },
+      fields: [<span class="str">'Sub-Award ID'</span>,<span class="str">'Sub-Awardee Name'</span>,<span class="str">'Sub-Award Amount'</span>,
+               <span class="str">'Prime Recipient Name'</span>,<span class="str">'Awarding Agency'</span>],
+      limit: <span class="num">25</span>, sort: <span class="str">'Sub-Award Amount'</span>, order: <span class="str">'desc'</span>
+    }
+  })
+});
+<span class="kw">const</span> { results } = <span class="kw">await</span> res.<span class="fn">json</span>();
+<span class="cmt">// [{ "Sub-Awardee Name": "ACME LLC", "Prime Recipient Name": "LEIDOS", ... }]</span></pre>
+  </div>
+</div>
+
+<div id="recipient" class="section">
+  <div class="section-title">Company Name Lookup</div>
+  <div class="ep">POST · /autocomplete/recipient/</div>
+  <p style="color:var(--dim);font-size:.84rem;margin-bottom:.9rem;">Find the exact legal name a company uses in USASpending. Brand names often differ from registered entity names — this resolves them. Also available: <code>/autocomplete/awarding_agency/</code> for agency name lookup.</p>
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang">javascript</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+    <pre><span class="kw">const</span> res = <span class="kw">await</span> <span class="fn">fetch</span>(PROXY, {
+  method: <span class="str">'POST'</span>, headers: { <span class="str">'Content-Type'</span>: <span class="str">'application/json'</span> },
+  body: <span class="fn">JSON.stringify</span>({
+    request_type: <span class="str">'usaspending_proxy'</span>,
+    endpoint: <span class="str">'/autocomplete/recipient/'</span>,
+    payload: { search_text: <span class="str">'Primer'</span>, limit: <span class="num">5</span> }
+  })
+});
+<span class="kw">const</span> { results } = <span class="kw">await</span> res.<span class="fn">json</span>();
+<span class="cmt">// [{ recipient_name: "PRIMER FEDERAL" }, { recipient_name: "PRIMER TECHNOLOGIES" }]</span></pre>
+  </div>
+</div>
+
+<div id="demo" class="section">
+  <div class="section-title">Live Demo</div>
+  <p style="color:var(--dim);font-size:.84rem;margin-bottom:1.1rem;">Hit the API right now — no setup, no key.</p>
+
+  <div class="demo-card">
+    <div class="demo-header"><div class="dot" id="d1"></div><div class="demo-title">Search Awards</div></div>
+    <div class="demo-body">
+      <div class="demo-row">
+        <input class="di" id="k1" value="zero trust" placeholder="keyword or NAICS">
+        <select class="ds" id="l1"><option value="5">5</option><option value="10" selected>10</option><option value="25">25</option></select>
+        <button class="db" id="b1" onclick="s1()">Run</button>
+      </div>
+      <div class="do" id="o1">Results will appear here...</div>
+    </div>
+  </div>
+
+  <div class="demo-card">
+    <div class="demo-header"><div class="dot" id="d2"></div><div class="demo-title">Top Agencies by Spend</div></div>
+    <div class="demo-body">
+      <div class="demo-row">
+        <input class="di" id="k2" value="artificial intelligence" placeholder="keyword">
+        <button class="db" id="b2" onclick="s2()">Run</button>
+      </div>
+      <div class="do" id="o2">Agency totals will appear here...</div>
+    </div>
+  </div>
+
+  <div class="demo-card">
+    <div class="demo-header"><div class="dot" id="d3"></div><div class="demo-title">Spending Over Time</div></div>
+    <div class="demo-body">
+      <div class="demo-row">
+        <input class="di" id="k3" value="cloud" placeholder="keyword">
+        <select class="ds" id="g3"><option value="fiscal_year" selected>Fiscal year</option><option value="quarter">Quarter</option></select>
+        <button class="db" id="b3" onclick="s3()">Run</button>
+      </div>
+      <div class="do" id="o3">Trend data will appear here...</div>
+    </div>
+  </div>
+
+  <div class="demo-card">
+    <div class="demo-header"><div class="dot" id="d4"></div><div class="demo-title">Company Name Lookup</div></div>
+    <div class="demo-body">
+      <div class="demo-row">
+        <input class="di" id="k4" value="Primer" placeholder="company name (partial ok)">
+        <button class="db" id="b4" onclick="s4()">Lookup</button>
+      </div>
+      <div class="do" id="o4">Legal entity names will appear here...</div>
+    </div>
+  </div>
+
+</div>
+
+</main>
+</div>
+<script>
+const PROXY='https://76unm1rlj0.execute-api.us-east-1.amazonaws.com/default/grumpy2';
+function nav(el,id){document.querySelectorAll('.nav-link').forEach(l=>l.classList.remove('active'));el.classList.add('active');document.getElementById(id)?.scrollIntoView({behavior:'smooth',block:'start'});}
+function copyCode(btn){const t=btn.closest('.code-block').querySelector('pre').innerText;navigator.clipboard.writeText(t).then(()=>{btn.textContent='copied!';btn.classList.add('copied');setTimeout(()=>{btn.textContent='copy';btn.classList.remove('copied');},2000);});}
+function yr(){const n=new Date(),s=new Date(n);s.setFullYear(s.getFullYear()-1);const f=d=>d.toISOString().split('T')[0];return[{start_date:f(s),end_date:f(n)}];}
+function money(n){if(!n)return'$0';const a=Math.abs(n);if(a>=1e9)return'$'+(a/1e9).toFixed(1)+'B';if(a>=1e6)return'$'+(a/1e6).toFixed(1)+'M';if(a>=1e3)return'$'+(a/1e3).toFixed(0)+'K';return'$'+Math.round(a).toLocaleString();}
+function busy(di,bi,on,label){document.getElementById(di).classList.toggle('loading',on);const b=document.getElementById(bi);b.disabled=on;b.textContent=on?'…':label||'Run';}
+async function post(payload){const r=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});return r.json();}
+
+async function s1(){
+  const kw=document.getElementById('k1').value.trim(),lim=+document.getElementById('l1').value,o=document.getElementById('o1');
+  if(!kw)return; busy('d1','b1',true,'Run'); o.className='do loading'; o.textContent='Querying USASpending...';
+  try{
+    const{results=[]}=await post({request_type:'usaspending_proxy',endpoint:'/search/spending_by_award/',payload:{filters:{time_period:yr(),award_type_codes:['A','B','C','D'],keywords:[kw]},fields:['Recipient Name','Awarding Agency','Award Amount','Start Date','End Date','Description'],limit:lim,sort:'Award Amount',order:'desc'}});
+    if(!results.length){o.className='do error';o.textContent='No results. Try a different keyword.';return;}
+    o.className='do';
+    o.textContent=results.map((c,i)=>{const ag=(c['Awarding Agency']||'').replace(/^Department of (the )?/i,'');const desc=(c['Description']||'').slice(0,85);return`${i+1}. ${c['Recipient Name']||'—'}\n   ${money(c['Award Amount'])} · ${ag}\n   ${desc}${desc.length===85?'…':''}`;}).join('\n\n');
+  }catch(e){o.className='do error';o.textContent='Error: '+e.message;}
+  finally{busy('d1','b1',false,'Run');}
+}
+
+async function s2(){
+  const kw=document.getElementById('k2').value.trim(),o=document.getElementById('o2');
+  if(!kw)return; busy('d2','b2',true,'Run'); o.className='do loading'; o.textContent='Aggregating agency spend...';
+  try{
+    const{results=[]}=await post({request_type:'usaspending_proxy',endpoint:'/search/spending_by_category/awarding_agency',payload:{category:'awarding_agency',filters:{time_period:yr(),award_type_codes:['A','B','C','D'],keywords:[kw]},limit:10}});
+    if(!results.length){o.className='do error';o.textContent='No results.';return;}
+    const max=results[0].aggregated_amount||1;
+    o.className='do';
+    o.textContent=results.map((r,i)=>{const name=(r.name||'Unknown').replace(/^Department of (the )?/i,'').slice(0,28);const bar='█'.repeat(Math.round((r.aggregated_amount/max)*20));return`${String(i+1).padStart(2)}. ${name.padEnd(30)} ${money(r.aggregated_amount).padStart(9)}  ${bar}`;}).join('\n');
+  }catch(e){o.className='do error';o.textContent='Error: '+e.message;}
+  finally{busy('d2','b2',false,'Run');}
+}
+
+async function s3(){
+  const kw=document.getElementById('k3').value.trim(),grp=document.getElementById('g3').value,o=document.getElementById('o3');
+  if(!kw)return; busy('d3','b3',true,'Run'); o.className='do loading'; o.textContent='Fetching trend data...';
+  try{
+    const{results=[]}=await post({request_type:'usaspending_proxy',endpoint:'/search/spending_over_time/',payload:{group:grp,filters:{time_period:[{start_date:'2020-10-01',end_date:new Date().toISOString().split('T')[0]}],award_type_codes:['A','B','C','D'],keywords:[kw]}}});
+    if(!results.length){o.className='do error';o.textContent='No trend data.';return;}
+    const sorted=[...results].sort((a,b)=>{const ka=a.time_period.fiscal_year||'';const kb=b.time_period.fiscal_year||'';return String(ka).localeCompare(String(kb));});
+    const max=Math.max(...sorted.map(r=>r.aggregated_amount||0),1);
+    o.className='do';
+    o.textContent=sorted.map(r=>{const label=grp==='fiscal_year'?`FY${r.time_period.fiscal_year}`:`FY${r.time_period.fiscal_year} Q${r.time_period.quarter}`;const bar='█'.repeat(Math.round(((r.aggregated_amount||0)/max)*22));return`${label.padEnd(10)} ${money(r.aggregated_amount||0).padStart(9)}  ${bar}`;}).join('\n');
+  }catch(e){o.className='do error';o.textContent='Error: '+e.message;}
+  finally{busy('d3','b3',false,'Run');}
+}
+
+async function s4(){
+  const kw=document.getElementById('k4').value.trim(),o=document.getElementById('o4');
+  if(!kw)return; busy('d4','b4',true,'Lookup'); o.className='do loading'; o.textContent='Looking up entity names...';
+  try{
+    const{results=[]}=await post({request_type:'usaspending_proxy',endpoint:'/autocomplete/recipient/',payload:{search_text:kw,limit:8}});
+    if(!results.length){o.className='do error';o.textContent='No matches found.';return;}
+    o.className='do';
+    o.textContent=results.map((r,i)=>`${i+1}. ${r.recipient_name||'—'}`).join('\n');
+  }catch(e){o.className='do error';o.textContent='Error: '+e.message;}
+  finally{busy('d4','b4',false,'Lookup');}
+}
+
+[['k1',s1],['k2',s2],['k3',s3],['k4',s4]].forEach(([id,fn])=>{document.getElementById(id).addEventListener('keydown',e=>{if(e.key==='Enter')fn();});});
+</script>
+</body>
+</html>
