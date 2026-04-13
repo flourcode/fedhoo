@@ -2565,6 +2565,7 @@ async searchAwards(keywords) {
       if (kws.length > 0) filters.keywords = kws;
       // ── TERRITORY INJECTION ──
       App._applySectorFilter(filters);
+      App._lastSearchFilters = filters;
       if (codes.length > 0 || agencies.length > 0) {
         let data;
         try { data = (await this._post('/search/spending_by_award/', { filters, fields: this.AWARD_FIELDS, limit: 100, sort: 'Award Amount', order: 'desc' })).results || []; } catch(e) { data = []; }
@@ -2616,6 +2617,7 @@ async searchAwards(keywords) {
     if (agencyFilters.length > 0) filters.agencies = agencyFilters;
     // ── TERRITORY INJECTION ──
     App._applySectorFilter(filters);
+    App._lastSearchFilters = filters;
     const rawData = (await this._post('/search/spending_by_award/', { filters, fields: this.AWARD_FIELDS, limit: 100, sort: 'Award Amount', order: 'desc' })).results || [];
     return cleanAndSort(rawData);
   },
@@ -4430,21 +4432,15 @@ selectAgencySuggestion(name, inputId, boxId) {
     const list = DOM.get('subawardsList');
     if (!card || !list || !this.searchData.loaded) return;
 
-    // Fetch subawards for current query
-    const query = this.currentQuery;
-    const timePeriod = Utils.getTrailing12Mo();
-    const { pscCodes, naicsCodes, keywordTerms, andGroups } = Utils.parseSearchTerms(query);
-    const filters = { time_period: [timePeriod[0]], award_type_codes: API.CONTRACT_TYPES };
-    const kws = [];
-    keywordTerms.forEach(t => {
-      const a = Utils.resolveAgencyAlias(t);
-      if (a) filters.agencies = [...(filters.agencies||[]), { type:'awarding', tier: a.tier, name: a.name, toptier_name: a.toptier_name }];
-      else kws.push(t);
-    });
-    if (kws.length) filters.keywords = kws;
-    if (naicsCodes.length) filters.naics_codes = { require: naicsCodes };
-    if (andGroups.length) filters.keywords = andGroups[0].filter(t => !Utils.resolveAgencyAlias(t));
-    App._applySectorFilter(filters);
+    // Reuse the exact filters from the main search — avoids re-parsing AND queries incorrectly
+    const filters = App._lastSearchFilters
+      ? JSON.parse(JSON.stringify(App._lastSearchFilters))  // deep clone
+      : (() => {
+          const timePeriod = Utils.getTrailing12Mo();
+          const f = { time_period: [timePeriod[0]], award_type_codes: API.CONTRACT_TYPES };
+          App._applySectorFilter(f);
+          return f;
+        })();
 
     let subs = [];
     try {
