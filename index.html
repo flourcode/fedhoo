@@ -1178,6 +1178,7 @@ a, button, input, select { touch-action: manipulation; }
     <div class="app-card wide hidden" id="expiringCard">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;">
         <h2 class="card-title" style="margin:0;">Expiring Soon</h2>
+        <button class="export-btn" onclick="App.exportExpiringCSV()" title="Export expiring contracts to CSV">Export CSV</button>
       </div>
       <div class="contract-list" id="expiringList"></div>
     </div>
@@ -1185,9 +1186,12 @@ a, button, input, select { touch-action: manipulation; }
 
     <!-- SUBAWARDS CARD -->
     <div class="app-card wide hidden" id="subawardsCard">
-      <div style="margin-bottom:4px;">
-        <h2 class="card-title">Prime to Sub Relationships</h2>
-        <p class="card-desc" style="margin:0;font-size:var(--text-xs);color:var(--text-tertiary);">Who the primes are subbing to — teaming intelligence for this market.</p>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;">
+        <div>
+          <h2 class="card-title" style="margin:0;">Prime to Sub Relationships</h2>
+          <p class="card-desc" style="margin:2px 0 0;font-size:var(--text-xs);color:var(--text-tertiary);">Who the primes are subbing to — teaming intelligence for this market.</p>
+        </div>
+        <button class="export-btn" onclick="App.exportSubawardsCSV()" title="Export subawards to CSV">Export CSV</button>
       </div>
       <div class="contract-list" id="subawardsList"></div>
     </div>
@@ -3282,7 +3286,7 @@ const App = {
 
       // Card title = title-cased search query, no "Market" suffix
       const rawForTitle = (DOM.get('searchInput')?.value || query).trim();
-      const titleLabel = rawForTitle.split(/,\s*/).map(t => Utils.titleCase(t.trim())).join(', ');
+      const titleLabel = rawForTitle.split(/,\s*/).map(t => t.trim().toUpperCase()).join(', ');
       document.getElementById('marketCardTitle').textContent = titleLabel;
       document.getElementById('marketCardDesc').textContent = 'Where the money is concentrated. Click any segment to drill in.';
 
@@ -4534,13 +4538,13 @@ selectAgencySuggestion(name, inputId, boxId) {
       const subs = this._subawardData || [];
       const subTotal = subs.reduce((s, r) => s + (parseFloat(r['Sub-Award Amount']) || 0), 0);
       if (heroEl) Utils.countUp(heroEl, subTotal, Utils.money);
-      if (titleEl) titleEl.textContent = `${this.currentQuery || 'Market'} · Subawards`;
+      if (titleEl) titleEl.textContent = `${(this.currentQuery || 'Market').toUpperCase()} · Subawards`;
     } else {
       // Restore main search total
       const mainTotal = (this.searchData.active || []).reduce((s, c) => s + (parseFloat(c['Award Amount']) || 0), 0);
       if (heroEl) Utils.countUp(heroEl, mainTotal, Utils.money);
       const rawForTitle = (DOM.get('searchInput')?.value || this.currentQuery || '').trim();
-      if (titleEl) titleEl.textContent = rawForTitle.split(/,\s*/).map(t => Utils.titleCase(t.trim())).join(', ');
+      if (titleEl) titleEl.textContent = rawForTitle.split(/,\s*/).map(t => t.trim().toUpperCase()).join(', ');
     }
 
     if (view === 'sankey') {
@@ -4836,6 +4840,66 @@ selectAgencySuggestion(name, inputId, boxId) {
       sheet?.classList.add('hidden');
       backdrop?.classList.add('hidden');
     }, 320);
+  },
+
+  exportExpiringCSV() {
+    const data = this.searchData.active;
+    if (!data || !data.length) { this.toast('No data to export.', 'warning'); return; }
+    const now = new Date();
+    const cutoff = new Date(now); cutoff.setDate(cutoff.getDate() + 90);
+    const expiring = data.filter(c => {
+      const end = new Date(c['End Date']);
+      return end > now && end <= cutoff && (parseFloat(c['Award Amount'])||0) > 50000;
+    }).sort((a, b) => new Date(a['End Date']) - new Date(b['End Date']));
+    if (!expiring.length) { this.toast('No expiring contracts to export.', 'warning'); return; }
+    const headers = ['Recipient Name','Awarding Agency','Award Amount','End Date','Description','NAICS','PSC','Type of Set Aside','pop_state_code','USASpending URL'];
+    const esc = v => `"${String(v ?? '').replace(/"/g,'""')}"`;
+    const rows = expiring.map(c => [
+      esc(c['Recipient Name']),
+      esc(c['Awarding Agency']),
+      esc(c['Award Amount']),
+      esc(c['End Date']),
+      esc(c['Description']),
+      esc(c['NAICS'] && typeof c['NAICS']==='object' ? c['NAICS'].code : c['NAICS']),
+      esc(c['PSC'] && typeof c['PSC']==='object' ? c['PSC'].code : c['PSC']),
+      esc(c['Type of Set Aside']),
+      esc(c['pop_state_code']),
+      esc(c['generated_internal_id'] ? `https://www.usaspending.gov/award/${c['generated_internal_id']}` : ''),
+    ].join(','));
+    const csv = [headers.map(h => `"${h}"`).join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `fedhoo_expiring_${(this.currentQuery||'export').replace(/\s+/g,'_')}_${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    this.toast('Expiring contracts exported.', 'ok');
+  },
+
+  exportSubawardsCSV() {
+    const subs = this._subawardData;
+    if (!subs || !subs.length) { this.toast('No subaward data to export.', 'warning'); return; }
+    const headers = ['Sub-Awardee Name','Prime Recipient Name','Awarding Agency','Sub-Award Amount','Sub-Award Date','Description','NAICS','pop_state_code','USASpending URL'];
+    const esc = v => `"${String(v ?? '').replace(/"/g,'""')}"`;
+    const rows = subs.map(s => [
+      esc(s['Sub-Awardee Name']),
+      esc(s['Prime Recipient Name']),
+      esc(s['Awarding Agency']),
+      esc(s['Sub-Award Amount']),
+      esc(s['Sub-Award Date']),
+      esc(s['Description']),
+      esc(s['NAICS'] && typeof s['NAICS']==='object' ? s['NAICS'].code : s['NAICS']),
+      esc(s['pop_state_code']),
+      esc(s['prime_award_generated_internal_id'] ? `https://www.usaspending.gov/award/${s['prime_award_generated_internal_id']}` : ''),
+    ].join(','));
+    const csv = [headers.map(h => `"${h}"`).join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `fedhoo_subawards_${(this.currentQuery||'export').replace(/\s+/g,'_')}_${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    this.toast('Subawards exported.', 'ok');
   },
 
   exportCSV() {
