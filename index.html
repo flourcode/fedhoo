@@ -4168,7 +4168,20 @@ selectAgencySuggestion(name, inputId, boxId) {
 
   shareSearch() {
     const url = window.location.href;
-    Utils.copyAndAnimate(url, DOM.get('shareBtn'), 'Link copied!');
+    const btn = DOM.get('shareBtn');
+    navigator.clipboard.writeText(url).catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = url; ta.style.cssText = 'position:fixed;opacity:0;pointer-events:none;';
+      document.body.appendChild(ta); ta.focus(); ta.select();
+      try { document.execCommand('copy'); } catch(e) {}
+      document.body.removeChild(ta);
+    });
+    if (btn) {
+      const origHTML = btn.innerHTML;
+      btn.textContent = 'Link copied!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.innerHTML = origHTML; btn.classList.remove('copied'); }, 2000);
+    }
   },
 
   // ── Recent searches ─────────────────────────────────────────
@@ -4246,7 +4259,7 @@ selectAgencySuggestion(name, inputId, boxId) {
           <div class="contract-right">
             <span class="contract-amount">${Utils.money(c['Award Amount'])}</span>
             <span class="contract-urgency" style="${urgencyStyle}">${days}d</span>
-            ${url ? `<a href="${url}" target="_blank" rel="noopener" class="contract-view">View →</a>` : ''}
+            ${url ? `<a href="${url}" target="_blank" rel="noopener" class="contract-view">View</a>` : ''}
           </div>
         </div>`;
       }).join('');
@@ -4314,7 +4327,7 @@ selectAgencySuggestion(name, inputId, boxId) {
           <div class="contract-right">
             <span class="contract-amount">${Utils.money(c['Award Amount'])}</span>
             <span class="contract-date">${ago}</span>
-            ${url ? `<a href="${url}" target="_blank" rel="noopener" class="contract-view">View →</a>` : ''}
+            ${url ? `<a href="${url}" target="_blank" rel="noopener" class="contract-view">View</a>` : ''}
           </div>
         </div>`;
       }).join('');
@@ -4386,7 +4399,7 @@ selectAgencySuggestion(name, inputId, boxId) {
           <div class="contract-right">
             <span class="contract-amount">${Utils.money(t.amount)}</span>
             <span class="contract-urgency" style="${urgencyStyle}">${daysLabel}</span>
-            ${url ? `<a href="${url}" target="_blank" rel="noopener" class="contract-view">View →</a>` : ''}
+            ${url ? `<a href="${url}" target="_blank" rel="noopener" class="contract-view">View</a>` : ''}
           </div>
         </div>`;
       }).join('');
@@ -4487,7 +4500,7 @@ selectAgencySuggestion(name, inputId, boxId) {
           <div class="contract-right">
             <span class="contract-amount">${Utils.money(s['Sub-Award Amount'])}</span>
             ${subDate ? `<span class="contract-date">${subDate}</span>` : ''}
-            ${url ? `<a href="${url}" target="_blank" rel="noopener" class="contract-view">View →</a>` : ''}
+            ${url ? `<a href="${url}" target="_blank" rel="noopener" class="contract-view">View</a>` : ''}
           </div>
         </div>`;
       }).join('');
