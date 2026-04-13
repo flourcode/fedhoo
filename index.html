@@ -2033,12 +2033,27 @@ filterActiveContracts(awards) {
     let andGroups = [];
     if (hasAndOperator) {
       keywordTerms.forEach(term => {
-        if (Utils.resolveAgencyAlias(term)) {
+        // Check if the whole term (before any AND split) is a known agency
+        const fullAlias = Utils.resolveAgencyAlias(term);
+        if (fullAlias) {
+          andGroups.push([term]);
+          return;
+        }
+        // Also check dynamicAgencies cache (populated by autocomplete selections)
+        const termLower = term.toLowerCase();
+        const dynMatch = Utils.dynamicAgencies[termLower];
+        if (dynMatch) {
           andGroups.push([term]);
           return;
         }
         const parts = term.split(/\bAND\b/).map(s => s.trim()).filter(s => s.length > 0);
         if (parts.length > 1) {
+          // Check if reassembling the parts forms a known agency name
+          const rejoined = parts.join(' AND ').toLowerCase();
+          if (Utils.dynamicAgencies[rejoined] || Utils.resolveAgencyAlias(parts.join(' AND '))) {
+            andGroups.push([parts.join(' AND ')]);
+            return;
+          }
           const expanded = parts.map(p => {
             const lower = p.toLowerCase().trim();
             return Utils.queryAliases[lower] || Utils.agencyAliases[lower] || Utils.subAgencyAliases[lower] || p;
@@ -2556,6 +2571,17 @@ async searchAwards(keywords) {
         else if (agencyMatch) agencies.push({ type: 'awarding', tier: agencyMatch.tier, name: agencyMatch.name, toptier_name: agencyMatch.toptier_name });
         else kws.push(term);
       });
+
+      // If AND splitting produced only keywords (no agencies, no codes), the query is
+      // likely an agency name containing "and" (e.g. "National Aeronautics and Space Administration").
+      // Fall through to the standard keyword search using the original full string instead.
+      if (codes.length === 0 && agencies.length === 0) {
+        const filters = { time_period: [period], award_type_codes: this.CONTRACT_TYPES, keywords: [keywords] };
+        App._applySectorFilter(filters);
+        App._lastSearchFilters = filters;
+        const pool = (await this._post('/search/spending_by_award/', { filters, fields: this.AWARD_FIELDS, limit: 100, sort: 'Award Amount', order: 'desc' })).results || [];
+        return cleanAndSort(pool);
+      }
       const filters = { time_period: [period], award_type_codes: this.CONTRACT_TYPES };
       codes.forEach(c => {
         if (c.type === 'naics') { filters.naics_codes = filters.naics_codes || { require: [] }; filters.naics_codes.require.push(c.value); }
