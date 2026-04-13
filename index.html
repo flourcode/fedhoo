@@ -4604,27 +4604,26 @@ selectAgencySuggestion(name, inputId, boxId) {
 
     const containerW = container.offsetWidth || 600;
     const isLvl0 = this.drillState.level === 0;
-    const effective = this.getEffectiveBubbleMode();
-    const useOfficeView = isLvl0 && effective === 'subagencies';
-    const mobileOfficeView = useOfficeView && containerW < 600;
+    // Always show 3 columns on desktop (agency → sub-agency → vendor)
+    // On mobile or when drilled in, collapse to 2 columns
+    const use3Col = isLvl0 && containerW >= 500;
 
     const pathMap = {};
     data.forEach(d => {
       if (d['Award Amount'] <= 0) return;
       const amt = d['Award Amount'];
       const vendor = d['Recipient Name'] || 'Unknown Vendor';
-      const agency = d['Awarding Agency'] || 'Unknown Agency';
+      const agency = Utils.cleanAgency(d['Awarding Agency'] || 'Unknown Agency');
       let sub = d['Awarding Sub Agency'] || d['Awarding Agency'] || agency;
       const agencyUp = (d['Awarding Agency'] || '').toUpperCase().split('(')[0].trim();
       const subUp = (d['Awarding Sub Agency'] || '').toUpperCase().split('(')[0].trim();
+      // If agency and sub-agency are the same, try to use the office
       if (agencyUp === subUp && d['Awarding Office']) sub = d['Awarding Office'];
+      sub = Utils.cleanAgency(sub);
 
       let key;
-      if (mobileOfficeView) {
-        const safeSub = sub === agency ? sub + ' (HQ)' : sub;
-        key = `${safeSub} ||| ${vendor}`;
-      } else if (useOfficeView) {
-        const safeSub = sub === agency ? sub + ' (HQ)' : sub;
+      if (use3Col) {
+        const safeSub = sub === agency ? agency + ' (HQ)' : sub;
         key = `${agency} ||| ${safeSub} ||| ${vendor}`;
       } else {
         const source = isLvl0 ? agency : sub;
