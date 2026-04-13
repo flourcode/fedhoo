@@ -964,7 +964,10 @@ a, button, input, select { touch-action: manipulation; }
 }
 @media (max-width: 640px) {
   .footer-explainer { grid-template-columns: 1fr; }
-  .bio-card { flex-direction: column; align-items: center; text-align: center; }
+  .bio-card { flex-direction: column; align-items: center; }
+  .bio-header { align-self: stretch; }
+  .bio-body { text-align: left; width: 100%; }
+  .bio-cta { text-align: center; }
   .site-footer { padding-left: 12px; padding-right: 12px; }
   .bio-avatar { width: 80px; height: 80px; }
 }
