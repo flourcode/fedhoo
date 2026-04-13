@@ -4485,8 +4485,7 @@ selectAgencySuggestion(name, inputId, boxId) {
         const meta = naicsDesc || (naicsCode ? `NAICS ${naicsCode}` : '');
         return `<div class="contract-row">
           <div class="contract-body">
-            <div class="contract-vendor">${Html.escapeHtml(sub)}</div>
-            <div class="contract-agency">via ${Html.escapeHtml(prime)}</div>
+            <div class="contract-vendor">${Html.escapeHtml(prime)} → ${Html.escapeHtml(sub)}</div>
             <div class="contract-agency">${Html.escapeHtml(agency)}</div>
             ${meta ? `<div class="contract-agency" style="margin-top:2px;color:var(--text-quaternary);">${Html.escapeHtml(meta)}</div>` : ''}
           </div>
