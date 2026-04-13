@@ -3220,7 +3220,7 @@ const App = {
   // Sets the active territory, persists to localStorage, re-runs search if active
 
   // ── Search ──────────────────────────────────────────────────
-  async runSearch(query, isDirectSelection = false) {
+  async runSearch(query, isDirectSelection = false, skipUrlUpdate = false) {
     if (!query) {
       query = (DOM.get('searchInput')?.value || '').trim();
     }
@@ -3282,8 +3282,8 @@ const App = {
     DOM.get('dotSankey')?.classList.remove('active');
     this.showLoader('Searching USASpending…', `"${query}"`);
 
-    // Update URL
-    try {
+    // Update URL — only when user-initiated, not on auto-restore from localStorage
+    if (!skipUrlUpdate) try {
       const url = new URL(window.location);
       url.searchParams.set('q', query);
       if (this.territory) url.searchParams.set('territory', this.territory);
@@ -5228,18 +5228,18 @@ selectAgencySuggestion(name, inputId, boxId) {
       const lastQuery = localStorage.getItem('fedhoo_last_query');
 
       if (q) {
-        // URL param — fire immediately (shared link)
+        // URL param — fire immediately, keep URL as-is
         DOM.get('searchInput').value = q;
         this.runSearch(q);
       } else if (lastQuery) {
-        // Returning visitor — auto-fire their last search, skip hero
+        // Returning visitor — restore last search silently, don't pollute URL
         DOM.get('searchInput').value = lastQuery;
-        this.runSearch(lastQuery);
+        this.runSearch(lastQuery, false, true);
       } else {
-        // Cold visitor — show hero AND fire default search so there's something to see
+        // Cold visitor — show hero, fire default search silently
         if (!this.searchData.loaded) DOM.show('searchHero');
         DOM.get('searchInput').value = DEFAULT_QUERY;
-        this.runSearch(DEFAULT_QUERY);
+        this.runSearch(DEFAULT_QUERY, false, true);
       }
     } catch(e) {
       if (!this.searchData.loaded) DOM.show('searchHero');
