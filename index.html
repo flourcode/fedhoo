@@ -2679,7 +2679,8 @@ const App = {
     if (_sb) { _sb.innerHTML = ''; _sb.classList.add('hidden'); }
     const thisSearch = ++this._searchId;
 
-    // Show skeleton loader (keeps results visible with shimmer cards)
+    // Hide results while loading
+    DOM.hide('resultsGrid');
     DOM.hide('artiFab'); DOM.get('artiBridge') && DOM.hide('artiBridge');
     this._artiPayloadCache = null;
     this._artiInlineDone = false;
@@ -2716,7 +2717,6 @@ const App = {
     DOM.get('dotTreemap')?.classList.add('active');
     DOM.get('dotSankey')?.classList.remove('active');
     this.showLoader('Searching USASpending…', `"${query}"`);
-    DOM.hide('searchHero');
 
     // Update URL — only when user-initiated, not on auto-restore from localStorage
     if (!skipUrlUpdate) try {
@@ -3296,36 +3296,14 @@ const App = {
   },
   showLoader(text, subtext) {
     if (this._loaderInterval) { clearInterval(this._loaderInterval); this._loaderInterval = null; }
-    // Animate the search bar border instead of covering the page
     const bar = DOM.get('searchBarInner');
     if (bar) bar.classList.add('loading');
-    // Show skeleton cards in the results area
-    DOM.show('resultsGrid');
-    const grid = DOM.get('resultsGrid');
-    if (grid && !this.searchData.loaded) {
-      grid.innerHTML = `
-        <div class="skeleton-card wide app-card">
-          <div class="skeleton-line" style="width:30%;height:14px;margin-bottom:10px;"></div>
-          <div class="skeleton-line" style="width:50%;height:36px;margin-bottom:18px;"></div>
-          <div class="skeleton-line" style="width:100%;height:220px;"></div>
-        </div>
-        <div class="skeleton-card wide app-card" style="margin-top:0">
-          <div class="skeleton-line" style="width:25%;height:13px;margin-bottom:12px;"></div>
-          ${[1,2,3,4].map(()=>`<div class="skeleton-line" style="width:100%;height:18px;margin-bottom:10px;"></div>`).join('')}
-        </div>`;
-    }
   },
 
   hideLoader() {
     if (this._loaderInterval) { clearInterval(this._loaderInterval); this._loaderInterval = null; }
     const bar = DOM.get('searchBarInner');
     if (bar) bar.classList.remove('loading');
-    // Skeleton grid will be replaced by renderBubbleChart/renderPrimes etc
-    const grid = DOM.get('resultsGrid');
-    if (grid) {
-      const skeletons = grid.querySelectorAll('.skeleton-card');
-      skeletons.forEach(s => s.remove());
-    }
     DOM.hide('loader');
   },
 
