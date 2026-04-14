@@ -1024,6 +1024,15 @@ a, button, input, select { touch-action: manipulation; }
       <div class="contract-list" id="recentList"></div>
     </div>
 
+    <!-- CONTRACTS CARD -->
+    <div class="app-card wide result-panel hidden" id="contractsCard">
+      <div class="card-header-row">
+        <h2 class="card-title card-title--flush">Contracts</h2>
+        <button class="export-btn" onclick="App.exportCSV()" title="Export all contracts as CSV">Export CSV</button>
+      </div>
+      <div class="contract-list" id="contractsList"></div>
+    </div>
+
     <!-- EXPIRING SOON CARD -->
     <div class="app-card wide result-panel hidden" id="expiringCard">
       <div class="card-header-row">
@@ -2711,6 +2720,7 @@ const App = {
       this.renderBubbleChart();
       this.renderBridge();
       this.renderPrimes();
+      this.renderContracts();
       this.renderExpiring();
       this.renderRecent();
 
@@ -2844,6 +2854,7 @@ const App = {
       this._treemapDirty = true;
       this.renderBubbleChart();
       this.renderPrimes();
+      this.renderContracts();
       this.renderExpiring();
       this.renderRecent();
       // Restore subawards panel if data is available
@@ -2877,6 +2888,7 @@ const App = {
     if (!preventRender) this.renderBubbleChart();
     this.renderBubbleBreadcrumb();
     this.renderPrimes();
+    this.renderContracts();
     this.renderExpiring();
     this.renderRecent();
     DOM.hide('subawardsCard'); // subaward data is for full market, not a single agency drill
@@ -2897,6 +2909,7 @@ const App = {
     if (!preventRender) this.renderBubbleChart();
     this.renderBubbleBreadcrumb();
     this.renderPrimes();
+    this.renderContracts();
     this.renderExpiring();
     this.renderRecent();
     DOM.hide('subawardsCard');
@@ -3601,6 +3614,16 @@ const App = {
     }, 'recent awards', '_renderRecentAll');
   },
 
+  renderContracts() {
+    const data = [...this.searchData.active].sort((a, b) =>
+      (parseFloat(b['Award Amount']) || 0) - (parseFloat(a['Award Amount']) || 0)
+    );
+    this._renderListCard(this.UI.contractsList, this.UI.contractsCard, data, c => {
+      const end = c['End Date'] ? new Date(c['End Date']).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '';
+      return this._buildContractRow(c, end ? `<span class="contract-date">Ends ${end}</span>` : '');
+    }, 'contracts', '_renderContractsAll');
+  },
+
   async renderSubawards() {
     const card = DOM.get('subawardsCard');
     const list = DOM.get('subawardsList');
@@ -4216,6 +4239,8 @@ const App = {
       recentList:           DOM.get('recentList'),
       expiringCard:         DOM.get('expiringCard'),
       expiringList:         DOM.get('expiringList'),
+      contractsCard:        DOM.get('contractsCard'),
+      contractsList:        DOM.get('contractsList'),
       subawardsCard:        DOM.get('subawardsCard'),
       subawardsList:        DOM.get('subawardsList'),
       // Arti / AI
