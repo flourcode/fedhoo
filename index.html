@@ -633,7 +633,6 @@ a, button, input, select { touch-action: manipulation; }
   pointer-events: none; z-index: 50; white-space: nowrap;
   box-shadow: var(--shadow); opacity: 0; transition: opacity 0.12s;
 }
-.bubble-tooltip
 .bubble-tooltip-name { font-weight: 700; color: var(--text-primary); margin-bottom: 2px; }
 .bubble-tooltip-amount { color: var(--accent); font-weight: 700; }
 .bubble-tooltip-meta { color: var(--text-tertiary); font-size: var(--text-xs); margin-top: 3px; }
@@ -2635,6 +2634,7 @@ const App = {
       }
 
       this.searchData = { raw: results, active: filtered, baseline: filtered, filter: null, loaded: true };
+      this.analyzeMarket(filtered);
 
       // Fire brand intelligence in background — powers smart empty state if a follow-up search fails
       SearchPills.generate(query);
@@ -4064,25 +4064,12 @@ selectAgencySuggestion(name, inputId, boxId) {
   _buildArtiPayload() {
     const data = this.searchData.active;
     if (!data || !data.length) return null;
+    const m = this.marketMetrics;
+    if (!m) return null;
     const now = new Date();
-    const totalVal = data.reduce((s, c) => s + (parseFloat(c['Award Amount']) || 0), 0);
-    const agencyMap = {};
-    data.forEach(c => {
-      const a = c['Awarding Agency'] || 'Unknown';
-      agencyMap[a] = (agencyMap[a] || 0) + (parseFloat(c['Award Amount']) || 0);
-    });
-    const topAgencies = Object.entries(agencyMap).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([name,amt])=>({ name, amount: amt }));
-    const vendorMap = {};
-    data.forEach(c => {
-      const v = c['Recipient Name'] || 'Unknown';
-      vendorMap[v] = (vendorMap[v] || 0) + (parseFloat(c['Award Amount']) || 0);
-    });
-    const topVendors = Object.entries(vendorMap).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([name,amt])=>({ name, amount: amt }));
-    const expiring = data
-      .filter(c => { const e = new Date(c['End Date']); const d = (e - now)/86400000; return d > 0 && d <= 90; })
-      .sort((a,b) => new Date(a['End Date']) - new Date(b['End Date']))
-      .slice(0, 8)
-      .map(c => ({
+    const topAgencies = Object.entries(m.agencies).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([name,amt])=>({ name, amount: amt }));
+    const topVendors  = Object.entries(m.vendors).sort((a,b)=>b[1].spend-a[1].spend).slice(0,8).map(([name,v])=>({ name, amount: v.spend }));
+    const expiring = m.expiring.slice(0, 8).map(c => ({
         vendor: c['Recipient Name'],
         agency: c['Awarding Sub Agency'] || c['Awarding Agency'],
         amount: c['Award Amount'],
@@ -4092,7 +4079,7 @@ selectAgencySuggestion(name, inputId, boxId) {
       }));
     return {
       query: this.currentQuery,
-      total_value: totalVal,
+      total_value: m.total,
       contract_count: data.length,
       top_agencies: topAgencies,
       top_vendors: topVendors,
@@ -4110,47 +4097,48 @@ selectAgencySuggestion(name, inputId, boxId) {
     };
   },
 
+  analyzeMarket(data) {
+    const now = new Date();
+    const exp90 = now.getTime() + 90 * 86400000;
+    const m = { total: 0, agencies: {}, vendors: {}, expiring: [] };
+    data.forEach(c => {
+      const amt = parseFloat(c['Award Amount']) || 0;
+      const agency = c['Awarding Agency'] || 'Unknown';
+      const vendor = c['Recipient Name'] || 'Unknown';
+      m.total += amt;
+      m.agencies[agency] = (m.agencies[agency] || 0) + amt;
+      if (!m.vendors[vendor]) m.vendors[vendor] = { spend: 0, count: 0 };
+      m.vendors[vendor].spend += amt;
+      m.vendors[vendor].count++;
+      const end = new Date(c['End Date']);
+      if (end > now && end.getTime() <= exp90 && amt > 50000) m.expiring.push(c);
+    });
+    m.expiring.sort((a, b) => new Date(a['End Date']) - new Date(b['End Date']));
+    this.marketMetrics = m;
+  },
+
   renderBridge() {
     const bridgeText = DOM.get('artiBridgeText');
     if (!bridgeText || !this.searchData.loaded) return;
 
-    const data = this.searchData.active;
+    const m = this.marketMetrics;
+    if (!m) return;
+    const total = m.total;
     const now = new Date();
-    const total = data.reduce((s,c) => s + (parseFloat(c['Award Amount'])||0), 0);
 
-    // ── Compute signals ──────────────────────────────────────────
-    // 1. Top agency and its share
-    const agencyMap = {};
-    data.forEach(c => {
-      const a = c['Awarding Agency'] || 'Unknown';
-      agencyMap[a] = (agencyMap[a]||0) + (parseFloat(c['Award Amount'])||0);
-    });
-    const agencySorted = Object.entries(agencyMap).sort((a,b)=>b[1]-a[1]);
+    const agencySorted = Object.entries(m.agencies).sort((a,b)=>b[1]-a[1]);
     const topAgencyRaw = agencySorted[0]?.[0] || '';
-    const topAgency = Utils.cleanAgency(topAgencyRaw);
+    const topAgency    = Utils.cleanAgency(topAgencyRaw);
     const topAgencyAmt = agencySorted[0]?.[1] || 0;
     const topAgencyPct = total > 0 ? Math.round(topAgencyAmt / total * 100) : 0;
 
-    // 2. Top vendor and concentration
-    const vendorMap = {};
-    data.forEach(c => {
-      const v = c['Recipient Name'] || 'Unknown';
-      vendorMap[v] = (vendorMap[v]||0) + (parseFloat(c['Award Amount'])||0);
-    });
-    const vendorSorted = Object.entries(vendorMap).sort((a,b)=>b[1]-a[1]);
-    const topVendor = vendorSorted[0]?.[0] || '';
-    const topVendorAmt = vendorSorted[0]?.[1] || 0;
-    const topVendorPct = total > 0 ? Math.round(topVendorAmt / total * 100) : 0;
-    const top3Spend = vendorSorted.slice(0,3).reduce((s,[,v])=>s+v,0);
-    const top3Pct = total > 0 ? Math.round(top3Spend / total * 100) : 0;
+    const vendorSorted = Object.entries(m.vendors).sort((a,b)=>b[1].spend-a[1].spend);
+    const topVendor    = vendorSorted[0]?.[0] || '';
+    const topVendorPct = total > 0 ? Math.round((vendorSorted[0]?.[1].spend||0) / total * 100) : 0;
+    const top3Spend    = vendorSorted.slice(0,3).reduce((s,[,v])=>s+v.spend,0);
+    const top3Pct      = total > 0 ? Math.round(top3Spend / total * 100) : 0;
 
-    // 3. Most urgent expiring contract (soonest, > $1M)
-    const expiring = data
-      .filter(c => {
-        const d = (new Date(c['End Date']) - now) / 86400000;
-        return d > 0 && d <= 90 && (parseFloat(c['Award Amount'])||0) > 1000000;
-      })
-      .sort((a,b) => new Date(a['End Date']) - new Date(b['End Date']));
+    const expiring = m.expiring.filter(c => (parseFloat(c['Award Amount'])||0) > 1000000);
     const hottestExpiry = expiring[0];
     const hotDays = hottestExpiry ? Math.ceil((new Date(hottestExpiry['End Date']) - now) / 86400000) : null;
     const hotVendor = hottestExpiry ? (hottestExpiry['Recipient Name'] || '') : null;
