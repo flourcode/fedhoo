@@ -1516,6 +1516,7 @@ buyingOffices: {},
     'aws': 'Amazon Web Services',
     'amazon': 'Amazon Web Services',
     'amazon web': 'Amazon Web Services',
+    'akamai': 'Akamai Technologies',
     'msft': 'Microsoft',
     'msft azure': 'Microsoft Azure',
     'gcp': 'Google Cloud',
@@ -1650,6 +1651,7 @@ normalizeQuery(query) {
     ['SPLUNK', 'SPLUNK'],
     ['PALO ALTO NETWORKS', 'PALO ALTO NETWORKS'],
     ['CROWDSTRIKE', 'CROWDSTRIKE'],
+    ['AKAMAI TECHNOLOGIES', 'AKAMAI TECHNOLOGIES'],
   ],
 
   normalizeVendorName(vendorName) {
@@ -1692,7 +1694,11 @@ filterActiveContracts(awards) {
   parseSearchTerms(keywords) {
     const hasAndOperator = _RE_AND.test(keywords);
     
-    const cleaned = keywords.replace(_RE_SUFFIX, '').replace(/,\s*$/, '').trim();
+    // Split on commas first, then trim — do NOT strip corporate suffixes here.
+    // Suffixes like INC, LLC are part of the legal name USASpending indexes against.
+    // Stripping them turns "AKAMAI TECHNOLOGIES INC" into "AKAMAI TECHNOLOGIES"
+    // which keyword-matches nothing in USASpending's recipient field.
+    const cleaned = keywords.replace(/,\s*$/, '').trim();
     
     const terms = cleaned.split(',').map(s => s.trim()).filter(s => s.length > 0);
     const pscCodes = terms.filter(t => _RE_PSC.test(t)).map(t => t.toUpperCase());
