@@ -836,6 +836,9 @@ a, button, input, select { touch-action: manipulation; }
     <a class="logo-link" href="/" onclick="App.resetToSearch(); return false;">Fedhoo.</a>
     <div class="header-actions">
       <a href="/tools/" class="hdr-btn">Tools</a>
+      <button class="hdr-btn" id="darkToggleBtn" onclick="App.toggleDarkMode()" title="Toggle dark mode" aria-label="Toggle dark mode">
+        <svg id="darkToggleIcon" width="15" height="15" aria-hidden="true"><use href="#icon-moon"></use></svg>
+      </button>
     </div>
   </div>
   <!-- Row 2: full-width search -->
@@ -4021,13 +4024,14 @@ const App = {
     if (!primes.length) { card.classList.add('hidden'); return; }
     card.classList.remove('hidden');
 
+    const totalSpend = primes.reduce((s, [, v]) => s + v.spend, 0);
+
     list.innerHTML = primes.map(([rawName, d], i) => {
       const name = rawName;
       const agencyCount = d.agencies.size;
       const saLabel = VehicleDetector.getSetAsideLabel(d.setAside);
 
       // Dominant/established/emerging signal based on spend share and contract density
-      const totalSpend = primes.reduce((s, [, v]) => s + v.spend, 0);
       const shareOfMarket = totalSpend > 0 ? (d.spend / totalSpend) : 0;
       let signal = '', signalClass = '';
       if (shareOfMarket >= 0.25 || (shareOfMarket >= 0.15 && d.count >= 8)) {
@@ -4287,8 +4291,7 @@ const App = {
 
     // Pre-build payload cache so send is instant
     this._artiPayloadCache = this._buildArtiPayload();
-
-    DOM.show('artiFab');
+    // FAB deliberately not shown — Arti brief auto-streams inline into results
   },
 
   resetToSearch() {
