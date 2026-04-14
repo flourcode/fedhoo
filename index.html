@@ -589,6 +589,29 @@ a, button, input, select { touch-action: manipulation; }
   font-size: var(--text-sm); font-weight: 500; color: var(--text-secondary);
   cursor: pointer; font-family: var(--font); transition: var(--transition);
 }
+.hero-bio {
+  display: flex; align-items: center; gap: 14px;
+  margin-top: 28px; padding: 16px 18px;
+  background: var(--bg-app); border: 1px solid var(--border);
+  border-radius: var(--radius); max-width: 480px;
+}
+.hero-bio-avatar {
+  width: 48px; height: 48px; border-radius: 50%;
+  object-fit: cover; flex-shrink: 0; border: 2px solid var(--border);
+}
+.hero-bio-body { min-width: 0; }
+.hero-bio-name {
+  font-size: var(--text-sm); font-weight: 700;
+  color: var(--text-primary); letter-spacing: -0.01em; margin-bottom: 3px;
+}
+.hero-bio-text {
+  font-size: var(--text-xs); color: var(--text-secondary); line-height: 1.5;
+}
+.hero-bio-link {
+  color: var(--btn-bg); font-weight: 600; text-decoration: none;
+  white-space: nowrap;
+}
+.hero-bio-link:hover { text-decoration: underline; }
 .hero-example-chip:hover { background: var(--accent-dim); color: var(--btn-bg); border-color: var(--accent-dim); }
 .hero-example-label {
   font-size: var(--text-xs); color: var(--text-quaternary); margin-bottom: 8px;
@@ -886,6 +909,7 @@ a, button, input, select { touch-action: manipulation; }
   <symbol id="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></symbol>
   <symbol id="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></symbol>
   <symbol id="icon-tools" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></symbol>
+  <symbol id="icon-share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></symbol>
 </svg>
 
 <!-- HEADER -->
@@ -941,6 +965,9 @@ a, button, input, select { touch-action: manipulation; }
         <svg class="hdr-tools-icon" width="15" height="15" aria-hidden="true"><use href="#icon-tools"/></svg>
         <span class="hdr-tools-label">Tools</span>
       </a>
+      <button class="hdr-btn-icon hidden" id="shareBtn" onclick="App.shareSearch(this)" title="Copy link to this search" aria-label="Share search">
+        <svg width="15" height="15" aria-hidden="true"><use href="#icon-share"/></svg>
+      </button>
       <button class="hdr-btn-icon" id="darkToggleBtn" onclick="App.toggleDarkMode()" title="Toggle dark mode" aria-label="Toggle dark mode">
         <svg id="darkToggleIcon" width="15" height="15" aria-hidden="true"><use href="#icon-moon"></use></svg>
       </button>
@@ -993,6 +1020,13 @@ a, button, input, select { touch-action: manipulation; }
       <button class="hero-example-chip" onclick="App.runSearch('Cybersecurity')">Cybersecurity</button>
       <button class="hero-example-chip" onclick="App.runSearch('541512')">NAICS 541512</button>
       <button class="hero-example-chip" onclick="App.runSearch('DHS AND Splunk')">DHS AND Splunk</button>
+    </div>
+    <div class="hero-bio">
+      <img src="/images/oldmark.jpg" alt="Mark Flournoy" class="hero-bio-avatar">
+      <div class="hero-bio-body">
+        <div class="hero-bio-name">Built by Mark Flournoy</div>
+        <div class="hero-bio-text">Retired federal sales — AWS, F5, Red Hat, DISA COTR, 20 years Marines. I built the tool I always wished I had. <a href="https://calendly.com/markflournoy/chat-with-mark" target="_blank" rel="noopener" class="hero-bio-link">Grab time →</a></div>
+      </div>
     </div>
   </div><!-- /search-hero -->
 
@@ -1072,6 +1106,7 @@ a, button, input, select { touch-action: manipulation; }
           <span class="arti-inline-dot"></span>
           <span id="artiInlineStatusText">Reading the data…</span>
         </div>
+        <button class="export-btn hidden" id="artiInlineCopyBtn" onclick="App.copyArtiInlineBrief()" style="margin-left:8px;flex-shrink:0;">Copy brief</button>
       </div>
       <div id="artiInlineContent" class="strategic-read arti-inline-loading">Analyzing market…</div>
       <div class="hidden" id="artiInlineActions" style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border-inner);">
@@ -1222,7 +1257,7 @@ a, button, input, select { touch-action: manipulation; }
 </div><!-- /arti-sheet -->
 
 <footer class="site-footer">
-  <div class="footer-copy">© 2026 Fedhoo.com · Data via USASpending.gov · Not affiliated with the U.S. government · <a href="https://calendly.com/markflournoy/chat-with-mark" target="_blank" rel="noopener" style="color:var(--text-quaternary);">Talk to Mark</a> · <button onclick="App.toggleDarkMode()" style="background:none;border:none;cursor:pointer;color:var(--text-quaternary);font-size:inherit;font-family:var(--font);padding:0;" id="darkToggleFooterBtn">Dark mode</button></div>
+  <div class="footer-copy">© 2026 Fedhoo.com · Data via USASpending.gov · Not affiliated with the U.S. government · <a href="https://calendly.com/markflournoy/chat-with-mark" target="_blank" rel="noopener" style="color:var(--text-quaternary);">Talk to Mark</a></div>
   <div class="footer-legal">Fedhoo uses Google Analytics to understand site usage and improve the product. We do not collect personal information or sell data. <a href="https://tools.google.com/dlpage/gaoptout" target="_blank" rel="noopener">Opt out using Google's Analytics Opt-out Browser Add-on</a>.</div>
 </footer>
 
@@ -2733,6 +2768,7 @@ const App = {
 
     // Hide results while loading
     DOM.hide('resultsGrid');
+    DOM.hide('shareBtn');
     DOM.hide('artiFab'); DOM.get('artiBridge') && DOM.hide('artiBridge');
     this._artiPayloadCache = null;
     this._artiInlineDone = false;
@@ -2743,6 +2779,7 @@ const App = {
     DOM.hide('artiInlineCard');
     const aic = DOM.get('artiInlineContent'); if (aic) { aic.innerHTML = 'Analyzing market…'; aic.className = 'strategic-read arti-inline-loading'; delete aic.dataset.rawPlan; }
     DOM.hide('artiInlineActions');
+    DOM.hide('artiInlineCopyBtn');
     const inlineChatHistory = DOM.get('artiInlineChatHistory'); if (inlineChatHistory) { inlineChatHistory.innerHTML = ''; inlineChatHistory.classList.add('hidden'); }
     DOM.hide('artiInlineChatInputWrap');
     const inlineChatInput = DOM.get('artiInlineChatInput'); if (inlineChatInput) inlineChatInput.value = '';
@@ -2806,6 +2843,7 @@ const App = {
       // Show results grid
       DOM.show('resultsGrid');
       DOM.hide('searchHero');
+      DOM.show('shareBtn');
 
       // Render chart and panels immediately
       this._treemapDirty = true;
@@ -3381,10 +3419,24 @@ const App = {
     }, duration);
   },
 
-  shareLink(btn) {
-    Utils.syncUrlState();
-    const url = new URL(window.location);
-    Utils.copyAndAnimate(url.toString(), btn, '');
+  shareSearch(btn) {
+    // Build a clean shareable URL with current query and territory
+    const url = new URL(window.location.href);
+    if (this.currentQuery) url.searchParams.set('q', this.currentQuery);
+    else url.searchParams.delete('q');
+    if (this.territory) url.searchParams.set('territory', this.territory);
+    else url.searchParams.delete('territory');
+    const shareUrl = url.toString();
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      this.toast('Link copied to clipboard', 'ok', 2000);
+      if (btn) {
+        const orig = btn.innerHTML;
+        btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+        setTimeout(() => { btn.innerHTML = orig; }, 2000);
+      }
+    }).catch(() => {
+      this.toast('Copy failed — use the address bar to share', 'warning', 3000);
+    });
   },
   shareBrief(btn) {
     if (!App._currentBriefText) {
@@ -3546,6 +3598,7 @@ const App = {
           // Hide live status dot, show actions
           if (statusEl) statusEl.style.display = 'none';
           DOM.show('artiInlineActions');
+          DOM.show('artiInlineCopyBtn');
           DOM.show('artiInlineChatInputWrap');
           DOM.show('artiInlineDisclaimer');
           const counter = DOM.get('artiInlineChatCounter');
@@ -4386,6 +4439,7 @@ const App = {
 
   resetToSearch() {
     DOM.hide('resultsGrid');
+    DOM.hide('shareBtn');
     DOM.show('searchHero');
     const input = this.UI.searchInput;
     if (input) { input.value = ''; input.focus(); }
@@ -4449,7 +4503,7 @@ const App = {
       chatInput:            DOM.get('chatInput'),
       chatSendBtn:          DOM.get('chatSendBtn'),
       // Header & search
-      shareBtn:             null, // removed from header
+      shareBtn:             DOM.get('shareBtn'),
       darkToggleIcon:       DOM.get('darkToggleIcon'),
       searchInput:          DOM.get('searchInput'),
       searchSuggestions:    DOM.get('searchSuggestions'),
