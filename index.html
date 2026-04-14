@@ -1191,7 +1191,6 @@ const LibLoader = {
 };
 
 const _RE_AMPERSAND = /\s+&\s+/g;
-const _RE_CORP_SUFFIX = /,?\s*(LLC|INC|CORP|CORPORATION|INCORPORATED|COMPANY|CO\.|LTD|L\.P\.|LP|P\.C\.|PLLC)\.?\s*$/gi;
 // Pre-compiled regexes for parseSearchTerms — defined once, reused on every search
 const _RE_PSC   = /^[A-Z]{1,2}\d{1,3}$|^\d{1,2}[A-Z]\d{0,2}$/i;
 const _RE_NAICS = /^\d{6}$/;
@@ -1665,7 +1664,7 @@ normalizeQuery(query) {
     name = name.replace(_RE_AMPERSAND, ' AND ');
 
     // 3. Strip messy corporate suffixes
-    name = name.replace(_RE_CORP_SUFFIX, '').trim();
+    name = name.replace(_RE_SUFFIX, '').trim();
 
     // 4. Exact-match alias (e.g. "IBM" → "INTERNATIONAL BUSINESS MACHINES")
     for (const [cleanName, variations] of Object.entries(Utils.VENDOR_ALIASES)) {
@@ -2500,7 +2499,6 @@ const App = {
   },
 
   // --- Initialization & Event Binding ---
-  // old init() removed, see init() below
 
   // =============================================
   // TERRITORY / SECTOR FILTER METHODS
@@ -2845,7 +2843,7 @@ const App = {
     );
 
     // Inject agency context into Arti input
-    const ctx = DOM.get('artiContextInput');
+    const ctx = this.UI.artiContextInput;
     if (ctx && !ctx.value) {
       ctx.placeholder = `e.g. I sell to ${Utils.cleanAgency ? Utils.cleanAgency(name) : name}`;
     }
@@ -4396,7 +4394,6 @@ selectAgencySuggestion(name, inputId, boxId) {
       if (!this.searchData.loaded) DOM.show('searchHero');
     }
 
-    // Render recent searches
 
     // Anchor FAB to visual viewport on mobile, prevents it sliding under browser chrome
     if (window.visualViewport) {
