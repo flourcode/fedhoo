@@ -2136,22 +2136,32 @@ async searchAwards(keywords) {
     // Lazy-load buying offices before processing results
     await Utils.loadBuyingOffices();
 
-    // If query looks like a proper agency name (no comma, no NAICS, no PSC) and
-    // dynamicAgencies is empty (fresh page load from URL param), pre-warm the cache
-    // so resolveAgencyAlias can find subtier agencies like "U.S. Special Operations Command"
-    const looksLikeAgencyName = keywords.length > 5 && !keywords.includes(',') && !/^\d{6}$/.test(keywords);
-    if (looksLikeAgencyName && Object.keys(Utils.dynamicAgencies).length === 0) {
+    // On fresh page load from URL param, dynamicAgencies is empty so subtier agency names
+    // (e.g. "U.S. Special Operations Command") won't resolve. Pre-warm the cache by firing
+    // the agency autocomplete — but only cache results where the agency name closely matches
+    // the query, to avoid polluting the cache with unrelated suggestions for vendor queries.
+    if (Object.keys(Utils.dynamicAgencies).length === 0) {
       try {
-        const suggestions = await API.fetchAgencySuggestions(keywords);
-        suggestions.forEach(s => {
-          if (s._type === 'agency') {
-            const sub = s.subtier_agency?.name || '';
-            const top = s.toptier_agency?.name || '';
-            if (sub && top) Utils.dynamicAgencies[sub.toLowerCase()] = { tier: 'subtier', name: sub, toptier_name: top };
-            if (top) Utils.dynamicAgencies[top.toLowerCase()] = { tier: 'toptier', name: top };
+        const res = await fetch(App.PROXY_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ request_type: 'usaspending_proxy', endpoint: '/autocomplete/awarding_agency/', payload: { search_text: keywords, limit: 6 } })
+        }).then(r => r.json());
+        const queryLower = keywords.toLowerCase();
+        (res.results || []).forEach(s => {
+          const sub = s.subtier_agency?.name || '';
+          const top = s.toptier_agency?.name || '';
+          // Only cache if the agency name is a close match to the query
+          // (query is a substring of the agency name or vice versa)
+          const subL = sub.toLowerCase(), topL = top.toLowerCase();
+          if (sub && top && (subL.includes(queryLower) || queryLower.includes(subL.substring(0, 8)))) {
+            Utils.dynamicAgencies[subL] = { tier: 'subtier', name: sub, toptier_name: top };
+          }
+          if (top && (topL.includes(queryLower) || queryLower.includes(topL.substring(0, 8)))) {
+            Utils.dynamicAgencies[topL] = { tier: 'toptier', name: top };
           }
         });
-      } catch(e) { /* non-fatal, proceed without cache */ }
+      } catch(e) { /* non-fatal */ }
     }
 
     const cleanAndSort = (dataArray) => {
