@@ -1508,6 +1508,40 @@ buyingOffices: {},
 
     return null;
   },
+  // Common search shortcuts — maps what users type to what USASpending recognizes.
+  // These are vendor/product terms that USASpending won't find via keyword alone.
+  // Agency aliases are handled separately in agencyAliases.
+  SEARCH_SHORTCUTS: {
+    'aws': 'Amazon Web Services',
+    'msft': 'Microsoft',
+    'msft azure': 'Microsoft Azure',
+    'gcp': 'Google Cloud',
+    'google cloud platform': 'Google Cloud',
+    'bah': 'Booz Allen Hamilton',
+    'saic': 'Science Applications International',
+    'gdit': 'General Dynamics Information Technology',
+    'lmco': 'Lockheed Martin',
+    'ngc': 'Northrop Grumman',
+    'lm': 'Lockheed Martin',
+    'rtx': 'Raytheon',
+    'hpe': 'Hewlett Packard Enterprise',
+    'wwt': 'World Wide Technology',
+    'crowdstrike': 'CrowdStrike',
+    'cs': 'CrowdStrike',
+    'panw': 'Palo Alto Networks',
+    'zs': 'Zscaler',
+    'now': 'ServiceNow',
+    'servicenow': 'ServiceNow',
+    'splk': 'Splunk',
+    'okta': 'Okta',
+    'snow': 'Snowflake',
+    'ai/ml': 'Artificial Intelligence',
+    'genai': 'Generative AI',
+    'llm': 'Large Language Model',
+    'zta': 'Zero Trust',
+    'zt': 'Zero Trust',
+  },
+
 normalizeQuery(query) {
     // 1. Clean up extra spaces and trailing commas
     let cleanQuery = query
@@ -1520,6 +1554,8 @@ normalizeQuery(query) {
     // 2. Translate acronyms into full names
     const translate = (str) => {
       const l = str.toLowerCase().trim();
+      // Check vendor/product shortcuts first (e.g. "AWS" → "Amazon Web Services")
+      if (this.SEARCH_SHORTCUTS[l]) return this.SEARCH_SHORTCUTS[l];
       // If the string is ALREADY a full agency name, don't translate it
       const alreadyFullName = Object.values(this.agencyAliases).some(v => v.toLowerCase() === l);
       if (alreadyFullName) return str.trim();
