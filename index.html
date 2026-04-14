@@ -46,7 +46,6 @@
   --accent-mid: #5E5B92;
   --accent-dim: #E3E3F1;
   --radius:    12px;
-  --radius-sm: 12px;
   --radius-xs: 8px;
   --shadow:    0 1px 3px rgba(44,41,51,0.06);
   --shadow-sm: 0 1px 2px rgba(44,41,51,0.05);
@@ -135,7 +134,7 @@ a, button, input, select { touch-action: manipulation; }
   font-size: 0.95rem; font-weight: 800; letter-spacing: -0.01em;
   color: #FFFFFF; text-decoration: none;
   background: var(--btn-bg); border: 1px solid transparent;
-  border-radius: var(--radius-sm); padding: 0 14px; height: 36px;
+  border-radius: var(--radius); padding: 0 14px; height: 36px;
   display: inline-flex; align-items: center;
   transition: var(--transition); cursor: pointer;
 }
@@ -143,7 +142,7 @@ a, button, input, select { touch-action: manipulation; }
 .header-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .hdr-btn {
   background: var(--bg-app); border: 1px solid var(--border);
-  border-radius: var(--radius-sm); padding: 0 14px; height: 36px;
+  border-radius: var(--radius); padding: 0 14px; height: 36px;
   font-size: var(--text-sm); font-weight: 600; color: var(--text-secondary);
   cursor: pointer; text-decoration: none; display: inline-flex; align-items: center;
   gap: 6px; transition: var(--transition);
@@ -206,7 +205,7 @@ a, button, input, select { touch-action: manipulation; }
   width: 100%; padding: 10px; background: transparent; border: none;
   font-size: var(--text-sm); font-weight: 500; color: var(--text-tertiary);
   cursor: pointer; font-family: var(--font); margin-top: 4px;
-  border-radius: var(--radius-sm); transition: var(--transition);
+  border-radius: var(--radius); transition: var(--transition);
   text-align: center;
 }
 .contract-show-more:hover { background: var(--bg-hover); color: var(--text-primary); }
@@ -297,7 +296,7 @@ a, button, input, select { touch-action: manipulation; }
 .arti-hero-input-wrap {
   display: flex; align-items: center; gap: 8px;
   background: var(--bg-hover); border: 1.5px solid transparent;
-  border-radius: var(--radius-sm); padding: 4px 4px 4px 14px;
+  border-radius: var(--radius); padding: 4px 4px 4px 14px;
   margin-bottom: 10px;
   transition: border-color 0.16s;
 }
@@ -399,12 +398,12 @@ a, button, input, select { touch-action: manipulation; }
   font-size: var(--text-xs); font-weight: 600; font-family: var(--font);
 }
 .empty-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
-.empty-hint-box { background:var(--accent-dim); border:1px solid var(--border-inner); border-radius:var(--radius-sm); padding:14px 16px; margin-bottom:20px; text-align:left; }
+.empty-hint-box { background:var(--accent-dim); border:1px solid var(--border-inner); border-radius:var(--radius); padding:14px 16px; margin-bottom:20px; text-align:left; }
 .empty-hint-label { font-size:var(--text-xs); font-weight:700; color:var(--btn-bg); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px; }
 .empty-hint-desc { font-size:var(--text-sm); color:var(--text-secondary); margin-bottom:10px; line-height:1.5; }
 .empty-chip {
   background: var(--bg); border: 1px solid var(--border);
-  border-radius: var(--radius-sm); padding: 6px 14px;
+  border-radius: var(--radius); padding: 6px 14px;
   font-size: var(--text-sm); font-weight: 500; color: var(--text-secondary);
   cursor: pointer; font-family: var(--font); transition: var(--transition);
 }
@@ -472,7 +471,7 @@ a, button, input, select { touch-action: manipulation; }
 }
 .chart-tabs {
   display: flex; gap: 2px; margin-top: 16px;
-  background: var(--bg-hover); border-radius: var(--radius-sm);
+  background: var(--bg-hover); border-radius: var(--radius);
   padding: 3px; width: fit-content;
 }
 .chart-tab {
@@ -530,7 +529,7 @@ a, button, input, select { touch-action: manipulation; }
 }
 .hero-example-chip {
   background: var(--bg-app); border: 1px solid var(--border);
-  border-radius: var(--radius-sm); padding: 6px 14px;
+  border-radius: var(--radius); padding: 6px 14px;
   font-size: var(--text-sm); font-weight: 500; color: var(--text-secondary);
   cursor: pointer; font-family: var(--font); transition: var(--transition);
 }
@@ -565,7 +564,7 @@ a, button, input, select { touch-action: manipulation; }
 .territory-dropdown {
   position: absolute; top: calc(100% + 6px); left: 0;
   background: var(--bg-app); border: 1px solid var(--border);
-  border-radius: var(--radius-sm); box-shadow: 0 8px 30px rgba(0,0,0,0.10);
+  border-radius: var(--radius); box-shadow: 0 8px 30px rgba(0,0,0,0.10);
   min-width: 240px; z-index: 100; display: none; overflow: hidden;
 }
 .territory-dropdown.open { display: block; animation: fadeIn 0.12s; }
@@ -628,7 +627,7 @@ a, button, input, select { touch-action: manipulation; }
 .bubble-toggle-row::-webkit-scrollbar { display: none; }
 .bubble-toggle-btn {
   padding: 4px 10px; font-size: var(--text-xs); font-weight: 500;
-  border: none; border-radius: var(--radius-sm); background: transparent;
+  border: none; border-radius: var(--radius); background: transparent;
   color: var(--text-tertiary); cursor: pointer; transition: var(--transition);
   white-space: nowrap; font-family: var(--font);
 }
@@ -638,7 +637,7 @@ a, button, input, select { touch-action: manipulation; }
 #bubbleChartContainer svg { width: 100%; height: auto; display: block; }
 .bubble-tooltip {
   position: absolute; background: var(--bg-app); border: 1px solid var(--border);
-  border-radius: var(--radius-sm); padding: 8px 12px;
+  border-radius: var(--radius); padding: 8px 12px;
   font-size: var(--text-sm); color: var(--text-primary);
   pointer-events: none; z-index: 50; white-space: nowrap;
   box-shadow: var(--shadow); opacity: 0; transition: opacity 0.12s;
@@ -667,7 +666,7 @@ a, button, input, select { touch-action: manipulation; }
 /* ── ARTI CARD specific ── */
 .input-field {
   width: 100%; background: var(--bg-hover); border: 1.5px solid transparent;
-  border-radius: var(--radius-sm); padding: 10px 13px;
+  border-radius: var(--radius); padding: 10px 13px;
   font-size: var(--text-base); color: var(--text-primary); font-family: var(--font);
   font-weight: 500; transition: var(--transition); outline: none;
 }
@@ -691,7 +690,7 @@ a, button, input, select { touch-action: manipulation; }
 .chat-msg-user {
   align-self: flex-end;
   background: var(--btn-bg); color: var(--btn-text);
-  border-radius: var(--radius-sm); padding: 10px 16px;
+  border-radius: var(--radius); padding: 10px 16px;
   font-size: var(--text-sm); font-weight: 500;
   max-width: 85%; line-height: 1.5;
 }
@@ -718,7 +717,7 @@ a, button, input, select { touch-action: manipulation; }
 .chat-input-row .input-field { flex: 1; }
 .chat-send-btn {
   height: 48px; padding: 0 18px; background: var(--btn-bg); color: var(--btn-text);
-  border: none; border-radius: var(--radius-sm); font-size: var(--text-sm); font-weight: 600;
+  border: none; border-radius: var(--radius); font-size: var(--text-sm); font-weight: 600;
   cursor: pointer; transition: var(--transition); font-family: var(--font); flex-shrink: 0;
   display: flex; align-items: center;
 }
@@ -728,7 +727,7 @@ a, button, input, select { touch-action: manipulation; }
 
 /* Copy button */
 .copy-btn {
-  background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
   padding: 0 12px; height: 32px; font-size: var(--text-xs); font-weight: 600;
   color: var(--text-secondary); cursor: pointer; transition: var(--transition); font-family: var(--font);
   white-space: nowrap; flex-shrink: 0;
@@ -757,7 +756,7 @@ a, button, input, select { touch-action: manipulation; }
 
 /* ── TOAST (minitools exact) ── */
 .toast-wrap { position: fixed; bottom: 20px; right: 14px; z-index: 999; display: flex; flex-direction: column; gap: 7px; pointer-events: none; }
-.toast { background: var(--bg-app); color: var(--text-primary); border: 1px solid var(--border); padding: 10px 14px; border-radius: var(--radius-sm); box-shadow: var(--shadow); font-weight: 600; font-size: var(--text-sm); transform: translateX(110%); opacity: 0; transition: all 0.25s cubic-bezier(0.16,1,0.3,1); pointer-events: auto; max-width: 280px; }
+.toast { background: var(--bg-app); color: var(--text-primary); border: 1px solid var(--border); padding: 10px 14px; border-radius: var(--radius); box-shadow: var(--shadow); font-weight: 600; font-size: var(--text-sm); transform: translateX(110%); opacity: 0; transition: all 0.25s cubic-bezier(0.16,1,0.3,1); pointer-events: auto; max-width: 280px; }
 .toast.show { transform: translateX(0); opacity: 1; }
 
 /* ── FOOTER (minitools exact) ── */
@@ -782,7 +781,7 @@ a, button, input, select { touch-action: manipulation; }
 .bio-cta {
   display: flex; align-items: center; justify-content: center;
   background: var(--btn-bg); color: var(--btn-text);
-  border: none; border-radius: var(--radius-sm);
+  border: none; border-radius: var(--radius);
   padding: 0 20px; height: 44px; margin-top: 8px;
   font-size: var(--text-sm); font-weight: 600;
   text-decoration: none; cursor: pointer;
@@ -829,6 +828,9 @@ a, button, input, select { touch-action: manipulation; }
 }
 
 .hidden { display: none !important; }
+.card-title--flush { margin-bottom: 0; }
+.card-desc--sub { margin: 2px 0 0; font-size: var(--text-xs); color: var(--text-tertiary); }
+.card-desc--hidden { margin-bottom: 0; display: none; }
 </style>
 </head>
 <body>
@@ -945,7 +947,7 @@ a, button, input, select { touch-action: manipulation; }
         <div>
           <h2 class="card-title" id="marketCardTitle">Market Signals</h2>
           <div class="market-hero-number" id="marketHeroNumber"></div>
-          <p class="card-desc" style="margin-bottom:0;display:none;" id="marketCardDesc"></p>
+          <p class="card-desc card-desc--hidden" id="marketCardDesc"></p>
         </div>
       </div>
 
@@ -1014,7 +1016,7 @@ a, button, input, select { touch-action: manipulation; }
     <!-- RECENT AWARDS CARD -->
     <div class="app-card wide result-panel hidden" id="recentCard">
       <div class="card-header-row">
-        <h2 class="card-title" style="margin:0;">Recent Awards</h2>
+        <h2 class="card-title card-title--flush">Recent Awards</h2>
       </div>
       <div class="contract-list" id="recentList"></div>
     </div>
@@ -1022,7 +1024,7 @@ a, button, input, select { touch-action: manipulation; }
     <!-- EXPIRING SOON CARD -->
     <div class="app-card wide result-panel hidden" id="expiringCard">
       <div class="card-header-row">
-        <h2 class="card-title" style="margin:0;">Expiring Soon</h2>
+        <h2 class="card-title card-title--flush">Expiring Soon</h2>
         <button class="export-btn" onclick="App.exportExpiringCSV()" title="Export expiring contracts to CSV">Export CSV</button>
       </div>
       <div class="contract-list" id="expiringList"></div>
@@ -1032,8 +1034,8 @@ a, button, input, select { touch-action: manipulation; }
     <div class="app-card wide result-panel hidden" id="subawardsCard">
       <div class="card-header-row">
         <div>
-          <h2 class="card-title" style="margin:0;">Prime to Sub Relationships</h2>
-          <p class="card-desc" style="margin:2px 0 0;font-size:var(--text-xs);color:var(--text-tertiary);">Who the primes are subbing to — teaming intelligence for this market.</p>
+          <h2 class="card-title card-title--flush">Prime to Sub Relationships</h2>
+          <p class="card-desc card-desc--sub">Who the primes are subbing to — teaming intelligence for this market.</p>
         </div>
         <button class="export-btn" onclick="App.exportSubawardsCSV()" title="Export subawards to CSV">Export CSV</button>
       </div>
@@ -1640,10 +1642,8 @@ normalizeQuery(query) {
     ['GOVPLACE', 'GOVPLACE'],
     ['WORLD WIDE TECHNOLOGY', 'WORLD WIDE TECHNOLOGY'],
     ['INTERNATIONAL BUSINESS MACHINES', 'IBM'],
-    ['IBM', 'IBM'],
     ['MICROSOFT', 'MICROSOFT'],
     ['AMAZON WEB SERVICES', 'AMAZON WEB SERVICES'],
-    ['AMAZON', 'AMAZON'],
     ['GOOGLE', 'GOOGLE'],
     ['ORACLE', 'ORACLE'],
     ['SAP', 'SAP'],
@@ -1734,46 +1734,6 @@ filterActiveContracts(awards) {
     return { pscCodes, naicsCodes, keywordTerms, allTerms: terms, andGroups };
   },
   
-  buildFilters(keywords, timePeriods) {
-    const { pscCodes, naicsCodes, keywordTerms, andGroups } = this.parseSearchTerms(keywords);
-    const filters = { time_period: timePeriods, award_type_codes: API.CONTRACT_TYPES };
-    
-    if (andGroups.length > 0) {
-      const group = andGroups[0];
-      const pscPat = /^[A-Z]{1,2}\d{1,3}$|^\d{1,2}[A-Z]\d{0,2}$/i;
-      const naicsPat = /^\d{6}$/;
-      const kws = [];
-      group.forEach(term => {
-        const agencyMatch = Utils.resolveAgencyAlias(term);
-        if (naicsPat.test(term)) { filters._naics = filters._naics || []; filters._naics.push(term); }
-        else if (pscPat.test(term)) { filters.psc_codes = filters.psc_codes || []; filters.psc_codes.push(term.toUpperCase()); }
-        else if (agencyMatch) {
-          filters.agencies = filters.agencies || [];
-          filters.agencies.push({ type: 'awarding', tier: agencyMatch.tier, name: agencyMatch.name, toptier_name: agencyMatch.toptier_name });
-        }
-        else kws.push(term);
-      });
-      if (kws.length > 0) filters.keywords = kws;
-      if (filters._naics) { filters.naics_codes = { require: filters._naics }; delete filters._naics; }
-      return filters;
-    }
-    
-    const agencyFilters = [];
-    const nonAgencyKeywords = [];
-    keywordTerms.forEach(term => {
-      const agencyMatch = Utils.resolveAgencyAlias(term);
-      if (agencyMatch) agencyFilters.push({ type: 'awarding', tier: agencyMatch.tier, name: agencyMatch.name, toptier_name: agencyMatch.toptier_name });
-      else nonAgencyKeywords.push(term);
-    });
-    
-    if (agencyFilters.length > 0) filters.agencies = agencyFilters;
-    if (pscCodes.length > 0) filters.psc_codes = pscCodes;
-    if (naicsCodes.length > 0) filters.naics_codes = { require: naicsCodes };
-    if (nonAgencyKeywords.length > 0) filters.keywords = nonAgencyKeywords;
-    if (!filters.psc_codes && !filters.naics_codes && !filters.keywords && !filters.agencies) filters.keywords = [keywords];
-    
-    return filters;
-  }
 };
 
 // ========================================
@@ -2210,13 +2170,11 @@ async searchAwards(keywords) {
     
     if (andGroups.length > 0) {
       const group = andGroups[0];
-      const pscPat = /^[A-Z]{1,2}\d{1,3}$|^\d{1,2}[A-Z]\d{0,2}$/i;
-      const naicsPat = /^\d{6}$/;
       const codes = [], kws = [], agencies = [];
       group.forEach(term => {
         const agencyMatch = Utils.resolveAgencyAlias(term);
-        if (naicsPat.test(term)) codes.push({ type: 'naics', value: term });
-        else if (pscPat.test(term)) codes.push({ type: 'psc', value: term.toUpperCase() });
+        if (_RE_NAICS.test(term)) codes.push({ type: 'naics', value: term });
+        else if (_RE_PSC.test(term)) codes.push({ type: 'psc', value: term.toUpperCase() });
         else if (agencyMatch) agencies.push({ type: 'awarding', tier: agencyMatch.tier, name: agencyMatch.name, toptier_name: agencyMatch.toptier_name });
         else kws.push(term);
       });
@@ -2340,7 +2298,7 @@ const SearchPills = {
       if (!names.length) return;
       this._cache[query.toLowerCase()] = { competitors: names };
       // If empty state is showing, refresh it with the real names
-      const container = this.UI.bubbleChartContainer;
+      const container = App.UI.bubbleChartContainer;
       if (container && container.querySelector('.empty-state')) {
         App.showEmptyState(query);
       }
@@ -2354,8 +2312,7 @@ const SearchPills = {
 
 const VehicleDetector = {
   patterns: [
-    { prefix: /^GS-35F/i, short: 'GSA Sched' }, { prefix: /^GS-00F/i, short: 'GSA Sched' },
-    { prefix: /^GS-\d{2}F/i, short: 'GSA Sched' },
+    { prefix: /^GS-\d{2,3}F/i, short: 'GSA Sched' },
     { prefix: /^47Q[A-Z]{2}A/i, short: 'OASIS+' }, { prefix: /^47QTCA/i, short: 'OASIS' },
     { prefix: /^47QTCK/i, short: 'OASIS SB' }, { prefix: /^GS-06F/i, short: 'ALLIANT 2' },
     { prefix: /^HC102[89]/i, short: 'CIO-SP3' }, { prefix: /^HC1013/i, short: 'CIO-SP4' },
@@ -3000,7 +2957,6 @@ const App = {
     // Update desc to reflect drill level
     const descEl = this.UI.marketCardDesc;
     if (descEl) {
-      const drill = this.drillState || {};
       if (drill.level > 0 && drill.path.length > 0) {
         const scopeName = drill.path[drill.path.length - 1].name;
         descEl.textContent = `Spend within ${scopeName}. Click a segment to go deeper.`;
@@ -3216,11 +3172,9 @@ const App = {
     if (this._pendingDrillScroll) {
       const targetPanel = typeof this._pendingDrillScroll === 'string' ? this._pendingDrillScroll : 'marketCard';
       this._pendingDrillScroll = false;
-      requestAnimationFrame(() => requestAnimationFrame(() => {
-        setTimeout(() => {
-          DOM.get(targetPanel)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 450);
-      }));
+      setTimeout(() => {
+        DOM.get(targetPanel)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 500);
     }
   },
   showLoader(text, subtext) {
@@ -3281,24 +3235,6 @@ const App = {
     Utils.syncUrlState();
     const url = new URL(window.location);
     Utils.copyAndAnimate(url.toString(), btn, '');
-  },
-selectAgencySuggestion(name, inputId, boxId) {
-    const inputEl = DOM.get(inputId);
-    const boxEl = DOM.get(boxId);
-    
-    if (inputEl) {
-      inputEl.value = name;
-      // This is the "Magic Line" for mobile. It kills the blinking cursor 
-      // and forces the keyboard/dropdown to close.
-      inputEl.blur(); 
-    }
-    
-    if (boxEl) {
-      boxEl.innerHTML = '';
-      boxEl.classList.add('hidden'); // This hits your .hidden CSS rule
-    }
-    
-    this.runSearch(name, true);
   },
   shareBrief(btn) {
     if (!App._currentBriefText) {
@@ -3609,9 +3545,22 @@ selectAgencySuggestion(name, inputId, boxId) {
     const list = DOM.get('subawardsList');
     if (!card || !list || !this.searchData.loaded) return;
 
-    // Build filters fresh from the current query — same approach as old govhoo getSubawards()
+    // Build filters fresh from the current query using the same logic as searchAwards
     const timePeriod = Utils.getTrailing12Mo();
-    const filters = Utils.buildFilters(this.currentQuery, timePeriod);
+    const period = timePeriod[0];
+    const { pscCodes, naicsCodes, keywordTerms } = Utils.parseSearchTerms(this.currentQuery);
+    const agencyFilters = [], plainKeywords = [];
+    keywordTerms.forEach(term => {
+      const m = Utils.resolveAgencyAlias(term);
+      if (m) agencyFilters.push({ type: 'awarding', tier: m.tier, name: m.name, toptier_name: m.toptier_name });
+      else plainKeywords.push(term);
+    });
+    const filters = { time_period: [period], award_type_codes: API.CONTRACT_TYPES };
+    if (pscCodes.length)      filters.psc_codes   = pscCodes;
+    if (naicsCodes.length)    filters.naics_codes  = { require: naicsCodes };
+    if (plainKeywords.length) filters.keywords     = plainKeywords;
+    if (agencyFilters.length) filters.agencies     = agencyFilters;
+    if (!filters.psc_codes && !filters.naics_codes && !filters.keywords && !filters.agencies) filters.keywords = [this.currentQuery];
     App._applySectorFilter(filters);
 
     let subs = [];
@@ -3979,36 +3928,33 @@ selectAgencySuggestion(name, inputId, boxId) {
   },
 
   openArtiSheet() {
-    DOM.get('artiBackdrop')?.classList.remove('hidden');
+    this.UI.artiBackdrop?.classList.remove('hidden');
     requestAnimationFrame(() => {
-      DOM.get('artiBackdrop')?.classList.add('open');
-      DOM.get('artiSheet')?.classList.remove('hidden');
-      requestAnimationFrame(() => DOM.get('artiSheet')?.classList.add('open'));
+      this.UI.artiBackdrop?.classList.add('open');
+      this.UI.artiSheet?.classList.remove('hidden');
+      requestAnimationFrame(() => this.UI.artiSheet?.classList.add('open'));
     });
     // Focus context input if trigger is showing
-    setTimeout(() => DOM.get('artiContextInput')?.focus(), 350);
+    setTimeout(() => this.UI.artiContextInput?.focus(), 350);
   },
 
   closeArtiSheet() {
-    const sheet = DOM.get('artiSheet');
-    const backdrop = DOM.get('artiBackdrop');
-    sheet?.classList.remove('open');
-    backdrop?.classList.remove('open');
+    this.UI.artiSheet?.classList.remove('open');
+    this.UI.artiBackdrop?.classList.remove('open');
     setTimeout(() => {
-      sheet?.classList.add('hidden');
-      backdrop?.classList.add('hidden');
+      this.UI.artiSheet?.classList.add('hidden');
+      this.UI.artiBackdrop?.classList.add('hidden');
     }, 320);
   },
 
   exportExpiringCSV() {
     const data = this.searchData.active;
     if (!data || !data.length) { this.toast('No data to export.', 'warning'); return; }
-    const now = new Date();
-    const cutoff = new Date(now); cutoff.setDate(cutoff.getDate() + 90);
-    const expiring = data.filter(c => {
-      const end = new Date(c['End Date']);
-      return end > now && end <= cutoff && (parseFloat(c['Award Amount'])||0) > 50000;
-    }).sort((a, b) => new Date(a['End Date']) - new Date(b['End Date']));
+    const nowTs = Date.now();
+    const cutoffTs = nowTs + 90 * 86400000;
+    const expiring = data
+      .filter(c => c._endTs > nowTs && c._endTs <= cutoffTs && (parseFloat(c['Award Amount'])||0) > 50000)
+      .sort((a, b) => a._endTs - b._endTs);
     if (!expiring.length) { this.toast('No expiring contracts to export.', 'warning'); return; }
     const headers = ['Recipient Name','Awarding Agency','Award Amount','End Date','Description','NAICS','PSC','Type of Set Aside','pop_state_code','USASpending URL'];
     const esc = v => `"${String(v ?? '').replace(/"/g,'""')}"`;
@@ -4085,10 +4031,6 @@ selectAgencySuggestion(name, inputId, boxId) {
     this.runSearch(name, true);
   },
 
-  triggerArtiFromBridge() {
-    App.runAiActionPlan();
-  },
-
   _buildArtiPayload() {
     const data = this.searchData.active;
     if (!data || !data.length) return null;
@@ -4126,8 +4068,8 @@ selectAgencySuggestion(name, inputId, boxId) {
   },
 
   analyzeMarket(data) {
-    const now = new Date();
-    const exp90 = now.getTime() + 90 * 86400000;
+    const nowTs = Date.now();
+    const exp90Ts = nowTs + 90 * 86400000;
     const m = { total: 0, agencies: {}, vendors: {}, expiring: [] };
     data.forEach(c => {
       const amt = parseFloat(c['Award Amount']) || 0;
@@ -4139,10 +4081,9 @@ selectAgencySuggestion(name, inputId, boxId) {
       m.vendors[vendor].spend += amt;
       m.vendors[vendor].count++;
       m.vendors[vendor].agencies.add(c['Awarding Agency'] || '');
-      const end = new Date(c['End Date']);
-      if (end > now && end.getTime() <= exp90 && amt > 50000) m.expiring.push(c);
+      if (c._endTs > nowTs && c._endTs <= exp90Ts && amt > 50000) m.expiring.push(c);
     });
-    m.expiring.sort((a, b) => new Date(a['End Date']) - new Date(b['End Date']));
+    m.expiring.sort((a, b) => a._endTs - b._endTs);
     this.marketMetrics = m;
   },
 
