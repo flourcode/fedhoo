@@ -111,7 +111,7 @@ a, button, input, select { touch-action: manipulation; }
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.13); border-radius: 9999px; }
 
-/* ── HEADER — single compact row ── */
+/* ── HEADER — two rows on mobile, single row on desktop ── */
 .site-header {
   position: sticky; top: 0; z-index: 200;
   background: rgba(244,243,248,0.96);
@@ -122,10 +122,11 @@ a, button, input, select { touch-action: manipulation; }
 }
 .header-row {
   display: flex; align-items: center; gap: 8px;
-  max-width: min(96vw, 1920px); margin: 0 auto;
+  max-width: min(96vw, 1920px); margin: 0 auto 8px;
 }
 .header-search-wrap {
   flex: 1; position: relative; min-width: 0;
+  max-width: min(96vw, 1920px); margin: 0 auto;
 }
 .header-search-wrap .territory-dropdown { top: calc(100% + 6px); left: 0; min-width: 260px; }
 .logo-link {
@@ -153,6 +154,10 @@ a, button, input, select { touch-action: manipulation; }
   color: var(--text-secondary); transition: var(--transition); flex-shrink: 0;
 }
 .hdr-btn-icon:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+/* Tools button: icon only on mobile, icon+label on desktop */
+.hdr-tools-label { display: none; }
+@media (min-width: 641px) { .hdr-tools-label { display: inline; } }
 
 /* Recent searches row — shown on input focus */
 .recent-searches {
@@ -854,7 +859,15 @@ a, button, input, select { touch-action: manipulation; }
   .toast-wrap { bottom: 14px; left: 10px; right: 10px; }
   .toast { transform: translateY(110%); max-width: 100%; }
   .toast.show { transform: translateY(0); }
-  .hdr-btn span { display: none; }
+  .header-row { margin-bottom: 6px; }
+  .header-search-desktop { display: none !important; }
+  .header-search-mobile { display: block; position: relative; }
+  .header-search-mobile .territory-dropdown { top: calc(100% + 6px); left: 0; min-width: 240px; }
+}
+@media (min-width: 641px) {
+  .header-search-mobile { display: none !important; }
+  .header-search-desktop { display: block; flex: 1; min-width: 0; }
+  .header-row { margin-bottom: 0; }
 }
 
 .hidden { display: none !important; }
@@ -872,13 +885,16 @@ a, button, input, select { touch-action: manipulation; }
   <symbol id="icon-chevron-down" viewBox="0 0 640 640"><path fill="currentColor" d="M587.6 182.8C575.1 170.3 554.9 170.3 542.4 182.8L320 405.1L97.6 182.8C85.1 170.3 64.9 170.3 52.4 182.8C39.9 195.3 39.9 215.5 52.4 228L297.6 473.2C310.1 485.7 330.3 485.7 342.8 473.2L587.6 228C600.1 215.5 600.1 195.3 587.6 182.8z"/></symbol>
   <symbol id="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></symbol>
   <symbol id="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></symbol>
+  <symbol id="icon-tools" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></symbol>
 </svg>
 
 <!-- HEADER -->
 <header class="site-header">
+  <!-- Logo + actions row (always visible) -->
   <div class="header-row">
     <a class="logo-link" href="/" onclick="App.resetToSearch(); return false;">Fedhoo.</a>
-    <div class="header-search-wrap">
+    <!-- Desktop: search sits here inline -->
+    <div class="header-search-wrap header-search-desktop">
       <div class="search-bar-inner" id="searchBarInner">
         <button class="search-territory-btn" id="territoryBtn" onclick="App.toggleTerritoryMenu()">
           <span class="territory-dot-sm" id="territoryDot"></span>
@@ -921,12 +937,32 @@ a, button, input, select { touch-action: manipulation; }
       </div>
     </div>
     <div class="header-actions">
-      <a href="/tools/" class="hdr-btn"><span>Tools</span></a>
+      <a href="/tools/" class="hdr-btn" title="Tools">
+        <svg class="hdr-tools-icon" width="15" height="15" aria-hidden="true"><use href="#icon-tools"/></svg>
+        <span class="hdr-tools-label">Tools</span>
+      </a>
       <button class="hdr-btn-icon" id="darkToggleBtn" onclick="App.toggleDarkMode()" title="Toggle dark mode" aria-label="Toggle dark mode">
         <svg id="darkToggleIcon" width="15" height="15" aria-hidden="true"><use href="#icon-moon"></use></svg>
       </button>
     </div>
   </div>
+
+  <!-- Mobile: search on its own row -->
+  <div class="header-search-mobile">
+    <div class="search-bar-inner" id="searchBarInnerMobile">
+      <button class="search-territory-btn" id="territoryBtnMobile" onclick="App.toggleTerritoryMenu()">
+        <span class="territory-dot-sm" id="territoryDotMobile"></span>
+        <span id="territoryLabelMobile">All</span>
+        <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M5 6L0 0h10z" fill="currentColor"/></svg>
+      </button>
+      <input type="search" id="searchInputMobile" class="search-input"
+        placeholder="Company, keyword, or NAICS code…"
+        autocomplete="off" autocorrect="off" autocapitalize="none"
+        enterkeyhint="search">
+    </div>
+    <div class="autocomplete-dropdown hidden" id="searchSuggestionsMobile"></div>
+  </div>
+
   <div class="recent-searches" id="recentSearches">
     <span class="recent-label">Recent</span>
   </div>
@@ -2657,6 +2693,8 @@ const App = {
     // Update search input to show normalized query
     const inp = this.UI.searchInput;
     if (inp) inp.value = query;
+    const mobileInp = DOM.get('searchInputMobile');
+    if (mobileInp) mobileInp.value = query;
     document.title = `Fedhoo | ${query}`;
 
     try {
@@ -2879,9 +2917,13 @@ const App = {
     if (key && sectors[key]) {
       dot.style.background = sectors[key].color;
       label.textContent = sectors[key].label;
+      const dotM = DOM.get('territoryDotMobile'); if (dotM) dotM.style.background = sectors[key].color;
+      const lblM = DOM.get('territoryLabelMobile'); if (lblM) lblM.textContent = sectors[key].label;
     } else {
       dot.style.background = 'var(--border)';
       label.textContent = 'All';
+      const dotM = DOM.get('territoryDotMobile'); if (dotM) dotM.style.background = 'var(--border)';
+      const lblM = DOM.get('territoryLabelMobile'); if (lblM) lblM.textContent = 'All';
     }
 
     // Re-run search with new territory so API applies the sector filter at fetch time
@@ -4201,6 +4243,8 @@ const App = {
       ? name.replace(_RE_SUFFIX, '').replace(/,\s*$/, '').trim()
       : name;
     if (input) { input.value = searchName; input.blur(); }
+    const mobileInp = DOM.get('searchInputMobile');
+    if (mobileInp) { mobileInp.value = searchName; mobileInp.blur(); }
     if (box)   { box.innerHTML = ''; box.classList.add('hidden'); }
     this.runSearch(searchName, true);
   },
@@ -4324,6 +4368,8 @@ const App = {
     DOM.show('searchHero');
     const input = this.UI.searchInput;
     if (input) { input.value = ''; input.focus(); }
+    const mobileInp = DOM.get('searchInputMobile');
+    if (mobileInp) mobileInp.value = '';
   },
 
   init() {
@@ -4590,6 +4636,66 @@ const App = {
         setTimeout(() => App._hideRecentSearches(), 200);
       });
     }
+
+    // Wire mobile search input — mirrors desktop input exactly
+    const mobileInput = DOM.get('searchInputMobile');
+    const mobileBar   = DOM.get('searchBarInnerMobile');
+    if (mobileInput) {
+      // Sync typing to desktop input (so App.UI.searchInput.value is always current)
+      mobileInput.addEventListener('input', e => {
+        if (this.UI.searchInput) this.UI.searchInput.value = e.target.value;
+        // Trigger autocomplete on mobile too
+        const acTimer = this._mobileAcTimer;
+        clearTimeout(acTimer);
+        const val = e.target.value.trim();
+        if (val.length < 2) { DOM.get('searchSuggestionsMobile')?.classList.add('hidden'); return; }
+        this._mobileAcTimer = setTimeout(async () => {
+          const suggestions = await API.fetchAgencySuggestions(val);
+          const sugBox = DOM.get('searchSuggestionsMobile');
+          if (!suggestions?.length || !sugBox) return;
+          sugBox.innerHTML = suggestions.map(s => {
+            if (s._type === 'recipient') {
+              const name = Html.escapeHtml(s.recipient_name || '');
+              const safe = (s.recipient_name || '').replace(/'/g, "\\'");
+              return `<div class="suggestion-item" onclick="App.selectAgencySuggestion('${safe}','searchSuggestionsMobile','recipient')">${name}<span class="suggestion-tier">Company</span></div>`;
+            }
+            const sub = s.subtier_agency?.name || '', top = s.toptier_agency?.name || '';
+            const display = sub || top;
+            const safe = display.replace(/'/g, "\\'");
+            const tierHtml = (sub && top && sub !== top) ? `<span class="suggestion-tier">${Html.escapeHtml(top)}</span>` : '';
+            if (s.subtier_agency && s.toptier_agency) Utils.dynamicAgencies[sub.toLowerCase()] = { tier:'subtier', name:sub, toptier_name:top };
+            if (s.toptier_agency) Utils.dynamicAgencies[top.toLowerCase()] = { tier:'toptier', name:top };
+            return `<div class="suggestion-item" onclick="App.selectAgencySuggestion('${safe}','searchSuggestionsMobile')">${Html.escapeHtml(display)}${tierHtml}</div>`;
+          }).join('');
+          sugBox.classList.remove('hidden');
+        }, 280);
+      });
+      mobileInput.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); App.runSearch(mobileInput.value.trim()); }
+        if (e.key === 'Escape') { DOM.get('searchSuggestionsMobile')?.classList.add('hidden'); DOM.get('territoryDropdown')?.classList.remove('open'); }
+      });
+      mobileInput.addEventListener('focus', () => {
+        renderRecentSearches();
+        if (recentRow && recentRow.children.length > 1) recentRow.classList.add('visible');
+        if (mobileBar) mobileBar.classList.add('loading');
+        setTimeout(() => { if (mobileBar) mobileBar.classList.remove('loading'); }, 0);
+      });
+      mobileInput.addEventListener('blur', () => {
+        setTimeout(() => { App._hideRecentSearches(); DOM.get('searchSuggestionsMobile')?.classList.add('hidden'); }, 200);
+      });
+    }
+
+    // Sync territory button mobile mirrors
+    const syncTerritoryMobile = (key, color, label) => {
+      const dot = DOM.get('territoryDotMobile');
+      const lbl = DOM.get('territoryLabelMobile');
+      if (dot) dot.style.background = color;
+      if (lbl) lbl.textContent = label;
+    };
+    App._syncTerritoryMobile = syncTerritoryMobile;
+    // Wire mobile territory button to same dropdown
+    const territoryBtnMobile = DOM.get('territoryBtnMobile');
+    if (territoryBtnMobile) territoryBtnMobile.addEventListener('click', () => App.toggleTerritoryMenu());
   },
 
   PROXY_ENDPOINT: 'https://76unm1rlj0.execute-api.us-east-1.amazonaws.com/default/grumpy2',
