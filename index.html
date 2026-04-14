@@ -274,7 +274,6 @@ a, button, input, select { touch-action: manipulation; }
 .arti-sheet-close:hover { background: var(--bg-hover); color: var(--text-primary); }
 .arti-sheet-body {
   flex: 1; overflow-y: auto; padding: 4px 20px 20px;
-  -webkit-overflow-scrolling: touch;
 }
 
 /* ── ARTI HERO (sheet trigger state) ── */
@@ -593,7 +592,6 @@ a, button, input, select { touch-action: manipulation; }
 }
 .tools-grid > * {
   break-inside: avoid;
-  -webkit-column-break-inside: avoid;
   margin-bottom: 18px;
   display: inline-block;
   width: 100%;
@@ -1003,7 +1001,7 @@ a, button, input, select { touch-action: manipulation; }
     </div><!-- /marketCard -->
 
     <!-- TOP PRIMES CARD -->
-    <div class="app-card wide hidden" id="primesCard">
+    <div class="app-card wide result-panel hidden" id="primesCard">
       <div class="primes-header">
         <div>
           <h2 class="card-title">Top Primes</h2>
@@ -1014,7 +1012,7 @@ a, button, input, select { touch-action: manipulation; }
     </div>
 
     <!-- RECENT AWARDS CARD -->
-    <div class="app-card wide hidden" id="recentCard">
+    <div class="app-card wide result-panel hidden" id="recentCard">
       <div class="card-header-row">
         <h2 class="card-title" style="margin:0;">Recent Awards</h2>
       </div>
@@ -1022,7 +1020,7 @@ a, button, input, select { touch-action: manipulation; }
     </div>
 
     <!-- EXPIRING SOON CARD -->
-    <div class="app-card wide hidden" id="expiringCard">
+    <div class="app-card wide result-panel hidden" id="expiringCard">
       <div class="card-header-row">
         <h2 class="card-title" style="margin:0;">Expiring Soon</h2>
         <button class="export-btn" onclick="App.exportExpiringCSV()" title="Export expiring contracts to CSV">Export CSV</button>
@@ -1031,7 +1029,7 @@ a, button, input, select { touch-action: manipulation; }
     </div>
 
     <!-- SUBAWARDS CARD -->
-    <div class="app-card wide hidden" id="subawardsCard">
+    <div class="app-card wide result-panel hidden" id="subawardsCard">
       <div class="card-header-row">
         <div>
           <h2 class="card-title" style="margin:0;">Prime to Sub Relationships</h2>
@@ -2685,8 +2683,8 @@ const App = {
       // Card title = title-cased search query, no "Market" suffix
       const rawForTitle = (DOM.get('searchInput')?.value || query).trim();
       const titleLabel = rawForTitle.split(/,\s*/).map(t => t.trim().toUpperCase()).join(', ');
-      document.getElementById('marketCardTitle').textContent = titleLabel;
-      document.getElementById('marketCardDesc').textContent = 'Where the money is concentrated. Click any segment to drill in.';
+      if (this.UI.marketCardTitle) this.UI.marketCardTitle.textContent = titleLabel;
+      if (this.UI.marketCardDesc) this.UI.marketCardDesc.textContent = 'Where the money is concentrated. Click any segment to drill in.';
 
       // Show results grid
       DOM.show('resultsGrid');
@@ -2719,11 +2717,7 @@ const App = {
 
   showEmptyState(query) {
     // Hide all result panels so old data doesn't bleed through
-    DOM.hide('primesCard');
-    DOM.hide('recentCard');
-    DOM.hide('expiringCard');
-    DOM.hide('expiringCard');
-    DOM.hide('subawardsCard');
+    document.querySelectorAll('.result-panel').forEach(el => el.classList.add('hidden'));
     DOM.hide('artiFab');
     // Hide third tab
     DOM.get('tabSubSankey')?.classList.add('hidden');
@@ -2741,8 +2735,8 @@ const App = {
     DOM.show('resultsGrid');
     DOM.show('marketCard');
 
-    document.getElementById('marketCardTitle').textContent = '';
-    document.getElementById('marketHeroNumber').textContent = '';
+    if (this.UI.marketCardTitle) this.UI.marketCardTitle.textContent = '';
+    if (this.UI.marketHeroNumber) this.UI.marketHeroNumber.textContent = '';
 
     const territoryNote = this.territory && this.SECTORS[this.territory]
       ? ` in <strong>${this.SECTORS[this.territory].label}</strong>` : '';
@@ -3577,29 +3571,32 @@ selectAgencySuggestion(name, inputId, boxId) {
     </div>`;
   },
 
-  renderExpiring() {
-    const now = new Date();
-    const cutoff = new Date(now); cutoff.setDate(cutoff.getDate() + 90);
-    const data = this.searchData.active
-      .filter(c => { const e = new Date(c['End Date']); return e > now && e <= cutoff && (parseFloat(c['Award Amount'])||0) > 50000; })
-      .sort((a, b) => new Date(a['End Date']) - new Date(b['End Date']));
-    const list = this.UI.expiringList, card = this.UI.expiringCard;
+  _renderListCard(list, card, data, rowFn, showAllText, showAllFnName) {
     if (!list || !card) return;
     if (!data.length) { card.classList.add('hidden'); return; }
     card.classList.remove('hidden');
     const SHOW = 8;
     const render = (all) => {
       const items = all ? data : data.slice(0, SHOW);
-      list.innerHTML = items.map(c => {
-        const days = Math.ceil((new Date(c['End Date']) - now) / 86400000);
-        const cls  = days <= 30 ? 'contract-urgency urgent' : days <= 60 ? 'contract-urgency warn' : 'contract-urgency';
-        return this._buildContractRow(c, `<span class="${cls}">${days}d</span>`);
-      }).join('');
+      list.innerHTML = items.map(rowFn).join('');
       if (!all && data.length > SHOW) list.insertAdjacentHTML('beforeend',
-        `<button class="contract-show-more" onclick="App._renderExpiringAll()">Show all ${data.length} expiring contracts</button>`);
+        `<button class="contract-show-more" onclick="App.${showAllFnName}()">Show all ${data.length} ${showAllText}</button>`);
     };
-    this._renderExpiringAll = () => render(true);
+    this[showAllFnName] = () => render(true);
     render(false);
+  },
+
+  renderExpiring() {
+    const now = new Date();
+    const cutoff = new Date(now); cutoff.setDate(cutoff.getDate() + 90);
+    const data = this.searchData.active
+      .filter(c => { const e = new Date(c['End Date']); return e > now && e <= cutoff && (parseFloat(c['Award Amount'])||0) > 50000; })
+      .sort((a, b) => new Date(a['End Date']) - new Date(b['End Date']));
+    this._renderListCard(this.UI.expiringList, this.UI.expiringCard, data, c => {
+      const days = Math.ceil((new Date(c['End Date']) - now) / 86400000);
+      const cls  = days <= 30 ? 'contract-urgency urgent' : days <= 60 ? 'contract-urgency warn' : 'contract-urgency';
+      return this._buildContractRow(c, `<span class="${cls}">${days}d</span>`);
+    }, 'expiring contracts', '_renderExpiringAll');
   },
 
   renderRecent() {
@@ -3608,24 +3605,12 @@ selectAgencySuggestion(name, inputId, boxId) {
     const data = this.searchData.active
       .filter(c => { const s = new Date(c['Start Date']); return s >= cutoff && s <= now; })
       .sort((a, b) => new Date(b['Start Date']) - new Date(a['Start Date']));
-    const list = this.UI.recentList, card = this.UI.recentCard;
-    if (!list || !card) return;
-    if (!data.length) { card.classList.add('hidden'); return; }
-    card.classList.remove('hidden');
-    const SHOW = 8;
-    const render = (all) => {
-      const items = all ? data : data.slice(0, SHOW);
-      list.innerHTML = items.map(c => {
-        const d = Math.floor((now - new Date(c['Start Date'])) / 86400000);
-        const ago = d === 0 ? 'Today' : d === 1 ? 'Yesterday'
-          : d <= 7 ? `${d}d ago` : d <= 30 ? `${Math.ceil(d/7)}w ago` : `${Math.floor(d/30)}mo ago`;
-        return this._buildContractRow(c, `<span class="contract-date">${ago}</span>`);
-      }).join('');
-      if (!all && data.length > SHOW) list.insertAdjacentHTML('beforeend',
-        `<button class="contract-show-more" onclick="App._renderRecentAll()">Show all ${data.length} recent awards</button>`);
-    };
-    this._renderRecentAll = () => render(true);
-    render(false);
+    this._renderListCard(this.UI.recentList, this.UI.recentCard, data, c => {
+      const d = Math.floor((now - new Date(c['Start Date'])) / 86400000);
+      const ago = d === 0 ? 'Today' : d === 1 ? 'Yesterday'
+        : d <= 7 ? `${d}d ago` : d <= 30 ? `${Math.ceil(d/7)}w ago` : `${Math.floor(d/30)}mo ago`;
+      return this._buildContractRow(c, `<span class="contract-date">${ago}</span>`);
+    }, 'recent awards', '_renderRecentAll');
   },
 
   async renderSubawards() {
@@ -3826,19 +3811,15 @@ selectAgencySuggestion(name, inputId, boxId) {
     const topPaths = allPaths.slice(0, limit);
     const tailPaths = allPaths.slice(limit);
 
-    const nodesSet = new Set();
+    const { nodes: topNodes, links: topLinks } = this._buildSankeyGraph(topPaths);
+    const nodesSet = new Set(topNodes.map(n => n.name));
     const linksMap = {};
+    topLinks.forEach(l => { linksMap[`${l.source}:::${l.target}`] = l.value; });
     const addLink = (s, t, v) => {
       nodesSet.add(s); nodesSet.add(t);
       const k = s + ':::' + t;
       linksMap[k] = (linksMap[k] || 0) + v;
     };
-
-    topPaths.forEach(([k, v]) => {
-      const parts = k.split(' ||| ');
-      if (parts.length === 3) { addLink(parts[0], parts[1], v); addLink(parts[1], parts[2], v); }
-      else { addLink(parts[0], parts[1], v); }
-    });
 
     if (tailPaths.length > 0) {
       const aggs = {};
@@ -3866,6 +3847,28 @@ selectAgencySuggestion(name, inputId, boxId) {
       isActive: () => false,
       onNodeClick: () => {}
     });
+  },
+
+  _buildSankeyGraph(paths) {
+    const nodesSet = new Set();
+    const linksMap = {};
+    const addLink = (s, t, v) => {
+      nodesSet.add(s); nodesSet.add(t);
+      const k = `${s}:::${t}`;
+      linksMap[k] = (linksMap[k] || 0) + v;
+    };
+    paths.forEach(([k, v]) => {
+      const parts = k.split(' ||| ');
+      if (parts.length === 3) { addLink(parts[0], parts[1], v); addLink(parts[1], parts[2], v); }
+      else { addLink(parts[0], parts[1], v); }
+    });
+    return {
+      nodes: Array.from(nodesSet).map(n => ({ name: n })),
+      links: Object.entries(linksMap).map(([k, v]) => {
+        const [source, target] = k.split(':::');
+        return { source, target, value: v };
+      })
+    };
   },
 
   renderSubSankey() {
@@ -3898,24 +3901,7 @@ selectAgencySuggestion(name, inputId, boxId) {
       return;
     }
 
-    const nodesSet = new Set();
-    const linksMap = {};
-    const addLink = (s, t, v) => {
-      nodesSet.add(s); nodesSet.add(t);
-      const k = `${s}:::${t}`;
-      linksMap[k] = (linksMap[k] || 0) + v;
-    };
-    allPaths.forEach(([k, v]) => {
-      const [agency, prime, sub] = k.split(' ||| ');
-      addLink(agency, prime, v);
-      addLink(prime, sub, v);
-    });
-
-    const links = Object.entries(linksMap).map(([k, v]) => {
-      const [source, target] = k.split(':::');
-      return { source, target, value: v };
-    });
-    const nodes = Array.from(nodesSet).map(n => ({ name: n }));
+    const { nodes, links } = this._buildSankeyGraph(allPaths);
 
     const svg = d3.select(container).append('svg').attr('id', 'subSankeySvg');
     ChartUtils.drawSankey(svg, {
