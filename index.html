@@ -92,6 +92,11 @@
 .dark .site-header { background: rgba(15,14,19,0.96) !important; }
 .dark .arti-sheet  { background: #0F0E13 !important; }
 .dark .arti-fab    { box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
+.arti-brief-header { display:flex; align-items:center; gap:12px; margin-bottom:18px; padding-bottom:14px; border-bottom:1px solid var(--border-inner); }
+.arti-brief-avatar { width:40px; height:40px; border-radius:50%; object-fit:cover; flex-shrink:0; }
+.arti-brief-name { font-size:var(--text-sm); font-weight:800; color:var(--text-primary); letter-spacing:-0.02em; }
+.arti-brief-role { font-size:var(--text-xs); color:var(--text-quaternary); }
+
 
 /* ── RESET (minitools exact) ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font); -webkit-tap-highlight-color: transparent; }
@@ -3259,7 +3264,7 @@ selectAgencySuggestion(name, inputId, boxId) {
     }
 
     // Don't auto-fire on empty input, focus the input instead
-    const inputEl = DOM.get('artiContextInput');
+    const inputEl = this.UI.artiContextInput;
     this.artiContext = (inputEl?.value || '').trim();
     if (!this.artiContext) {
       if (inputEl) { inputEl.focus(); inputEl.placeholder = 'Tell me your angle first…'; }
@@ -3267,9 +3272,9 @@ selectAgencySuggestion(name, inputId, boxId) {
     }
 
     // Hide trigger panel, keep artiBridge container open
-    DOM.hide('artiTrigger');
-    DOM.show('artiProgress');
-    const fill = DOM.get('artiProgressFill');
+    this.UI.artiTrigger?.classList.add('hidden');
+    this.UI.artiProgress?.classList.remove('hidden');
+    const fill = this.UI.artiProgressFill;
     let pct = 0;
     const progTimer = setInterval(() => {
       pct = Math.min(pct + 2, 88);
@@ -3303,19 +3308,19 @@ selectAgencySuggestion(name, inputId, boxId) {
       if (fill) fill.style.width = '100%';
 
       // Set up streaming target
-      const contentEl = DOM.get('aiContentContainer');
+      const contentEl = this.UI.aiContentContainer;
       contentEl.innerHTML = `
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--border-inner);">
-          <img src="/images/arti.png" style="width:40px;height:40px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+        <div class="arti-brief-header">
+          <img src="/images/arti.png" class="arti-brief-avatar">
           <div>
-            <div style="font-size:var(--text-sm);font-weight:800;color:var(--text-primary);letter-spacing:-0.02em;">Arti</div>
-            <div style="font-size:var(--text-xs);color:var(--text-quaternary);">Pre-meeting briefing</div>
+            <div class="arti-brief-name">Arti</div>
+            <div class="arti-brief-role">Pre-meeting briefing</div>
           </div>
         </div>
         <div id="artiStreamTarget" class="strategic-read" style="min-height:2em;"></div>`;
 
       const streamTarget = DOM.get('artiStreamTarget');
-      DOM.hide('artiProgress');
+      this.UI.artiProgress?.classList.add('hidden');
 
       await Html.streamInto(
         streamTarget,
@@ -3328,17 +3333,16 @@ selectAgencySuggestion(name, inputId, boxId) {
           ];
           this.aiState.count = 0;
           // Show follow-up UI
-          DOM.show('artiActions');
-          DOM.show('chatInputWrap');
-          DOM.show('artiDisclaimer');
-          DOM.text('chatCounter', `${this.aiState.max} follow-up questions remaining.`);
-          DOM.show('chatCounter');
+          this.UI.artiActions?.classList.remove('hidden');
+          this.UI.chatInputWrap?.classList.remove('hidden');
+          this.UI.artiDisclaimer?.classList.remove('hidden');
+          if (this.UI.chatCounter) { this.UI.chatCounter.textContent = `${this.aiState.max} follow-up questions remaining.`; this.UI.chatCounter.classList.remove('hidden'); }
           
         },
         (msg) => {
           clearInterval(progTimer);
-          DOM.hide('artiProgress');
-          DOM.show('artiTrigger');
+          this.UI.artiProgress?.classList.add('hidden');
+          this.UI.artiTrigger?.classList.remove('hidden');
           contentEl.innerHTML = `<p style="color:var(--crit-text);font-size:var(--text-sm);padding:1rem 0;">${Html.escapeHtml(msg)}</p>`;
           
         }
@@ -3346,8 +3350,8 @@ selectAgencySuggestion(name, inputId, boxId) {
 
     } catch (e) {
       clearInterval(progTimer);
-      DOM.hide('artiProgress');
-      DOM.show('artiTrigger');
+      this.UI.artiProgress?.classList.add('hidden');
+      this.UI.artiTrigger?.classList.remove('hidden');
       const msg = (e.name === 'AbortError' || (e.message||'').includes('timed'))
         ? 'Arti took too long, try a more focused search.'
         : (e.message || 'Something went wrong. Try again.');
@@ -3369,7 +3373,7 @@ selectAgencySuggestion(name, inputId, boxId) {
       ? `${remaining} follow-up question${remaining === 1 ? '' : 's'} remaining.`
       : 'Question limit reached.');
 
-    const historyEl = DOM.get('chatHistory');
+    const historyEl = this.UI.chatHistory;
     historyEl.classList.remove('hidden');
     historyEl.insertAdjacentHTML('beforeend',
       `<div class="chat-msg-user">${Html.escapeHtml(message)}</div>`
@@ -3382,8 +3386,8 @@ selectAgencySuggestion(name, inputId, boxId) {
       </div>`);
     historyEl.scrollTop = historyEl.scrollHeight;
 
-    const chatInput = DOM.get('chatInput');
-    const chatSend  = DOM.get('chatSendBtn');
+    const chatInput = this.UI.chatInput;
+    const chatSend  = this.UI.chatSendBtn;
     if (chatInput) chatInput.disabled = true;
     if (chatSend)  chatSend.disabled  = true;
 
@@ -3709,7 +3713,7 @@ selectAgencySuggestion(name, inputId, boxId) {
   },
 
   renderSankey() {
-    const container = DOM.get('sankeyContainer');
+    const container = this.UI.sankeyContainer;
     if (!container || !this.searchData.loaded) return;
     container.innerHTML = '';
     container.dataset.rendered = '1';
@@ -3807,7 +3811,7 @@ selectAgencySuggestion(name, inputId, boxId) {
   },
 
   renderSubSankey() {
-    const container = DOM.get('subSankeyContainer');
+    const container = this.UI.subSankeyContainer;
     if (!container) return;
     container.innerHTML = '';
     container.dataset.rendered = '1';
@@ -4365,21 +4369,33 @@ selectAgencySuggestion(name, inputId, boxId) {
 
     // Cache static DOM elements used in high-frequency functions
     this.UI = {
-      chartTrack:       DOM.get('chartTrack'),
-      chartViewport:    DOM.get('chartViewport'),
-      tabTreemap:       DOM.get('tabTreemap'),
-      tabSankey:        DOM.get('tabSankey'),
-      tabSubSankey:     DOM.get('tabSubSankey'),
-      dotTreemap:       DOM.get('dotTreemap'),
-      dotSankey:        DOM.get('dotSankey'),
-      dotSubSankey:     DOM.get('dotSubSankey'),
-      bubbleToggleRow:  DOM.get('bubbleToggleRow'),
-      marketHeroNumber: DOM.get('marketHeroNumber'),
-      marketCardTitle:  DOM.get('marketCardTitle'),
-      sankeyContainer:  DOM.get('sankeyContainer'),
-      panelSankey:      DOM.get('panelSankey'),
+      chartTrack:         DOM.get('chartTrack'),
+      chartViewport:      DOM.get('chartViewport'),
+      tabTreemap:         DOM.get('tabTreemap'),
+      tabSankey:          DOM.get('tabSankey'),
+      tabSubSankey:       DOM.get('tabSubSankey'),
+      dotTreemap:         DOM.get('dotTreemap'),
+      dotSankey:          DOM.get('dotSankey'),
+      dotSubSankey:       DOM.get('dotSubSankey'),
+      bubbleToggleRow:    DOM.get('bubbleToggleRow'),
+      marketHeroNumber:   DOM.get('marketHeroNumber'),
+      marketCardTitle:    DOM.get('marketCardTitle'),
+      sankeyContainer:    DOM.get('sankeyContainer'),
+      panelSankey:        DOM.get('panelSankey'),
       subSankeyContainer: DOM.get('subSankeyContainer'),
-      panelSubSankey:   DOM.get('panelSubSankey'),
+      panelSubSankey:     DOM.get('panelSubSankey'),
+      aiContentContainer: DOM.get('aiContentContainer'),
+      artiProgress:       DOM.get('artiProgress'),
+      artiProgressFill:   DOM.get('artiProgressFill'),
+      artiTrigger:        DOM.get('artiTrigger'),
+      artiActions:        DOM.get('artiActions'),
+      chatInputWrap:      DOM.get('chatInputWrap'),
+      artiDisclaimer:     DOM.get('artiDisclaimer'),
+      chatCounter:        DOM.get('chatCounter'),
+      chatHistory:        DOM.get('chatHistory'),
+      chatInput:          DOM.get('chatInput'),
+      chatSendBtn:        DOM.get('chatSendBtn'),
+      artiContextInput:   DOM.get('artiContextInput'),
     };
 
     // Preload D3
