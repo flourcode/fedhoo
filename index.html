@@ -1683,16 +1683,11 @@ normalizeQuery(query) {
     return name;
   },
 filterActiveContracts(awards) {
-    const now = new Date();
-    
+    const nowMs = Date.now();
     return awards.filter(a => {
-      const endStr = a['End Date'];
-      if (!endStr) return true; 
-      
-      const end = new Date(endStr);
-      if (isNaN(end.getTime())) return true;
-
-      return end > now; 
+      const endMs = a._endTs || (a['End Date'] ? new Date(a['End Date']).getTime() : NaN);
+      if (!endMs || isNaN(endMs)) return true;
+      return endMs > nowMs;
     });
   },
   parseSearchTerms(keywords) {
@@ -2201,12 +2196,11 @@ async searchAwards(keywords) {
         const topAgency = (award['Awarding Agency'] || '').toUpperCase();
         if (topAgency.includes('DEFENSE') && award['Awarding Sub Agency']) award['Awarding Agency'] = award['Awarding Sub Agency'];
         const awardId = String(award['Award ID'] || '').toUpperCase();
-        const code6 = awardId.substring(0, 6);
-        const code4 = awardId.substring(0, 4);
-        const known = Utils.buyingOffices[code6] || Utils.buyingOffices[code4];
-        if (known) {
-          award['Awarding Sub Agency'] = known;
-        }
+        const known = Utils.buyingOffices[awardId.substring(0, 6)] || Utils.buyingOffices[awardId.substring(0, 4)];
+        if (known) award['Awarding Sub Agency'] = known;
+        // Pre-parse dates as timestamps — avoids repeated new Date() in filter/sort loops
+        award._endTs   = award['End Date']   ? new Date(award['End Date']).getTime()   : 0;
+        award._startTs = award['Start Date'] ? new Date(award['Start Date']).getTime() : 0;
         return award;
       }).sort((a,b) => (b['Award Amount'] || 0) - (a['Award Amount'] || 0));
     };
@@ -3586,26 +3580,26 @@ selectAgencySuggestion(name, inputId, boxId) {
   },
 
   renderExpiring() {
-    const now = new Date();
-    const cutoff = new Date(now); cutoff.setDate(cutoff.getDate() + 90);
+    const nowTs = Date.now();
+    const cutoffTs = nowTs + 90 * 86400000;
     const data = this.searchData.active
-      .filter(c => { const e = new Date(c['End Date']); return e > now && e <= cutoff && (parseFloat(c['Award Amount'])||0) > 50000; })
-      .sort((a, b) => new Date(a['End Date']) - new Date(b['End Date']));
+      .filter(c => c._endTs > nowTs && c._endTs <= cutoffTs && (parseFloat(c['Award Amount'])||0) > 50000)
+      .sort((a, b) => a._endTs - b._endTs);
     this._renderListCard(this.UI.expiringList, this.UI.expiringCard, data, c => {
-      const days = Math.ceil((new Date(c['End Date']) - now) / 86400000);
+      const days = Math.ceil((c._endTs - nowTs) / 86400000);
       const cls  = days <= 30 ? 'contract-urgency urgent' : days <= 60 ? 'contract-urgency warn' : 'contract-urgency';
       return this._buildContractRow(c, `<span class="${cls}">${days}d</span>`);
     }, 'expiring contracts', '_renderExpiringAll');
   },
 
   renderRecent() {
-    const now = new Date();
-    const cutoff = new Date(now); cutoff.setDate(cutoff.getDate() - 90);
+    const nowTs = Date.now();
+    const cutoffTs = nowTs - 90 * 86400000;
     const data = this.searchData.active
-      .filter(c => { const s = new Date(c['Start Date']); return s >= cutoff && s <= now; })
-      .sort((a, b) => new Date(b['Start Date']) - new Date(a['Start Date']));
+      .filter(c => c._startTs >= cutoffTs && c._startTs <= nowTs)
+      .sort((a, b) => b._startTs - a._startTs);
     this._renderListCard(this.UI.recentList, this.UI.recentCard, data, c => {
-      const d = Math.floor((now - new Date(c['Start Date'])) / 86400000);
+      const d = Math.floor((nowTs - c._startTs) / 86400000);
       const ago = d === 0 ? 'Today' : d === 1 ? 'Yesterday'
         : d <= 7 ? `${d}d ago` : d <= 30 ? `${Math.ceil(d/7)}w ago` : `${Math.floor(d/30)}mo ago`;
       return this._buildContractRow(c, `<span class="contract-date">${ago}</span>`);
@@ -3945,17 +3939,9 @@ selectAgencySuggestion(name, inputId, boxId) {
     const card = this.UI.primesCard;
     if (!list || !card) return;
 
-    // Aggregate by vendor
-    const vendorMap = {};
-    data.forEach(c => {
-      const name = c['Recipient Name'] || 'Unknown';
-      if (!vendorMap[name]) vendorMap[name] = { spend: 0, contracts: 0, agencies: new Set(), setAside: c['Type of Set Aside'] || '' };
-      vendorMap[name].spend += parseFloat(c['Award Amount']) || 0;
-      vendorMap[name].contracts++;
-      vendorMap[name].agencies.add(c['Awarding Agency'] || '');
-    });
-
-    const primes = Object.entries(vendorMap)
+    // Use pre-aggregated market metrics — avoids re-looping searchData.active
+    const vendors = this.marketMetrics?.vendors || {};
+    const primes = Object.entries(vendors)
       .sort((a, b) => b[1].spend - a[1].spend)
       .slice(0, 10);
 
@@ -3982,7 +3968,7 @@ selectAgencySuggestion(name, inputId, boxId) {
         <span class="prime-rank">${i + 1}</span>
         <div class="prime-body">
           <div class="prime-name">${Html.escapeHtml(name)}${saLabel ? ` <span class="inline-tag">${Html.escapeHtml(saLabel)}</span>` : ''}</div>
-          <div class="prime-meta">${d.contracts} contract${d.contracts !== 1 ? 's' : ''} · ${agencyCount} agenc${agencyCount !== 1 ? 'ies' : 'y'}</div>
+          <div class="prime-meta">${d.count} contract${d.count !== 1 ? 's' : ''} · ${agencyCount} agenc${agencyCount !== 1 ? 'ies' : 'y'}</div>
         </div>
         <span class="prime-amount">${Utils.money(d.spend)}</span>
         <div class="prime-links">
@@ -4151,9 +4137,10 @@ selectAgencySuggestion(name, inputId, boxId) {
       const vendor = c['Recipient Name'] || 'Unknown';
       m.total += amt;
       m.agencies[agency] = (m.agencies[agency] || 0) + amt;
-      if (!m.vendors[vendor]) m.vendors[vendor] = { spend: 0, count: 0 };
+      if (!m.vendors[vendor]) m.vendors[vendor] = { spend: 0, count: 0, agencies: new Set(), setAside: c['Type of Set Aside'] || '' };
       m.vendors[vendor].spend += amt;
       m.vendors[vendor].count++;
+      m.vendors[vendor].agencies.add(c['Awarding Agency'] || '');
       const end = new Date(c['End Date']);
       if (end > now && end.getTime() <= exp90 && amt > 50000) m.expiring.push(c);
     });
