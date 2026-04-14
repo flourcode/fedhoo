@@ -1561,7 +1561,7 @@ buyingOffices: {},
     return null;
   },
   dynamicAgencies: {}, 
-resolveAgencyAlias(term) {
+  resolveAgencyAlias(term) {
     const lower = term.toLowerCase().trim();
     
     // 1. Check the dynamic memory bank first (for autocomplete selections)
@@ -1626,7 +1626,7 @@ normalizeQuery(query) {
   cleanAgency(s) { return (s || '').replace(/^(Department of (the )?|Office of (the )?)/i, '').trim(); },
   titleIfCaps(s) { return s && s === s.toUpperCase() ? Utils.titleCase(s) : (s || ''); },
   displayName(s, len) { return Utils.trunc(Utils.titleIfCaps(s), len); },
-normalizeVendorName(vendorName) {
+  normalizeVendorName(vendorName) {
     if (!vendorName) return 'Unknown Vendor';
     
     // 1. Force uppercase for baseline comparison
