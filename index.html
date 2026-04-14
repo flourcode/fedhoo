@@ -2687,6 +2687,14 @@ const App = {
     }
     if (!query) return;
 
+    // Dismiss keyboard and dropdowns immediately regardless of how search was triggered
+    this.UI.searchInput?.blur();
+    DOM.get('searchInputMobile')?.blur();
+    document.activeElement?.blur();
+    DOM.get('searchSuggestions')?.classList.add('hidden');
+    DOM.get('searchSuggestionsMobile')?.classList.add('hidden');
+    DOM.get('territoryDropdown')?.classList.remove('open');
+
     const rawQuery = query.toUpperCase();
     if (!isDirectSelection) query = Utils.normalizeQuery(rawQuery);
 
@@ -2793,14 +2801,19 @@ const App = {
       DOM.show('resultsGrid');
       DOM.hide('searchHero');
 
-      // Render chart
+      // Render chart and panels immediately
       this._treemapDirty = true;
       this.renderBubbleChart();
-      this.renderBridge();
       this.renderPrimes();
       this.renderContracts();
       this.renderExpiring();
       this.renderRecent();
+
+      // renderBridge builds the AI payload cache — defer so treemap paints first
+      setTimeout(() => {
+        this.renderBridge();
+        this._autoFireArtiBrief(query);
+      }, 0);
 
       // Clear sub-sankey stale state before async fetch
       this._subawardData = null;
@@ -2809,9 +2822,6 @@ const App = {
       if (this._chartView === 'subsankey') this.switchChartView('treemap');
 
       this.renderSubawards();
-
-      // Auto-stream Arti brief — no FAB, no modal, no tap required
-      this._autoFireArtiBrief(query);
 
     } catch (err) {
       if (thisSearch !== this._searchId) return;
@@ -4245,7 +4255,12 @@ const App = {
     if (input) { input.value = searchName; input.blur(); }
     const mobileInp = DOM.get('searchInputMobile');
     if (mobileInp) { mobileInp.value = searchName; mobileInp.blur(); }
+    document.activeElement?.blur(); // force iOS keyboard dismiss
     if (box)   { box.innerHTML = ''; box.classList.add('hidden'); }
+    // Also hide both suggestion boxes
+    const otherBox = box?.id === 'searchSuggestions'
+      ? DOM.get('searchSuggestionsMobile') : DOM.get('searchSuggestions');
+    if (otherBox) { otherBox.innerHTML = ''; otherBox.classList.add('hidden'); }
     this.runSearch(searchName, true);
   },
 
@@ -4444,7 +4459,12 @@ const App = {
       const hideBox = () => { if (sugBox) { sugBox.innerHTML = ''; sugBox.classList.add('hidden'); } };
 
       input.addEventListener('keypress', e => {
-        if (e.key === 'Enter') { hideBox(); e.target.blur(); App.runSearch(e.target.value); }
+        if (e.key === 'Enter') {
+          hideBox();
+          input.blur();
+          document.activeElement?.blur(); // force iOS keyboard dismiss
+          App.runSearch(e.target.value);
+        }
       });
       input.addEventListener('keydown', e => {
         if (e.key === 'Escape') {
@@ -4671,8 +4691,19 @@ const App = {
         }, 280);
       });
       mobileInput.addEventListener('keydown', e => {
-        if (e.key === 'Enter') { e.preventDefault(); App.runSearch(mobileInput.value.trim()); }
-        if (e.key === 'Escape') { DOM.get('searchSuggestionsMobile')?.classList.add('hidden'); DOM.get('territoryDropdown')?.classList.remove('open'); }
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const val = mobileInput.value.trim();
+          mobileInput.blur();
+          document.activeElement?.blur(); // force iOS keyboard dismiss
+          DOM.get('searchSuggestionsMobile')?.classList.add('hidden');
+          App.runSearch(val);
+        }
+        if (e.key === 'Escape') {
+          mobileInput.blur();
+          DOM.get('searchSuggestionsMobile')?.classList.add('hidden');
+          DOM.get('territoryDropdown')?.classList.remove('open');
+        }
       });
       mobileInput.addEventListener('focus', () => {
         renderRecentSearches();
