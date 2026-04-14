@@ -172,12 +172,13 @@ a, button, input, select { touch-action: manipulation; }
   font-size: var(--text-sm); font-weight: 700;
   color: var(--text-primary); letter-spacing: -0.01em;
 }
-.contract-agency  {
+.contract-agency, .contract-desc {
   font-size: var(--text-xs); color: var(--text-tertiary);
+}
+.contract-agency  {
   margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .contract-desc {
-  font-size: var(--text-xs); color: var(--text-tertiary);
   margin-top: 3px; line-height: 1.4;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
@@ -633,7 +634,9 @@ a, button, input, select { touch-action: manipulation; }
 }
 .bubble-toggle-btn.active { background: var(--accent-dim); color: var(--btn-bg); font-weight: 700; }
 
-#bubbleChartContainer { width: 100%; position: relative; margin-top: 14px; }
+#bubbleChartContainer svg.treemap-dimmed .treemap-cell:not(.treemap-cell--active) .treemap-bg { opacity: 0.22 !important; }
+#bubbleChartContainer svg.treemap-dimmed .treemap-cell--active .treemap-bg { opacity: 1 !important; filter: brightness(1.15); }
+
 #bubbleChartContainer svg { width: 100%; height: auto; display: block; }
 .bubble-tooltip {
   position: absolute; background: var(--bg-app); border: 1px solid var(--border);
@@ -1582,30 +1585,15 @@ buyingOffices: {},
     "zta":         "Zero Trust",
     "zt":          "Zero Trust",
   },
-  VEHICLE_MAP: {
-    'NNG15SC': 'SEWP V', 'NNG15SD': 'SEWP V',
-    'HHSN316': 'CIO-SP4',
-    'GS00Q17': 'Alliant 2', 'GS00Q14': 'Alliant 2',
-    'EEQ7CQ': 'ITSSS-2', 'HHSN3162': 'ITSSS-2',
-    'GS': 'GSA MAS',
-    'GS00F': 'OASIS+', 'GS06F': 'OASIS+',
-    'HC1028': 'SETI',
-    'W52P1J': 'ITES-3S', 'W52P1': 'ITES',
-    'N00178': 'SeaPort-NxG',
-    'FA8771': 'NETCENTS-2',
-    'HC1047': 'ENCORE III',
-    'W15QKN': 'OTA',
-  },
-
   detectVehicle(award) {
+    // Delegates to VehicleDetector for unified contract vehicle detection
     const parentId = String(award['parent_award_id'] || '').toUpperCase();
     const awardId  = String(award['Award ID'] || '').toUpperCase();
     const idvType  = String(award['idv_type'] || '');
-    if (!parentId && !idvType) return null;
-    const sorted = Object.keys(this.VEHICLE_MAP).sort((a,b) => b.length - a.length);
-    for (const prefix of sorted) {
-      if (parentId.startsWith(prefix) || awardId.startsWith(prefix)) return this.VEHICLE_MAP[prefix];
-    }
+    const id = parentId || awardId;
+    if (!id && !idvType) return null;
+    const hit = VehicleDetector.detect(id);
+    if (hit) return hit.short;
     if (idvType === 'B') return 'IDIQ T.O.';
     return null;
   },
@@ -1721,29 +1709,18 @@ normalizeQuery(query) {
     ['CACI', 'CACI'],
     ['SAIC', 'SAIC'],
     ['MANTECH', 'MANTECH'],
-    ['UNISON', 'UNISON'],
     ['AMENTUM', 'AMENTUM'],
-    ['VECTRUS', 'VECTRUS'],
     ['PARSONS', 'PARSONS'],
     ['JACOBS', 'JACOBS'],
     ['ICF', 'ICF'],
     ['MITRE', 'MITRE'],
     ['NOBLIS', 'NOBLIS'],
-    ['ENGILITY', 'ENGILITY'],
-    ['SERCO', 'SERCO'],
     ['TETRA TECH', 'TETRA TECH'],
     ['CARAHSOFT', 'CARAHSOFT'],
-    ['GOVPLACE', 'GOVPLACE'],
     ['WORLD WIDE TECHNOLOGY', 'WORLD WIDE TECHNOLOGY'],
     ['INTERNATIONAL BUSINESS MACHINES', 'IBM'],
-    ['MICROSOFT', 'MICROSOFT'],
     ['AMAZON WEB SERVICES', 'AMAZON WEB SERVICES'],
-    ['GOOGLE', 'GOOGLE'],
-    ['ORACLE', 'ORACLE'],
-    ['SAP', 'SAP'],
-    ['SPLUNK', 'SPLUNK'],
     ['PALO ALTO NETWORKS', 'PALO ALTO NETWORKS'],
-    ['CROWDSTRIKE', 'CROWDSTRIKE'],
     ['AKAMAI TECHNOLOGIES', 'AKAMAI TECHNOLOGIES'],
   ],
 
@@ -2359,12 +2336,7 @@ async searchAwards(keywords) {
 const SearchPills = {
   _cache: {
     // Static seed for the default onload query — no API call needed
-    'cloud': {
-      company: 'Cloud',
-      competitors: ['Amazon', 'Microsoft', 'Google', 'Oracle', 'IBM'],
-      core_keywords: ['Cloud Hosting', 'Cloud Migration', 'IaaS'],
-      psc_codes: ['D302'], naics_codes: ['541512'],
-    },
+    'cloud': { competitors: ['Amazon Web Services', 'Microsoft', 'Google', 'Oracle', 'IBM'] },
   },
   _current: null,
 
@@ -2724,9 +2696,6 @@ const App = {
       this.searchData = { raw: results, active: filtered, baseline: filtered, filter: null, loaded: true };
       this.analyzeMarket(filtered);
 
-      // Fire brand intelligence in background — powers smart empty state if a follow-up search fails
-      SearchPills.generate(query);
-
       // Card title = title-cased search query, no "Market" suffix
       const rawForTitle = (this.UI.searchInput?.value || query).trim();
       const titleLabel = rawForTitle.split(/,\s*/).map(t => t.trim().toUpperCase()).join(', ');
@@ -2752,8 +2721,6 @@ const App = {
       if (this._chartView === 'subsankey') this.switchChartView('treemap');
 
       this.renderSubawards();
-
-      // SearchPills
 
     } catch (err) {
       if (thisSearch !== this._searchId) return;
@@ -3169,19 +3136,14 @@ const App = {
         .style('cursor', d => effective !== 'vendors' ? 'pointer' : 'default'); 
 
       cells
-        .on('mouseover.modern', function(event, d) {
-            svg.selectAll('.treemap-bg').attr('opacity', 0.25);
-            d3.select(this).select('.treemap-bg')
-                .attr('opacity', 1)
-                .attr('fill', (d, i) => {
-                    const baseColor = bubbleColors[i % bubbleColors.length];
-                    return d3.color(baseColor).brighter(0.4); 
-                });
+        .on('mouseover.modern', function() {
+            d3.select(this).select('.treemap-bg').attr('opacity', 1);
+            svg.classed('treemap-dimmed', true);
+            d3.select(this).classed('treemap-cell--active', true);
         })
-        .on('mouseout.modern', function(event, d) {
-            svg.selectAll('.treemap-bg')
-                .attr('opacity', 0.85)
-                .attr('fill', (d, i) => bubbleColors[i % bubbleColors.length]);
+        .on('mouseout.modern', function() {
+            svg.classed('treemap-dimmed', false);
+            d3.select(this).classed('treemap-cell--active', false);
         });
 
       const textGroup = cells.append('g').attr('clip-path', (d, i) => `url(#tm-clip-${i})`);
@@ -3319,7 +3281,7 @@ const App = {
     if (!container) return;
     const el = document.createElement('div');
     el.className = `toast toast-${type}`;
-    el.innerHTML = `<svg class="toast-icon icon" aria-hidden="true"><use href="#toast-${type}"></use></svg><span class="toast-msg">${msg}</span>`;
+    el.textContent = msg;
     container.appendChild(el);
     
     setTimeout(() => { 
@@ -3799,20 +3761,21 @@ const App = {
     if (!container || !this.searchData.loaded) return;
     container.innerHTML = '';
     container.dataset.rendered = '1';
-    this._renderSankeyInner(container);
-  },
-
-  _renderSankeyInner(container) {
-    const data = this.searchData.active;
-    if (!data || data.length === 0) {
+    const { nodes, links } = this._buildSankeyData(this.searchData.active, this.drillState);
+    if (!nodes.length) {
       container.innerHTML = '<div class="sankey-empty">No data for this view.</div>';
       return;
     }
+    const svg = d3.select(container).append('svg').attr('id', 'sankeySvg');
+    ChartUtils.drawSankey(svg, { nodes, links, gradientPrefix: 'flow-grad', heightPerNode: 28,
+      isDrillable: () => false, isActive: () => false, onNodeClick: () => {} });
+  },
 
-    const containerW = container.offsetWidth || 600;
-    const isLvl0 = this.drillState.level === 0;
-    // Always show 3 columns on desktop (agency → sub-agency → vendor)
-    // On mobile or when drilled in, collapse to 2 columns
+  // Shared pipeline: build Sankey nodes+links from award data (prime flow)
+  _buildSankeyData(data, drillState) {
+    if (!data || !data.length) return { nodes: [], links: [] };
+    const containerW = (this.UI.sankeyContainer || this.UI.subSankeyContainer || {}).offsetWidth || 600;
+    const isLvl0 = !drillState || drillState.level === 0;
     const use3Col = isLvl0 && containerW >= 500;
 
     const pathMap = {};
@@ -3824,7 +3787,6 @@ const App = {
       let sub = d['Awarding Sub Agency'] || d['Awarding Agency'] || agency;
       const agencyUp = (d['Awarding Agency'] || '').toUpperCase().split('(')[0].trim();
       const subUp = (d['Awarding Sub Agency'] || '').toUpperCase().split('(')[0].trim();
-      // If agency and sub-agency are the same, try to use the office
       if (agencyUp === subUp && d['Awarding Office']) sub = d['Awarding Office'];
       sub = Utils.cleanAgency(sub);
 
@@ -3833,8 +3795,7 @@ const App = {
         const safeSub = sub === agency ? agency + ' (HQ)' : sub;
         key = `${agency} ||| ${safeSub} ||| ${vendor}`;
       } else {
-        const source = isLvl0 ? agency : sub;
-        key = `${source} ||| ${vendor}`;
+        key = `${isLvl0 ? agency : sub} ||| ${vendor}`;
       }
       pathMap[key] = (pathMap[key] || 0) + amt;
     });
@@ -3847,19 +3808,22 @@ const App = {
       limit = i + 1;
       if (cumulative / totalSpend >= 0.92 && limit >= 8) break;
     }
-    const topPaths = allPaths.slice(0, limit);
-    const tailPaths = allPaths.slice(limit);
+    return this._buildSankeyGraph(allPaths.slice(0, limit), allPaths.slice(limit));
+  },
 
-    const { nodes: topNodes, links: topLinks } = this._buildSankeyGraph(topPaths);
-    const nodesSet = new Set(topNodes.map(n => n.name));
+  _buildSankeyGraph(topPaths, tailPaths = []) {
+    const nodesSet = new Set();
     const linksMap = {};
-    topLinks.forEach(l => { linksMap[`${l.source}:::${l.target}`] = l.value; });
     const addLink = (s, t, v) => {
       nodesSet.add(s); nodesSet.add(t);
-      const k = s + ':::' + t;
+      const k = `${s}:::${t}`;
       linksMap[k] = (linksMap[k] || 0) + v;
     };
-
+    topPaths.forEach(([k, v]) => {
+      const parts = k.split(' ||| ');
+      if (parts.length === 3) { addLink(parts[0], parts[1], v); addLink(parts[1], parts[2], v); }
+      else { addLink(parts[0], parts[1], v); }
+    });
     if (tailPaths.length > 0) {
       const aggs = {};
       tailPaths.forEach(([k, v]) => {
@@ -3870,37 +3834,6 @@ const App = {
       });
       Object.entries(aggs).forEach(([s, v]) => addLink(s, `Other (${tailPaths.length} contracts)`, v));
     }
-
-    const links = Object.entries(linksMap).map(([k, v]) => {
-      const [source, target] = k.split(':::');
-      return { source, target, value: v };
-    });
-    const nodes = Array.from(nodesSet).map(n => ({ name: n }));
-
-    const svg = d3.select(container).append('svg').attr('id', 'sankeySvg');
-    ChartUtils.drawSankey(svg, {
-      nodes, links,
-      gradientPrefix: 'flow-grad',
-      heightPerNode: 28,
-      isDrillable: () => false, // no drill from sankey in new UI
-      isActive: () => false,
-      onNodeClick: () => {}
-    });
-  },
-
-  _buildSankeyGraph(paths) {
-    const nodesSet = new Set();
-    const linksMap = {};
-    const addLink = (s, t, v) => {
-      nodesSet.add(s); nodesSet.add(t);
-      const k = `${s}:::${t}`;
-      linksMap[k] = (linksMap[k] || 0) + v;
-    };
-    paths.forEach(([k, v]) => {
-      const parts = k.split(' ||| ');
-      if (parts.length === 3) { addLink(parts[0], parts[1], v); addLink(parts[1], parts[2], v); }
-      else { addLink(parts[0], parts[1], v); }
-    });
     return {
       nodes: Array.from(nodesSet).map(n => ({ name: n })),
       links: Object.entries(linksMap).map(([k, v]) => {
@@ -3922,7 +3855,6 @@ const App = {
       return;
     }
 
-    // Build Agency → Prime → Sub paths, top 50 by value
     const pathMap = {};
     subs.forEach(s => {
       const agency = Utils.cleanAgency(s['Awarding Agency'] || 'Unknown Agency');
@@ -3941,16 +3873,9 @@ const App = {
     }
 
     const { nodes, links } = this._buildSankeyGraph(allPaths);
-
     const svg = d3.select(container).append('svg').attr('id', 'subSankeySvg');
-    ChartUtils.drawSankey(svg, {
-      nodes, links,
-      gradientPrefix: 'sub-grad',
-      heightPerNode: 28,
-      isDrillable: () => false,
-      isActive: () => false,
-      onNodeClick: () => {}
-    });
+    ChartUtils.drawSankey(svg, { nodes, links, gradientPrefix: 'sub-grad', heightPerNode: 28,
+      isDrillable: () => false, isActive: () => false, onNodeClick: () => {} });
   },
 
   _initSwipe() {
@@ -4401,19 +4326,13 @@ const App = {
       });
     });
 
-    // Restore dark mode preference
-    try {
-      const dark = localStorage.getItem('fedhoo_dark');
-      const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      if (dark === '1' || (dark === null && systemDark)) {
-        document.documentElement.classList.add('dark');
-        const icon = DOM.get('darkToggleIcon');
-        if (icon) icon.innerHTML = '<use href="#icon-sun"></use>';
-      }
-    } catch(e) { /* localStorage unavailable */ }
+    // Sync dark mode toggle icon with current state (class was set by the inline <head> script)
+    if (document.documentElement.classList.contains('dark')) {
+      const icon = DOM.get('darkToggleIcon');
+      if (icon) icon.innerHTML = '<use href="#icon-sun"></use>';
+    }
 
     // Restore from URL params → last saved query → show hero for cold visitors
-    const DEFAULT_QUERY = 'Cloud'; // ← fallback if hero chip isn't used
     try {
       const params = new URLSearchParams(window.location.search);
       const q = params.get('q');
@@ -4432,8 +4351,8 @@ const App = {
       } else {
         // Cold visitor — show hero, fire default search silently
         if (!this.searchData.loaded) DOM.show('searchHero');
-        this.UI.searchInput.value = DEFAULT_QUERY;
-        this.runSearch(DEFAULT_QUERY, false, true);
+        this.UI.searchInput.value = 'Cloud';
+        this.runSearch('Cloud', false, true);
       }
     } catch(e) {
       console.warn('Fedhoo init error:', e);
@@ -4509,9 +4428,6 @@ const App = {
 };
 
 // Start App
-
-// ── Cleanup legacy localStorage keys ────────────────────────
-(function() { try { localStorage.removeItem('govhoo_learned_offices'); } catch(e) {} })();
 
 // ── Boot ─────────────────────────────────────────────────────
 App.init();
