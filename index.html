@@ -305,21 +305,15 @@ a, button, input, select { touch-action: manipulation; }
 .arti-hero-send:hover { background: var(--btn-hover); }
 .arti-hero-send:active { transform: scale(0.93); }
 
-.arti-hero-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
 
 /* Sheet body provides padding, individual section overrides removed */
 #chatInputWrap { border-top: 1px solid var(--border-inner); padding-top: 12px; margin-top: 8px; }
 
 .arti-bridge-text strong { color: var(--text-primary); font-weight: 700; }
 
-.arti-bridge-btn:hover { background: var(--btn-hover); }
-.arti-bridge-btn:active { transform: scale(0.97); }
 
 /* ── ARTI GREETING (inline-tag editorial style) ── */
 
-.arti-greeting-avatar img {
-  width: 72px; height: 72px; border-radius: 50%; object-fit: cover; display: block;
-}
 
 /* The inline pill-border tag, matches the reference screenshot exactly */
 
@@ -1324,7 +1318,6 @@ const Utils = {
     });
   },
 
-  date: s => s ? new Date(s).toLocaleDateString() : '—',
 
   getTrailing12Mo() {
     const end = new Date(), start = new Date();
@@ -1492,9 +1485,6 @@ buyingOffices: {},
     "transcom": "USTRANSCOM", "centcom": "USCENTCOM", "eucom": "USEUCOM",
     "indopacom": "USINDOPACOM", "northcom": "USNORTHCOM",
   },
-  subAgencyAliases: {},
-  queryAliases: {},
-
   VEHICLE_MAP: {
     'NNG15SC': 'SEWP V', 'NNG15SD': 'SEWP V',
     'HHSN316': 'CIO-SP4',
@@ -1531,7 +1521,6 @@ buyingOffices: {},
 
     // 2. Check the hardcoded acronyms
     if (this.agencyAliases[lower]) return { tier: 'toptier', name: this.agencyAliases[lower] };
-    if (this.subAgencyAliases[lower]) return { tier: 'subtier', name: this.subAgencyAliases[lower] };
     
     // NEW: Helper to strip official prefixes for natural language matching
     const stripPrefix = name => name.toLowerCase().replace(/^(department of (the )?|office of (the )?|u\.s\. )/, '').trim();
@@ -2831,7 +2820,6 @@ const App = {
     DOM.hide('primesCard');
     DOM.hide('recentCard');
     DOM.hide('expiringCard');
-    DOM.hide('pipelineCard');
     DOM.hide('expiringCard');
     DOM.hide('subawardsCard');
     DOM.hide('artiFab');
@@ -3837,95 +3825,6 @@ selectAgencySuggestion(name, inputId, boxId) {
     render(false);
   },
 
-  renderPipeline() {
-    const card = DOM.get('pipelineCard');
-    const list = DOM.get('pipelineList');
-    if (!card || !list || !this.searchData.loaded) return;
-
-    const now = new Date();
-    const cutoff = new Date(now); cutoff.setDate(cutoff.getDate() + 180);
-
-    const targets = (this.searchData.active || [])
-      .filter(c => {
-        const end = new Date(c['End Date']);
-        return end > now && end <= cutoff && (parseFloat(c['Award Amount']) || 0) > 50000;
-      })
-      .sort((a, b) => new Date(a['End Date']) - new Date(b['End Date']));
-
-    if (!targets.length) { card.classList.add('hidden'); return; }
-    card.classList.remove('hidden');
-    this._pipelineTargets = targets;
-
-    const SHOW = 8;
-    const render = (all) => {
-      const items = all ? targets : targets.slice(0, SHOW);
-      list.innerHTML = items.map(c => {
-        const end = new Date(c['End Date']);
-        const days = Math.ceil((end - now) / 86400000);
-        const daysLabel = days <= 90 ? `${days}d`
-          : end.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-        const urgencyStyle = days <= 30 ? 'color:rgb(160,60,20);font-weight:700;'
-          : days <= 90 ? 'color:var(--warn-text);font-weight:600;' : 'color:var(--text-quaternary);';
-        const vendor  = c['Recipient Name'] || 'Unknown Vendor';
-        const agency  = Utils.cleanAgency(c['Awarding Agency'] || '');
-        const desc    = (c['Description'] || '').slice(0, 120);
-        const naics   = c['NAICS'] ? (typeof c['NAICS'] === 'object' ? c['NAICS'].code : c['NAICS']) : '';
-        const state   = c['pop_state_code'] || '';
-        const meta    = [state, naics ? `NAICS ${naics}` : ''].filter(Boolean).join(' · ');
-        const vehicle  = Utils.detectVehicle(c);
-        const setAside = VehicleDetector.getSetAsideLabel(c['Type of Set Aside'] || '');
-        const url = c['generated_internal_id']
-          ? `https://www.usaspending.gov/award/${c['generated_internal_id']}`
-          : c['Award ID'] ? `https://www.usaspending.gov/search/?hash=&keyword=${encodeURIComponent(c['Award ID'])}` : '';
-        return `<div class="contract-row">
-          <div class="contract-body">
-            <div class="contract-vendor">${Html.escapeHtml(vendor)}</div>
-            <div class="contract-agency">${Html.escapeHtml(agency)}</div>
-            ${vehicle  ? `<span class="vehicle-tag">${Html.escapeHtml(vehicle)}</span>` : ''}
-            ${setAside ? `<span class="vehicle-tag" style="background:var(--go-bg);color:var(--go-text);">${Html.escapeHtml(setAside)}</span>` : ''}
-            ${desc ? `<div class="contract-desc">${Html.escapeHtml(desc)}</div>` : ''}
-            ${meta ? `<div class="contract-agency" style="margin-top:2px;color:var(--text-quaternary);">${Html.escapeHtml(meta)}</div>` : ''}
-          </div>
-          <div class="contract-right">
-            <span class="contract-amount">${Utils.money(c['Award Amount'])}</span>
-            <span class="contract-urgency" style="${urgencyStyle}">${daysLabel}</span>
-            ${url ? `<a href="${url}" target="_blank" rel="noopener" class="contract-view">View</a>` : ''}
-          </div>
-        </div>`;
-      }).join('');
-      if (!all && targets.length > SHOW) {
-        list.insertAdjacentHTML('beforeend',
-          `<button class="contract-show-more" onclick="App._renderPipelineAll()">Show all ${targets.length} expiring contracts</button>`);
-      }
-    };
-    this._renderPipelineAll = () => render(true);
-    render(false);
-  },
-
-  exportPipelineCSV() {
-    if (!this._pipelineTargets || !this._pipelineTargets.length) {
-      this.toast('Run a search first.', 'warning'); return;
-    }
-    const esc = v => `"${String(v ?? '').replace(/"/g,'""')}"`;
-    const headers = ['Recipient Name','Awarding Agency','Award Amount','End Date','Description','NAICS','pop_state_code','USASpending URL'];
-    const rows = this._pipelineTargets.map(c => [
-      esc(c['Recipient Name']), esc(c['Awarding Agency']), esc(c['Award Amount']),
-      esc(c['End Date']), esc(c['Description']),
-      esc(c['NAICS'] && typeof c['NAICS']==='object' ? c['NAICS'].code : c['NAICS']),
-      esc(c['pop_state_code']),
-      esc(c['generated_internal_id'] ? `https://www.usaspending.gov/award/${c['generated_internal_id']}` : ''),
-    ].join(','));
-    const csv = [headers.map(h=>`"${h}"`).join(','), ...rows].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `fedhoo_expiring_${(this.currentQuery||'export').replace(/\s+/g,'_')}_${new Date().toISOString().slice(0,10)}.csv`;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    this.toast('Expiring contracts exported.', 'ok');
-  },
-
   async renderSubawards() {
     const card = DOM.get('subawardsCard');
     const list = DOM.get('subawardsList');
@@ -4260,14 +4159,6 @@ selectAgencySuggestion(name, inputId, boxId) {
     }, { passive: true });
   },
 
-  _cleanVendorName(name) {
-    // Strip legal suffixes, normalize spacing, makes search queries tighter
-    return name
-      .replace(/,?\s*(LLC|INC|CORP|CORPORATION|INCORPORATED|L\.L\.C\.|L\.P\.|LP|LTD|LIMITED|CO\.|PC|DBA)\.?\s*$/gi, '')
-      .replace(/\s+/g, ' ')
-      .trim();
-  },
-
   renderPrimes() {
     const data = this.searchData.active;
     const list = DOM.get('primesList');
@@ -4297,7 +4188,7 @@ selectAgencySuggestion(name, inputId, boxId) {
       const saLabel = VehicleDetector.getSetAsideLabel(d.setAside);
 
       // Universal URL pattern, quoted name works for any company, known or unknown
-      const clean = this._cleanVendorName(name);
+      const clean = Utils.normalizeVendorName(name);
       const quoted = encodeURIComponent(`"${clean}"`);
       const plain  = encodeURIComponent(clean);
       // People: quoted name finds profiles that mention the company, works even without a company page
