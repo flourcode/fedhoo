@@ -2192,7 +2192,7 @@ async searchAwards(keywords) {
             Utils.dynamicAgencies[topL] = { tier: 'toptier', name: top };
           }
         });
-      } catch(e) { /* non-fatal */ }
+      } catch(e) { /* non-fatal — agency cache warm-up failed */ }
     }
 
     const cleanAndSort = (dataArray) => {
@@ -2250,12 +2250,12 @@ async searchAwards(keywords) {
       App._lastSearchFilters = filters;
       if (codes.length > 0 || agencies.length > 0) {
         let data;
-        try { data = (await this._post('/search/spending_by_award/', { filters, fields: this.AWARD_FIELDS, limit: 100, sort: 'Award Amount', order: 'desc' })).results || []; } catch(e) { data = []; }
+        try { data = (await this._post('/search/spending_by_award/', { filters, fields: this.AWARD_FIELDS, limit: 100, sort: 'Award Amount', order: 'desc' })).results || []; } catch(e) { if (e.name !== 'AbortError') console.warn('USASpending fetch failed:', e); data = []; }
         if (data.length === 0 && kws.length > 0) {
           const fallbackFilters = { time_period: [period], award_type_codes: this.CONTRACT_TYPES, keywords: kws };
           App._applySectorFilter(fallbackFilters);
           let pool;
-          try { pool = (await this._post('/search/spending_by_award/', { filters: fallbackFilters, fields: this.AWARD_FIELDS, limit: 100, sort: 'Award Amount', order: 'desc' })).results || []; } catch(e) { pool = []; }
+          try { pool = (await this._post('/search/spending_by_award/', { filters: fallbackFilters, fields: this.AWARD_FIELDS, limit: 100, sort: 'Award Amount', order: 'desc' })).results || []; } catch(e) { if (e.name !== 'AbortError') console.warn('USASpending fallback fetch failed:', e); pool = []; }
           data = pool.filter(award => {
             let keep = true;
             if (agencies.length > 0) {
@@ -2347,7 +2347,7 @@ const SearchPills = {
       if (!names.length) return;
       this._cache[query.toLowerCase()] = { competitors: names };
       // If empty state is showing, refresh it with the real names
-      const container = DOM.get('bubbleChartContainer');
+      const container = this.UI.bubbleChartContainer;
       if (container && container.querySelector('.empty-state')) {
         App.showEmptyState(query);
       }
@@ -2590,7 +2590,7 @@ const App = {
 
   async runSearch(query, isDirectSelection = false, skipUrlUpdate = false) {
     if (!query) {
-      query = (DOM.get('searchInput')?.value || '').trim();
+      query = (this.UI.searchInput?.value || '').trim();
     }
     if (!query) return;
 
@@ -2598,7 +2598,7 @@ const App = {
     if (!isDirectSelection) query = Utils.normalizeQuery(rawQuery);
 
     // Update search input to show normalized query
-    const inp = DOM.get('searchInput');
+    const inp = this.UI.searchInput;
     if (inp) inp.value = query;
     document.title = `Fedhoo | ${query}`;
 
@@ -2616,8 +2616,7 @@ const App = {
     }
 
     this.currentQuery = query;
-    try { localStorage.setItem('fedhoo_last_query', query); } catch(e) {}
-    Object.keys(_memoVendor).forEach(k => delete _memoVendor[k]); // clear vendor memo on new search
+    try { localStorage.setItem('fedhoo_last_query', query); } catch(e) { /* private browsing */ }
     // Dismiss autocomplete
     const _sb = DOM.get('searchSuggestions');
     if (_sb) { _sb.innerHTML = ''; _sb.classList.add('hidden'); }
@@ -2681,7 +2680,7 @@ const App = {
       SearchPills.generate(query);
 
       // Card title = title-cased search query, no "Market" suffix
-      const rawForTitle = (DOM.get('searchInput')?.value || query).trim();
+      const rawForTitle = (this.UI.searchInput?.value || query).trim();
       const titleLabel = rawForTitle.split(/,\s*/).map(t => t.trim().toUpperCase()).join(', ');
       if (this.UI.marketCardTitle) this.UI.marketCardTitle.textContent = titleLabel;
       if (this.UI.marketCardDesc) this.UI.marketCardDesc.textContent = 'Where the money is concentrated. Click any segment to drill in.';
@@ -2729,7 +2728,7 @@ const App = {
     DOM.hide('chartDots');   // hide swipe dots too
 
     // Remove viewport height clipping so empty state isn't cut off
-    const vp = DOM.get('chartViewport');
+    const vp = this.UI.chartViewport;
     if (vp) vp.style.height = 'auto';
 
     DOM.show('resultsGrid');
@@ -2762,7 +2761,7 @@ const App = {
       `<button class="empty-chip" onclick="App.runSearch('${Html.escapeHtml(s.q)}')">${Html.escapeHtml(s.label)}</button>`
     ).join('');
 
-    const container = DOM.get('bubbleChartContainer');
+    const container = this.UI.bubbleChartContainer;
     if (container) container.innerHTML = `
       <div class="empty-state">
         <img src="/images/arti.png" alt="Arti" class="arti-avatar-lg">
@@ -2818,7 +2817,7 @@ const App = {
     }
 
     // Re-run search with new territory so API applies the sector filter at fetch time
-    const q = this.currentQuery || (DOM.get('searchInput')?.value || '').trim();
+    const q = this.currentQuery || (this.UI.searchInput?.value || '').trim();
     if (q) this.runSearch(q);
   },
 
@@ -2936,8 +2935,8 @@ const App = {
   },
 
   renderBubbleChart() {
-    const container = DOM.get('bubbleChartContainer');
-    const panel = DOM.get('marketCard');
+    const container = this.UI.bubbleChartContainer;
+    const panel = this.UI.marketCard;
     if (!container || !panel) return;
     
     const data = this.searchData.active;
@@ -2958,7 +2957,7 @@ const App = {
         hint.id = 'treemapHint';
         hint.style.cssText = 'text-align:center;font-size:var(--text-xs);color:var(--text-quaternary);padding:6px 0 2px;letter-spacing:0.02em;';
         hint.textContent = 'Tap any segment to drill in';
-        const container = DOM.get('bubbleChartContainer');
+        const container = this.UI.bubbleChartContainer;
         if (container) container.insertAdjacentElement('afterend', hint);
         const dismiss = () => {
           hint.remove();
@@ -3002,12 +3001,12 @@ const App = {
     if (entities.length === 0) { DOM.hide('marketCard'); return; }
 
     // Update hero number, changes on drill-down
-    const heroEl = DOM.get('marketHeroNumber');
+    const heroEl = this.UI.marketHeroNumber;
     if (heroEl) {
       Utils.countUp(heroEl, totalSpend, Utils.money);
     }
     // Update desc to reflect drill level
-    const descEl = DOM.get('marketCardDesc');
+    const descEl = this.UI.marketCardDesc;
     if (descEl) {
       const drill = this.drillState || {};
       if (drill.level > 0 && drill.path.length > 0) {
@@ -3086,7 +3085,7 @@ const App = {
 
     // Sync viewport height using h (known exactly) so inactive Sankey panel never bloats the container
     if (this._chartView !== 'sankey') {
-      const vp = DOM.get('chartViewport');
+      const vp = this.UI.chartViewport;
       if (vp) vp.style.height = (container.offsetTop + h + 2) + 'px';
     }
 
@@ -3637,7 +3636,7 @@ selectAgencySuggestion(name, inputId, boxId) {
         if (s['Sub-Awardee Name']) s['Sub-Awardee Name'] = Utils.normalizeVendorName(s['Sub-Awardee Name']);
         return s;
       });
-    } catch(e) { subs = []; }
+    } catch(e) { if (e.name !== 'AbortError') console.warn('Subawards fetch failed:', e); subs = []; }
 
     if (!subs.length) { card.classList.add('hidden'); return; }
     card.classList.remove('hidden');
@@ -3723,7 +3722,7 @@ selectAgencySuggestion(name, inputId, boxId) {
       // Restore main search total
       const mainTotal = (this.searchData.active || []).reduce((s, c) => s + (parseFloat(c['Award Amount']) || 0), 0);
       if (heroEl) Utils.countUp(heroEl, mainTotal, Utils.money);
-      const rawForTitle = (DOM.get('searchInput')?.value || this.currentQuery || '').trim();
+      const rawForTitle = (this.UI.searchInput?.value || this.currentQuery || '').trim();
       if (titleEl) titleEl.textContent = rawForTitle.split(/,\s*/).map(t => t.trim().toUpperCase()).join(', ');
     }
 
@@ -3915,7 +3914,7 @@ selectAgencySuggestion(name, inputId, boxId) {
   },
 
   _initSwipe() {
-    const viewport = DOM.get('chartViewport');
+    const viewport = this.UI.chartViewport;
     if (!viewport) return;
     let startX = 0, startY = 0, isDragging = false;
     viewport.addEventListener('touchstart', e => {
@@ -4095,7 +4094,7 @@ selectAgencySuggestion(name, inputId, boxId) {
   },
 
   selectAgencySuggestion(name, boxId) {
-    const input = DOM.get('searchInput');
+    const input = this.UI.searchInput;
     const box   = DOM.get(boxId);
     if (input) { input.value = name; input.blur(); }
     if (box)   { box.innerHTML = ''; box.classList.add('hidden'); }
@@ -4224,13 +4223,13 @@ selectAgencySuggestion(name, inputId, boxId) {
   resetToSearch() {
     DOM.hide('resultsGrid');
     DOM.show('searchHero');
-    const input = DOM.get('searchInput');
+    const input = this.UI.searchInput;
     if (input) { input.value = ''; input.focus(); }
   },
 
   init() {
     // Wire search input + autocomplete
-    const input = DOM.get('searchInput');
+    const input = this.UI.searchInput;
     const sugBox = DOM.get('searchSuggestions');
     if (input) {
       let acTimer;
@@ -4319,7 +4318,7 @@ selectAgencySuggestion(name, inputId, boxId) {
         const icon = DOM.get('darkToggleIcon');
         if (icon) icon.innerHTML = '<use href="#icon-sun"></use>';
       }
-    } catch(e) {}
+    } catch(e) { /* localStorage unavailable */ }
 
     // Restore from URL params → last saved query → show hero for cold visitors
     const DEFAULT_QUERY = 'Cloud'; // ← fallback if hero chip isn't used
@@ -4332,19 +4331,20 @@ selectAgencySuggestion(name, inputId, boxId) {
 
       if (q) {
         // URL param — fire immediately, keep URL as-is
-        DOM.get('searchInput').value = q;
+        this.UI.searchInput.value = q;
         this.runSearch(q);
       } else if (lastQuery) {
         // Returning visitor — restore last search silently, don't pollute URL
-        DOM.get('searchInput').value = lastQuery;
+        this.UI.searchInput.value = lastQuery;
         this.runSearch(lastQuery, false, true);
       } else {
         // Cold visitor — show hero, fire default search silently
         if (!this.searchData.loaded) DOM.show('searchHero');
-        DOM.get('searchInput').value = DEFAULT_QUERY;
+        this.UI.searchInput.value = DEFAULT_QUERY;
         this.runSearch(DEFAULT_QUERY, false, true);
       }
     } catch(e) {
+      console.warn('Fedhoo init error:', e);
       if (!this.searchData.loaded) DOM.show('searchHero');
     }
 
@@ -4412,7 +4412,7 @@ selectAgencySuggestion(name, inputId, boxId) {
     // Cache static DOM elements used in high-frequency functions
     this.UI = {
       chartTrack:         DOM.get('chartTrack'),
-      chartViewport:      DOM.get('chartViewport'),
+      chartViewport:      this.UI.chartViewport,
       tabTreemap:         DOM.get('tabTreemap'),
       tabSankey:          DOM.get('tabSankey'),
       tabSubSankey:       DOM.get('tabSubSankey'),
@@ -4420,15 +4420,15 @@ selectAgencySuggestion(name, inputId, boxId) {
       dotSankey:          DOM.get('dotSankey'),
       dotSubSankey:       DOM.get('dotSubSankey'),
       bubbleToggleRow:    DOM.get('bubbleToggleRow'),
-      marketHeroNumber:   DOM.get('marketHeroNumber'),
+      marketHeroNumber:   this.UI.marketHeroNumber,
       marketCardTitle:    DOM.get('marketCardTitle'),
       sankeyContainer:    DOM.get('sankeyContainer'),
       panelSankey:        DOM.get('panelSankey'),
       subSankeyContainer: DOM.get('subSankeyContainer'),
       panelSubSankey:     DOM.get('panelSubSankey'),
-      bubbleChartContainer: DOM.get('bubbleChartContainer'),
-      marketCard:           DOM.get('marketCard'),
-      marketCardDesc:       DOM.get('marketCardDesc'),
+      bubbleChartContainer: this.UI.bubbleChartContainer,
+      marketCard:           this.UI.marketCard,
+      marketCardDesc:       this.UI.marketCardDesc,
       primesCard:           DOM.get('primesCard'),
       primesList:           DOM.get('primesList'),
       recentCard:           DOM.get('recentCard'),
@@ -4444,7 +4444,7 @@ selectAgencySuggestion(name, inputId, boxId) {
       artiBackdrop:         DOM.get('artiBackdrop'),
       shareBtn:             DOM.get('shareBtn'),
       darkToggleIcon:       DOM.get('darkToggleIcon'),
-      searchInput:          DOM.get('searchInput'),
+      searchInput:          this.UI.searchInput,
       searchSuggestions:    DOM.get('searchSuggestions'),
       scrollTopBtn:         DOM.get('scrollTopBtn'),
       toastWrap:            DOM.get('toastWrap'),
@@ -4452,8 +4452,8 @@ selectAgencySuggestion(name, inputId, boxId) {
       expiringCard:         DOM.get('expiringCard'),
       subawardsList:        DOM.get('subawardsList'),
       subawardsCard:        DOM.get('subawardsCard'),
-      bubbleChartContainer: DOM.get('bubbleChartContainer'),
-      marketCardDesc:       DOM.get('marketCardDesc'),
+      bubbleChartContainer: this.UI.bubbleChartContainer,
+      marketCardDesc:       this.UI.marketCardDesc,
       bubbleTooltip:        null, // created dynamically
       aiContentContainer:   DOM.get('aiContentContainer'),
       artiProgress:       DOM.get('artiProgress'),
