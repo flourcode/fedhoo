@@ -4215,6 +4215,67 @@ selectAgencySuggestion(name, inputId, boxId) {
   },
 
   init() {
+    // Cache all static DOM elements — must be first in init() so all methods can use this.UI
+    this.UI = {
+      // Chart track & viewport
+      chartTrack:           DOM.get('chartTrack'),
+      chartViewport:        DOM.get('chartViewport'),
+      // Chart tabs & dots
+      tabTreemap:           DOM.get('tabTreemap'),
+      tabSankey:            DOM.get('tabSankey'),
+      tabSubSankey:         DOM.get('tabSubSankey'),
+      dotTreemap:           DOM.get('dotTreemap'),
+      dotSankey:            DOM.get('dotSankey'),
+      dotSubSankey:         DOM.get('dotSubSankey'),
+      // Chart containers
+      bubbleToggleRow:      DOM.get('bubbleToggleRow'),
+      bubbleChartContainer: DOM.get('bubbleChartContainer'),
+      sankeyContainer:      DOM.get('sankeyContainer'),
+      panelSankey:          DOM.get('panelSankey'),
+      subSankeyContainer:   DOM.get('subSankeyContainer'),
+      panelSubSankey:       DOM.get('panelSubSankey'),
+      bubbleTooltip:        null, // created dynamically inside renderBubbleChart
+      // Market card
+      marketCard:           DOM.get('marketCard'),
+      marketCardTitle:      DOM.get('marketCardTitle'),
+      marketCardDesc:       DOM.get('marketCardDesc'),
+      marketHeroNumber:     DOM.get('marketHeroNumber'),
+      // Result panels
+      primesCard:           DOM.get('primesCard'),
+      primesList:           DOM.get('primesList'),
+      recentCard:           DOM.get('recentCard'),
+      recentList:           DOM.get('recentList'),
+      expiringCard:         DOM.get('expiringCard'),
+      expiringList:         DOM.get('expiringList'),
+      subawardsCard:        DOM.get('subawardsCard'),
+      subawardsList:        DOM.get('subawardsList'),
+      // Arti / AI
+      artiFab:              DOM.get('artiFab'),
+      artiBridge:           DOM.get('artiBridge'),
+      artiBridgeText:       DOM.get('artiBridgeText'),
+      artiSheet:            DOM.get('artiSheet'),
+      artiBackdrop:         DOM.get('artiBackdrop'),
+      artiTrigger:          DOM.get('artiTrigger'),
+      artiProgress:         DOM.get('artiProgress'),
+      artiProgressFill:     DOM.get('artiProgressFill'),
+      artiActions:          DOM.get('artiActions'),
+      artiDisclaimer:       DOM.get('artiDisclaimer'),
+      artiContextInput:     DOM.get('artiContextInput'),
+      aiContentContainer:   DOM.get('aiContentContainer'),
+      chatInputWrap:        DOM.get('chatInputWrap'),
+      chatCounter:          DOM.get('chatCounter'),
+      chatHistory:          DOM.get('chatHistory'),
+      chatInput:            DOM.get('chatInput'),
+      chatSendBtn:          DOM.get('chatSendBtn'),
+      // Header & search
+      shareBtn:             DOM.get('shareBtn'),
+      darkToggleIcon:       DOM.get('darkToggleIcon'),
+      searchInput:          DOM.get('searchInput'),
+      searchSuggestions:    DOM.get('searchSuggestions'),
+      scrollTopBtn:         DOM.get('scrollTopBtn'),
+      toastWrap:            DOM.get('toastWrap'),
+    };
+
     // Wire search input + autocomplete
     const input = this.UI.searchInput;
     const sugBox = DOM.get('searchSuggestions');
@@ -4395,66 +4456,6 @@ selectAgencySuggestion(name, inputId, boxId) {
         DOM.show('resultsGrid');
       }
     });
-
-    // Cache static DOM elements used in high-frequency functions
-    this.UI = {
-      chartTrack:         DOM.get('chartTrack'),
-      chartViewport:      this.UI.chartViewport,
-      tabTreemap:         DOM.get('tabTreemap'),
-      tabSankey:          DOM.get('tabSankey'),
-      tabSubSankey:       DOM.get('tabSubSankey'),
-      dotTreemap:         DOM.get('dotTreemap'),
-      dotSankey:          DOM.get('dotSankey'),
-      dotSubSankey:       DOM.get('dotSubSankey'),
-      bubbleToggleRow:    DOM.get('bubbleToggleRow'),
-      marketHeroNumber:   this.UI.marketHeroNumber,
-      marketCardTitle:    DOM.get('marketCardTitle'),
-      sankeyContainer:    DOM.get('sankeyContainer'),
-      panelSankey:        DOM.get('panelSankey'),
-      subSankeyContainer: DOM.get('subSankeyContainer'),
-      panelSubSankey:     DOM.get('panelSubSankey'),
-      bubbleChartContainer: this.UI.bubbleChartContainer,
-      marketCard:           this.UI.marketCard,
-      marketCardDesc:       this.UI.marketCardDesc,
-      primesCard:           DOM.get('primesCard'),
-      primesList:           DOM.get('primesList'),
-      recentCard:           DOM.get('recentCard'),
-      recentList:           DOM.get('recentList'),
-      expiringCard:         DOM.get('expiringCard'),
-      expiringList:         DOM.get('expiringList'),
-      subawardsCard:        DOM.get('subawardsCard'),
-      subawardsList:        DOM.get('subawardsList'),
-      artiFab:              DOM.get('artiFab'),
-      artiBridge:           DOM.get('artiBridge'),
-      artiBridgeText:       DOM.get('artiBridgeText'),
-      artiSheet:            DOM.get('artiSheet'),
-      artiBackdrop:         DOM.get('artiBackdrop'),
-      shareBtn:             DOM.get('shareBtn'),
-      darkToggleIcon:       DOM.get('darkToggleIcon'),
-      searchInput:          this.UI.searchInput,
-      searchSuggestions:    DOM.get('searchSuggestions'),
-      scrollTopBtn:         DOM.get('scrollTopBtn'),
-      toastWrap:            DOM.get('toastWrap'),
-      expiringList:         DOM.get('expiringList'),
-      expiringCard:         DOM.get('expiringCard'),
-      subawardsList:        DOM.get('subawardsList'),
-      subawardsCard:        DOM.get('subawardsCard'),
-      bubbleChartContainer: this.UI.bubbleChartContainer,
-      marketCardDesc:       this.UI.marketCardDesc,
-      bubbleTooltip:        null, // created dynamically
-      aiContentContainer:   DOM.get('aiContentContainer'),
-      artiProgress:       DOM.get('artiProgress'),
-      artiProgressFill:   DOM.get('artiProgressFill'),
-      artiTrigger:        DOM.get('artiTrigger'),
-      artiActions:        DOM.get('artiActions'),
-      chatInputWrap:      DOM.get('chatInputWrap'),
-      artiDisclaimer:     DOM.get('artiDisclaimer'),
-      chatCounter:        DOM.get('chatCounter'),
-      chatHistory:        DOM.get('chatHistory'),
-      chatInput:          DOM.get('chatInput'),
-      chatSendBtn:        DOM.get('chatSendBtn'),
-      artiContextInput:   DOM.get('artiContextInput'),
-    };
 
     // Preload D3
     LibLoader.preloadWhenIdle();
