@@ -2383,6 +2383,7 @@ const App = {
   territory: null,
   _searchId: 0,
   _territoryAgencyOverride: null,
+  _treemapDirty: true,  // true = needs redraw; set false after render, true on data/drill change
   FALLBACK_CHIPS: [
     { label: 'Cloud',         q: 'Cloud' },
     { label: 'Zero Trust',    q: 'Zero Trust' },
@@ -2685,6 +2686,7 @@ const App = {
       DOM.hide('searchHero');
 
       // Render chart
+      this._treemapDirty = true;
       this.renderBubbleChart();
       this.renderBridge();
       this.renderPrimes();
@@ -2824,6 +2826,7 @@ const App = {
     this.searchData.filter = null;
     if (!silent && this.searchData.loaded) {
       this.searchData.active = this.searchData.baseline || Utils.filterActiveContracts(this.searchData.raw);
+      this._treemapDirty = true;
       this.renderBubbleChart();
       if (this.UI.sankeyContainer) { this.UI.sankeyContainer.innerHTML = ''; delete this.UI.sankeyContainer.dataset.rendered; if (this._chartView === 'sankey') this.renderSankey(); }
     if (this.UI.subSankeyContainer) { this.UI.subSankeyContainer.innerHTML = ''; delete this.UI.subSankeyContainer.dataset.rendered; if (this._chartView === 'subsankey') this.renderSubSankey(); }
@@ -2848,6 +2851,7 @@ const App = {
     // Update bridge text for the drill
     this.renderBridge();
 
+    this._treemapDirty = true;
     if (!preventRender) this.renderBubbleChart();
     this.renderBubbleBreadcrumb();
     // Keep Sankey in sync with drill state
@@ -3195,6 +3199,7 @@ const App = {
       cells.selectAll('rect').attr('opacity', 0).transition().duration(500).delay((d, i) => i * 12).ease(d3.easeCubicOut).attr('opacity', 0.85);
       cells.selectAll('text').attr('opacity', 0).transition().duration(400).delay((d, i) => 200 + i * 12).attr('opacity', 1);
 
+    this._treemapDirty = false; // SVG is now current
     if (this._pendingDrillScroll) {
       const targetPanel = typeof this._pendingDrillScroll === 'string' ? this._pendingDrillScroll : 'marketCard';
       this._pendingDrillScroll = false;
@@ -3728,9 +3733,12 @@ selectAgencySuggestion(name, inputId, boxId) {
         }, 370);
       }
     } else {
-      setTimeout(() => {
-        if (this.searchData.loaded) this.renderBubbleChart();
-      }, 360);
+      // Only redraw treemap if data changed since last render — avoids flash on tab switch
+      if (this._treemapDirty) {
+        setTimeout(() => {
+          if (this.searchData.loaded) this.renderBubbleChart();
+        }, 360);
+      }
     }
   },
 
@@ -4283,6 +4291,7 @@ selectAgencySuggestion(name, inputId, boxId) {
     document.querySelectorAll('[data-mode]').forEach(b => {
       b.addEventListener('click', () => {
         App.bubbleMode = b.dataset.mode;
+        App._treemapDirty = true;
         App.renderBubbleChart();
       });
     });
