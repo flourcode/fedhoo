@@ -3035,11 +3035,17 @@ const App = {
     
     
     
-    const tooltip = DOM.get('bubbleTooltip');
-    if (tooltip) tooltip.classList.remove('visible');
+    // Clean up previous outside-tap handler before wiping the container
+    if (container._outsideTapHandler) {
+      document.removeEventListener('touchstart', container._outsideTapHandler);
+      document.removeEventListener('click', container._outsideTapHandler);
+      container._outsideTapHandler = null;
+    }
     // Clear the full container, removes both old SVG and any empty-state div
     container.innerHTML = '<div class="bubble-tooltip" id="bubbleTooltip"></div>';
     d3.select(container).selectAll('svg').remove();
+    // Get tooltip reference AFTER setting innerHTML — not before — so it points to the live element
+    const tooltip = container.querySelector('#bubbleTooltip');
     
     const rect = container.getBoundingClientRect();
     const w = Math.max(rect.width || 600, 300);
