@@ -1024,15 +1024,6 @@ a, button, input, select { touch-action: manipulation; }
       <div class="contract-list" id="recentList"></div>
     </div>
 
-    <!-- CONTRACTS CARD -->
-    <div class="app-card wide result-panel hidden" id="contractsCard">
-      <div class="card-header-row">
-        <h2 class="card-title card-title--flush">Contracts</h2>
-        <button class="export-btn" onclick="App.exportCSV()" title="Export all contracts as CSV">Export CSV</button>
-      </div>
-      <div class="contract-list" id="contractsList"></div>
-    </div>
-
     <!-- EXPIRING SOON CARD -->
     <div class="app-card wide result-panel hidden" id="expiringCard">
       <div class="card-header-row">
@@ -1040,6 +1031,15 @@ a, button, input, select { touch-action: manipulation; }
         <button class="export-btn" onclick="App.exportExpiringCSV()" title="Export expiring contracts to CSV">Export CSV</button>
       </div>
       <div class="contract-list" id="expiringList"></div>
+    </div>
+
+    <!-- CONTRACTS CARD -->
+    <div class="app-card wide result-panel hidden" id="contractsCard">
+      <div class="card-header-row">
+        <h2 class="card-title card-title--flush">Contracts</h2>
+        <button class="export-btn" onclick="App.exportCSV()" title="Export all contracts as CSV">Export CSV</button>
+      </div>
+      <div class="contract-list" id="contractsList"></div>
     </div>
 
     <!-- SUBAWARDS CARD -->
