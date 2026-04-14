@@ -464,6 +464,30 @@ a, button, input, select { touch-action: manipulation; }
   display: inline-flex; align-items: center;
 }
 .prime-link:hover { background: var(--bg-hover); color: var(--text-primary); }
+.prime-signal {
+  font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 9999px;
+  letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; flex-shrink: 0;
+}
+.prime-signal-dominant { background: var(--crit-bg); color: var(--crit-text); }
+.prime-signal-established { background: var(--warn-bg); color: var(--warn-text); }
+.prime-signal-emerging { background: var(--go-bg); color: var(--go-text); }
+
+/* Arti inline card — auto-streams into results below market card */
+.arti-inline-card {
+  background: var(--bg-app); border: 1px solid var(--border-inner);
+  border-radius: var(--radius); padding: 20px 24px;
+}
+.arti-inline-header {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+  padding-bottom: 12px; border-bottom: 1px solid var(--border-inner);
+}
+.arti-inline-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.arti-inline-name { font-size: var(--text-sm); font-weight: 800; color: var(--text-primary); letter-spacing: -0.02em; }
+.arti-inline-role { font-size: var(--text-xs); color: var(--text-quaternary); }
+.arti-inline-status { margin-left: auto; font-size: var(--text-xs); color: var(--text-quaternary); display: flex; align-items: center; gap: 5px; }
+.arti-inline-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--go-text); animation: pulse-dot 2s ease-in-out infinite; flex-shrink: 0; }
+@keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+.arti-inline-loading { color: var(--text-quaternary); font-size: var(--text-sm); padding: 8px 0; }
 @media (max-width: 640px) {
   .prime-row { flex-wrap: wrap; gap: 8px; }
   .prime-amount { margin-left: auto; }
@@ -772,48 +796,6 @@ a, button, input, select { touch-action: manipulation; }
   object-fit: cover; flex-shrink: 0;
   border: 2px solid var(--border);
 }
-.bio-name {
-  font-size: var(--text-lg); font-weight: 700;
-  color: var(--text-primary); letter-spacing: -0.02em;
-  margin-bottom: 2px;
-}
-.bio-text {
-  font-size: var(--text-sm); color: var(--text-secondary);
-  line-height: 1.75; margin-bottom: 12px;
-}
-.bio-cta {
-  display: flex; align-items: center; justify-content: center;
-  background: var(--btn-bg); color: var(--btn-text);
-  border: none; border-radius: var(--radius);
-  padding: 0 20px; height: 44px; margin-top: 8px;
-  font-size: var(--text-sm); font-weight: 600;
-  text-decoration: none; cursor: pointer;
-  font-family: var(--font); transition: var(--transition);
-  width: 100%;
-}
-.bio-cta:hover { background: var(--btn-hover); }
-.footer-explainer {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
-}
-.footer-explainer-col {
-  padding: 0;
-}
-.footer-section-title {
-  font-size: var(--text-xs); font-weight: 700;
-  color: var(--btn-bg); text-transform: uppercase;
-  letter-spacing: 0.06em; margin-bottom: 8px;
-}
-.footer-section-text {
-  font-size: var(--text-sm); color: var(--text-secondary);
-  line-height: 1.6;
-}
-@media (max-width: 640px) {
-  .footer-explainer { grid-template-columns: 1fr; }
-  .bio-header { flex-direction: row; align-items: center; }
-  .bio-body { text-align: left; }
-  .site-footer { padding-left: 12px; padding-right: 12px; }
-  .footer-explainer-col { padding: 20px 12px; }
-}
 .footer-copy { font-size: var(--text-xs); color: var(--text-quaternary); text-align: center; margin-top: 12px; }
 .footer-legal { font-size: 0.68rem; color: var(--text-quaternary); text-align: center; margin-top: 6px; line-height: 1.5; max-width: 560px; margin-left: auto; margin-right: auto; }
 .footer-legal a { color: var(--text-quaternary); text-decoration: underline; text-underline-offset: 2px; }
@@ -854,12 +836,6 @@ a, button, input, select { touch-action: manipulation; }
     <a class="logo-link" href="/" onclick="App.resetToSearch(); return false;">Fedhoo.</a>
     <div class="header-actions">
       <a href="/tools/" class="hdr-btn">Tools</a>
-      <button class="hdr-btn" id="darkToggleBtn" onclick="App.toggleDarkMode()" title="Toggle dark mode" aria-label="Toggle dark mode">
-        <svg id="darkToggleIcon" width="15" height="15" aria-hidden="true"><use href="#icon-moon"></use></svg>
-      </button>
-      <button class="hdr-btn" id="shareBtn" onclick="App.shareSearch()" title="Share">
-        <svg width="14" height="14" viewBox="0 0 640 640" fill="currentColor" aria-hidden="true"><use href="#icon-slack"/></svg>
-      </button>
     </div>
   </div>
   <!-- Row 2: full-width search -->
@@ -916,12 +892,6 @@ a, button, input, select { touch-action: manipulation; }
 </div>
 
 <!-- TOAST -->
-<button class="scroll-top-btn hidden" id="scrollTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Back to top">
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-    <path d="M8 12V4M4 8l4-4 4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  </svg>
-</button>
-
 <div class="toast-wrap" id="toastWrap"></div>
 
 <!-- MAIN -->
@@ -1005,6 +975,45 @@ a, button, input, select { touch-action: manipulation; }
       </div>
     </div><!-- /marketCard -->
 
+    <!-- ARTI INLINE BRIEF — auto-streams after search loads -->
+    <div class="app-card wide result-panel hidden" id="artiInlineCard">
+      <div class="arti-inline-header">
+        <img src="/images/arti.png" alt="Arti" class="arti-inline-avatar">
+        <div>
+          <div class="arti-inline-name">Arti</div>
+          <div class="arti-inline-role">Pre-meeting briefing</div>
+        </div>
+        <div class="arti-inline-status" id="artiInlineStatus">
+          <span class="arti-inline-dot"></span>
+          <span id="artiInlineStatusText">Reading the data…</span>
+        </div>
+      </div>
+      <div id="artiInlineContent" class="strategic-read arti-inline-loading">Analyzing market…</div>
+      <div class="hidden" id="artiInlineActions" style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border-inner);">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;">
+          <span style="font-size:var(--text-xs);font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.05em;">Ask a follow-up</span>
+          <button class="export-btn" onclick="App.copyArtiInlineBrief()">Copy brief</button>
+        </div>
+        <div class="prompt-chips" id="artiInlineChips">
+          <button class="prompt-chip" onclick="App.sendArtiChat('Who is the dominant incumbent in this market and how entrenched are they? Name the top vendor, their biggest contracts, and where their grip is weakest.', true)">Who owns this?</button>
+          <button class="prompt-chip" onclick="App.sendArtiChat('Given my situation, what is the single best near-term opportunity in this data for me specifically? Name the contract, the agency, the incumbent, and exactly why it\'s the right one to chase.', true)">Best opening</button>
+          <button class="prompt-chip" onclick="App.sendArtiChat('Write a short cold outreach email to the procurement lead at the agency spending the most in this market. Use the actual agency name, reference their real spending from the data, and connect it to what I sell. 4 sentences, no fluff.', true)">Draft outreach</button>
+          <button class="prompt-chip" onclick="App.sendArtiChat('Give me 3 things I need to know walking into a meeting with the top buyer in this market. Be specific — name the agency, the programs they\'re funding, the incumbent, and the budget cycle pressure.', true)">Meeting prep</button>
+          <button class="prompt-chip" onclick="App.sendArtiChat('Who should I team with to be competitive here? Pick 2 specific companies already winning in this data and explain exactly what they bring and how I should approach them.', true)">Who to team with</button>
+        </div>
+        <!-- Follow-up chat lives here when triggered from inline chips -->
+        <div class="chat-history hidden" id="artiInlineChatHistory" style="margin-top:16px;"></div>
+        <div class="hidden" id="artiInlineChatInputWrap" style="margin-top:12px;">
+          <div class="chat-input-row">
+            <input type="text" class="input-field" id="artiInlineChatInput" placeholder="Ask a follow-up question…" autocomplete="off">
+            <button class="chat-send-btn" id="artiInlineChatSendBtn">Send</button>
+          </div>
+          <div class="chat-counter hidden" id="artiInlineChatCounter"></div>
+        </div>
+        <div class="hidden" id="artiInlineDisclaimer" style="font-size:var(--text-xs);color:var(--text-tertiary);margin-top:10px;">Always use your own judgment before making strategic decisions.</div>
+      </div>
+    </div>
+
     <!-- TOP PRIMES CARD -->
     <div class="app-card wide result-panel hidden" id="primesCard">
       <div class="primes-header">
@@ -1052,37 +1061,6 @@ a, button, input, select { touch-action: manipulation; }
         <button class="export-btn" onclick="App.exportSubawardsCSV()" title="Export subawards to CSV">Export CSV</button>
       </div>
       <div class="contract-list" id="subawardsList"></div>
-    </div>
-
-    <!-- FOOTER PANELS — inside grid so they match card width exactly -->
-    <div class="app-card wide" style="margin-top:8px;">
-      <div class="bio-header">
-        <img src="/images/oldmark.jpg" alt="Mark Flournoy" class="bio-avatar">
-        <div class="bio-header-text">
-          <div class="bio-name">Hi, I'm Mark.</div>
-        </div>
-      </div>
-      <div class="bio-body">
-        <p class="bio-text">I'm a retired federal sales guy, and I built Fedhoo.</p>
-        <p class="bio-text">I spent a lot of years getting ready for pipeline reviews the hard way, pulling data from FPDS, USASpending, and SAM.gov to answer a few simple questions: How big is the market? Who's doing the work? And is there room for someone new?</p>
-        <p class="bio-text">After a while, I figured there had to be a better way, so I built the tool I always wished I had.</p>
-        <p class="bio-text">I've worked in sales at Amazon Web Services, F5, and Red Hat, spent time as a DISA COTR, and before that, 20 years in the Marines. This is really just a simple way to make sense of a complicated market.</p>
-        <p class="bio-text">There's no pitch here. If you'd like, we can take a few minutes and look at your territory together, see where the money is flowing, who's established, and where things might be opening up. You'll get a clearer picture. I'll get a better sense of what's useful and what's not.</p>
-        <a href="https://calendly.com/markflournoy/chat-with-mark" target="_blank" rel="noopener" class="bio-cta">Grab time on my calendar</a>
-      </div>
-    </div>
-
-    <div class="app-card wide" style="margin-top:0;">
-      <div class="footer-explainer">
-        <div class="footer-explainer-col">
-          <div class="footer-section-title">How it works</div>
-          <p class="footer-section-text">Type a keyword, company, agency, or NAICS code. Use AND to intersect (e.g. DHS AND Splunk), commas for OR (Cloud, Cyber). Keep terms exact, this is a live database, not a search engine. In seconds you'll see who's buying, who's winning, and what's expiring. Tap Ask Arti for a pre-meeting briefing based on the data.</p>
-        </div>
-        <div class="footer-explainer-col">
-          <div class="footer-section-title">About the data</div>
-          <p class="footer-section-text">Every search queries the USASpending.gov API v2 in real time, no cache, no stale snapshots. Dollar figures reflect full lifetime obligated value of multi-year contracts. Only active contracts with funding actions in the past 12 months are shown. Searches are routed through Fedhoo's proxy to USASpending and are not stored or logged. Fedhoo is not an opportunity tracker or RFP database. It's market intelligence so you can decide where to focus.</p>
-        </div>
-      </div>
     </div>
 
   </div><!-- /tools-grid -->
@@ -1159,7 +1137,7 @@ a, button, input, select { touch-action: manipulation; }
 </div><!-- /arti-sheet -->
 
 <footer class="site-footer">
-  <div class="footer-copy">© 2026 Fedhoo.com, Data via USASpending.gov · Not affiliated with the U.S. government</div>
+  <div class="footer-copy">© 2026 Fedhoo.com · Data via USASpending.gov · Not affiliated with the U.S. government · <a href="https://calendly.com/markflournoy/chat-with-mark" target="_blank" rel="noopener" style="color:var(--text-quaternary);">Talk to Mark</a> · <button onclick="App.toggleDarkMode()" style="background:none;border:none;cursor:pointer;color:var(--text-quaternary);font-size:inherit;font-family:var(--font);padding:0;" id="darkToggleFooterBtn">Dark mode</button></div>
   <div class="footer-legal">Fedhoo uses Google Analytics to understand site usage and improve the product. We do not collect personal information or sell data. <a href="https://tools.google.com/dlpage/gaoptout" target="_blank" rel="noopener">Opt out using Google's Analytics Opt-out Browser Add-on</a>.</div>
 </footer>
 
@@ -2655,10 +2633,19 @@ const App = {
     DOM.hide('resultsGrid');
     DOM.hide('artiFab'); DOM.get('artiBridge') && DOM.hide('artiBridge');
     this._artiPayloadCache = null;
+    this._artiInlineDone = false;
     this.closeArtiSheet();
     DOM.hide('expiringCard');
     DOM.hide('recentCard');
     DOM.hide('primesCard');
+    DOM.hide('artiInlineCard');
+    const aic = DOM.get('artiInlineContent'); if (aic) { aic.innerHTML = 'Analyzing market…'; aic.className = 'strategic-read arti-inline-loading'; }
+    DOM.hide('artiInlineActions');
+    DOM.hide('artiInlineChatHistory');
+    DOM.hide('artiInlineChatInputWrap');
+    DOM.hide('artiInlineDisclaimer');
+    const ais = DOM.get('artiInlineStatus'); if (ais) { ais.style.display = ''; }
+    const aist = DOM.get('artiInlineStatusText'); if (aist) aist.textContent = 'Reading the data…';
     DOM.get('aiContentContainer').innerHTML = '';
     DOM.hide('artiActions');
     DOM.hide('chatHistory');
@@ -2731,6 +2718,9 @@ const App = {
       if (this._chartView === 'subsankey') this.switchChartView('treemap');
 
       this.renderSubawards();
+
+      // Auto-stream Arti brief — no FAB, no modal, no tap required
+      this._autoFireArtiBrief(query);
 
     } catch (err) {
       if (thisSearch !== this._searchId) return;
@@ -3421,7 +3411,89 @@ const App = {
     }
   },
 
-  async sendArtiChat(message) {
+  async _autoFireArtiBrief(query) {
+    if (!this.searchData.loaded || this.searchData.active.length === 0) return;
+    if (this._artiInlineDone) return;
+
+    // Show the inline card immediately in loading state
+    DOM.show('artiInlineCard');
+
+    const summaryPayload = this._artiPayloadCache || this._buildArtiPayload();
+    const territoryScope = this.territory && this.SECTORS[this.territory]
+      ? `Market scoped to ${this.SECTORS[this.territory].label} agencies. ` : '';
+
+    try {
+      const artiAbort = new AbortController();
+      const artiTimeout = setTimeout(() => artiAbort.abort(), 28000);
+      const res = await fetch(this.AI_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          request_type: 'govhoo_brief',
+          market_data: summaryPayload,
+          objective: territoryScope || null
+        }),
+        signal: artiAbort.signal
+      });
+      clearTimeout(artiTimeout);
+      if (!res.ok) throw new Error(`Error ${res.status}`);
+
+      const contentEl = DOM.get('artiInlineContent');
+      const statusEl  = DOM.get('artiInlineStatus');
+      const statusTxt = DOM.get('artiInlineStatusText');
+      if (contentEl) { contentEl.innerHTML = ''; contentEl.className = 'strategic-read'; }
+      if (statusTxt) statusTxt.textContent = 'Briefing…';
+
+      await Html.streamInto(
+        contentEl,
+        res,
+        (fullText) => {
+          this._artiInlineDone = true;
+          this._currentBriefText = fullText;
+          if (contentEl) contentEl.dataset.rawPlan = fullText;
+          // Wire follow-up chat to inline UI
+          this.aiState.history = [
+            { role: 'user', content: `Give me an actionable plan in the "${query}" market.` },
+            { role: 'model', content: fullText }
+          ];
+          this.aiState.count = 0;
+          // Hide live status dot, show actions
+          if (statusEl) statusEl.style.display = 'none';
+          DOM.show('artiInlineActions');
+          DOM.show('artiInlineChatInputWrap');
+          DOM.show('artiInlineDisclaimer');
+          const counter = DOM.get('artiInlineChatCounter');
+          if (counter) { counter.textContent = `${this.aiState.max} follow-up questions remaining.`; counter.classList.remove('hidden'); }
+        },
+        (msg) => {
+          if (contentEl) contentEl.innerHTML = `<p style="color:var(--text-quaternary);font-size:var(--text-sm);">Arti couldn't load a brief right now. Use the Ask Arti button below.</p>`;
+          if (statusEl) statusEl.style.display = 'none';
+        }
+      );
+    } catch(e) {
+      const contentEl = DOM.get('artiInlineContent');
+      if (contentEl) contentEl.innerHTML = `<p style="color:var(--text-quaternary);font-size:var(--text-sm);">Brief unavailable. Use the Ask Arti button for a manual briefing.</p>`;
+      const statusEl = DOM.get('artiInlineStatus');
+      if (statusEl) statusEl.style.display = 'none';
+    }
+  },
+
+  copyArtiInlineBrief() {
+    const el = DOM.get('artiInlineContent');
+    const raw = el?.dataset.rawPlan || el?.innerText;
+    if (!raw) return;
+    const btn = event?.target;
+    Utils.copyAndAnimate(Utils.stripMarkdown ? Utils.stripMarkdown(raw) : raw, btn, 'Copied!');
+  },
+
+  async sendArtiChat(message, useInline = false) {
+    // useInline=true → stream into the inline brief card (after auto-brief)
+    // useInline=false → stream into the Arti sheet modal (legacy path)
+    const historyElId    = useInline ? 'artiInlineChatHistory'    : 'chatHistory';
+    const counterElId    = useInline ? 'artiInlineChatCounter'     : 'chatCounter';
+    const chatInputElId  = useInline ? 'artiInlineChatInput'       : 'chatInput';
+    const chatSendElId   = useInline ? 'artiInlineChatSendBtn'     : 'chatSendBtn';
+
     if (this.aiState.count >= this.aiState.max) {
       this.toast('Question limit reached for this search.', 'warning');
       return;
@@ -3430,25 +3502,32 @@ const App = {
 
     this.aiState.count++;
     const remaining = this.aiState.max - this.aiState.count;
-    DOM.text('chatCounter', remaining > 0
+    DOM.text(counterElId, remaining > 0
       ? `${remaining} follow-up question${remaining === 1 ? '' : 's'} remaining.`
       : 'Question limit reached.');
 
-    const historyEl = this.UI.chatHistory;
-    historyEl.classList.remove('hidden');
-    historyEl.insertAdjacentHTML('beforeend',
-      `<div class="chat-msg-user">${Html.escapeHtml(message)}</div>`
-    );
+    const historyEl = DOM.get(historyElId);
+    if (historyEl) {
+      historyEl.classList.remove('hidden');
+      historyEl.insertAdjacentHTML('beforeend',
+        `<div class="chat-msg-user">${Html.escapeHtml(message)}</div>`
+      );
+    }
 
     const loaderId = 'chat-' + Date.now();
-    historyEl.insertAdjacentHTML('beforeend', `
-      <div class="chat-msg-arti" id="${loaderId}">
-        <div id="${loaderId}-text" class="strategic-read arti-thinking">Arti is thinking…</div>
-      </div>`);
-    historyEl.scrollTop = historyEl.scrollHeight;
+    if (historyEl) {
+      historyEl.insertAdjacentHTML('beforeend', `
+        <div class="chat-msg-arti" id="${loaderId}">
+          <div id="${loaderId}-text" class="strategic-read arti-thinking">Arti is thinking…</div>
+        </div>`);
+      historyEl.scrollTop = historyEl.scrollHeight;
+    }
 
-    const chatInput = this.UI.chatInput;
-    const chatSend  = this.UI.chatSendBtn;
+    // Show inline chat input wrap if using inline
+    if (useInline) { DOM.show('artiInlineChatInputWrap'); }
+
+    const chatInput = DOM.get(chatInputElId);
+    const chatSend  = DOM.get(chatSendElId);
     if (chatInput) chatInput.disabled = true;
     if (chatSend)  chatSend.disabled  = true;
 
@@ -3517,12 +3596,20 @@ const App = {
     }
   },
 
+  _sendArtiInlineChatFromInput() {
+    const input = DOM.get('artiInlineChatInput');
+    const msg = (input?.value || '').trim();
+    if (!msg) return;
+    input.value = '';
+    this.sendArtiChat(msg, true);
+  },
+
   sendArtiChatFromInput() {
     const input = DOM.get('chatInput');
     const msg = (input?.value || '').trim();
     if (!msg) return;
     input.value = '';
-    this.sendArtiChat(msg);
+    this.sendArtiChat(msg, false);
   },
 
   copyArtiBrief() {
@@ -3531,14 +3618,6 @@ const App = {
     if (!raw) return;
     const btn = DOM.get('copyArtiBtn');
     Utils.copyAndAnimate(Utils.stripMarkdown(raw), btn, 'Copied!');
-  },
-
-  shareSearch() {
-    const btn = DOM.get('shareBtn');
-    const origHTML = btn ? btn.innerHTML : null;
-    Utils.copyAndAnimate(window.location.href, btn, 'Link copied!');
-    // Restore SVG icon after animation (copyAndAnimate uses textContent, we need innerHTML)
-    if (btn && origHTML) setTimeout(() => { btn.innerHTML = origHTML; }, 2100);
   },
 
   _buildContractRow(c, timeHtml) {
@@ -3947,6 +4026,18 @@ const App = {
       const agencyCount = d.agencies.size;
       const saLabel = VehicleDetector.getSetAsideLabel(d.setAside);
 
+      // Dominant/established/emerging signal based on spend share and contract density
+      const totalSpend = primes.reduce((s, [, v]) => s + v.spend, 0);
+      const shareOfMarket = totalSpend > 0 ? (d.spend / totalSpend) : 0;
+      let signal = '', signalClass = '';
+      if (shareOfMarket >= 0.25 || (shareOfMarket >= 0.15 && d.count >= 8)) {
+        signal = 'Dominant'; signalClass = 'prime-signal-dominant';
+      } else if (shareOfMarket >= 0.08 || d.count >= 5) {
+        signal = 'Established'; signalClass = 'prime-signal-established';
+      } else {
+        signal = 'Emerging'; signalClass = 'prime-signal-emerging';
+      }
+
       // Universal URL pattern, quoted name works for any company, known or unknown
       const clean = Utils.normalizeVendorName(name);
       const quoted = encodeURIComponent(`"${clean}"`);
@@ -3964,6 +4055,7 @@ const App = {
           <div class="prime-name">${Html.escapeHtml(name)}${saLabel ? ` <span class="inline-tag">${Html.escapeHtml(saLabel)}</span>` : ''}</div>
           <div class="prime-meta">${d.count} contract${d.count !== 1 ? 's' : ''} · ${agencyCount} agenc${agencyCount !== 1 ? 'ies' : 'y'}</div>
         </div>
+        <span class="prime-signal ${signalClass}">${signal}</span>
         <span class="prime-amount">${Utils.money(d.spend)}</span>
         <div class="prime-links">
           <a href="${liPeople}" target="_blank" rel="noopener" class="prime-link">People</a>
@@ -4262,11 +4354,11 @@ const App = {
       chatInput:            DOM.get('chatInput'),
       chatSendBtn:          DOM.get('chatSendBtn'),
       // Header & search
-      shareBtn:             DOM.get('shareBtn'),
+      shareBtn:             null, // removed from header
       darkToggleIcon:       DOM.get('darkToggleIcon'),
       searchInput:          DOM.get('searchInput'),
       searchSuggestions:    DOM.get('searchSuggestions'),
-      scrollTopBtn:         DOM.get('scrollTopBtn'),
+      scrollTopBtn:         null, // removed
       toastWrap:            DOM.get('toastWrap'),
     };
 
@@ -4342,6 +4434,16 @@ const App = {
     const chatSend = DOM.get('chatSendBtn');
     if (chatSend) chatSend.addEventListener('click', () => App.sendArtiChatFromInput());
 
+    // Wire inline Arti chat input
+    const inlineChatInput = DOM.get('artiInlineChatInput');
+    if (inlineChatInput) {
+      inlineChatInput.addEventListener('keypress', e => {
+        if (e.key === 'Enter') App._sendArtiInlineChatFromInput();
+      });
+    }
+    const inlineChatSend = DOM.get('artiInlineChatSendBtn');
+    if (inlineChatSend) inlineChatSend.addEventListener('click', () => App._sendArtiInlineChatFromInput());
+
     // Wire bubble mode toggles (Agency / Office / Prime)
     document.querySelectorAll('[data-mode]').forEach(b => {
       b.addEventListener('click', () => {
@@ -4415,14 +4517,6 @@ const App = {
 
     // Init swipe gesture for chart panel
     this._initSwipe();
-
-    // Scroll-to-top button, appears after 400px scroll
-    const scrollBtn = DOM.get('scrollTopBtn');
-    if (scrollBtn) {
-      window.addEventListener('scroll', () => {
-        scrollBtn.classList.toggle('hidden', window.scrollY < 400);
-      }, { passive: true });
-    }
 
     // Re-render treemap on resize, only if WIDTH changed (ignore mobile chrome height changes)
     let resizeTimer, lastW = window.innerWidth;
