@@ -1541,6 +1541,80 @@ normalizeQuery(query) {
   },
   cleanAgency(s) { return (s || '').replace(/^(Department of (the )?|Office of (the )?)/i, '').trim(); },
   displayName(s, len) { return Utils.trunc((s && s === s.toUpperCase() ? Utils.titleCase(s) : (s || '')), len); },
+  VENDOR_ALIASES: {
+    'LOCKHEED MARTIN': ['LMCO'],
+    'NORTHROP GRUMMAN': ['NGC'],
+    'GENERAL DYNAMICS INFORMATION TECHNOLOGY': ['GDIT'],
+    'L3HARRIS': ['L3 HARRIS', 'L-3 COMMUNICATIONS'],
+    'RTX': ['RAYTHEON', 'RAYTHEON TECHNOLOGIES'],
+    'SPACE EXPLORATION TECHNOLOGIES': ['SPACEX'],
+    'AMAZON WEB SERVICES': ['AWS'],
+    'INTERNATIONAL BUSINESS MACHINES': ['IBM'],
+    'WORLD WIDE TECHNOLOGY': ['WWT'],
+    'CARAHSOFT TECHNOLOGY': ['Carahsoft'],
+    'HEWLETT PACKARD ENTERPRISE': ['HPE'],
+    'SCIENCE APPLICATIONS INTERNATIONAL': ['SAIC'],
+    'BOOZ ALLEN HAMILTON': ['BOOZ ALLEN'],
+    'CACI INTERNATIONAL': ['CACI'],
+    'MANTECH INTERNATIONAL': ['MANTECH'],
+    'JACOBS ENGINEERING GROUP': ['JACOBS'],
+    'ACCENTURE FEDERAL SERVICES': ['AFS'],
+    'CGI FEDERAL': ['CGI FEDERAL INC', 'CGI TECHNOLOGIES AND SOLUTIONS'],
+    'PERATON': ['PERATON INC'],
+    'NOBLIS': ['NOBLIS INC'],
+    'PRICEWATERHOUSECOOPERS': ['PWC'],
+    'ERNST AND YOUNG': ['EY'],
+    'THE MITRE': ['MITRE'],
+    'BATTELLE MEMORIAL INSTITUTE': ['BATTELLE'],
+    'BOEING': ['THE BOEING', 'BOEING COMPANY', 'THE BOEING COMPANY'],
+  },
+
+  VENDOR_PREFIXES: [
+    ['BOOZ ALLEN HAMILTON', 'BOOZ ALLEN HAMILTON'],
+    ['SCIENCE APPLICATIONS INTERNATIONAL', 'SAIC'],
+    ['LEIDOS', 'LEIDOS'],
+    ['GENERAL DYNAMICS INFORMATION TECHNOLOGY', 'GENERAL DYNAMICS IT'],
+    ['GENERAL DYNAMICS', 'GENERAL DYNAMICS'],
+    ['NORTHROP GRUMMAN', 'NORTHROP GRUMMAN'],
+    ['LOCKHEED MARTIN', 'LOCKHEED MARTIN'],
+    ['RAYTHEON', 'RAYTHEON'],
+    ['BAE SYSTEMS', 'BAE SYSTEMS'],
+    ['ACCENTURE FEDERAL SERVICES', 'ACCENTURE FEDERAL SERVICES'],
+    ['ACCENTURE', 'ACCENTURE'],
+    ['DELOITTE CONSULTING', 'DELOITTE CONSULTING'],
+    ['DELOITTE', 'DELOITTE'],
+    ['PERATON', 'PERATON'],
+    ['PERSPECTA', 'PERSPECTA'],
+    ['CACI', 'CACI'],
+    ['SAIC', 'SAIC'],
+    ['MANTECH', 'MANTECH'],
+    ['UNISON', 'UNISON'],
+    ['AMENTUM', 'AMENTUM'],
+    ['VECTRUS', 'VECTRUS'],
+    ['PARSONS', 'PARSONS'],
+    ['JACOBS', 'JACOBS'],
+    ['ICF', 'ICF'],
+    ['MITRE', 'MITRE'],
+    ['NOBLIS', 'NOBLIS'],
+    ['ENGILITY', 'ENGILITY'],
+    ['SERCO', 'SERCO'],
+    ['TETRA TECH', 'TETRA TECH'],
+    ['CARAHSOFT', 'CARAHSOFT'],
+    ['GOVPLACE', 'GOVPLACE'],
+    ['WORLD WIDE TECHNOLOGY', 'WORLD WIDE TECHNOLOGY'],
+    ['INTERNATIONAL BUSINESS MACHINES', 'IBM'],
+    ['IBM', 'IBM'],
+    ['MICROSOFT', 'MICROSOFT'],
+    ['AMAZON WEB SERVICES', 'AMAZON WEB SERVICES'],
+    ['AMAZON', 'AMAZON'],
+    ['GOOGLE', 'GOOGLE'],
+    ['ORACLE', 'ORACLE'],
+    ['SAP', 'SAP'],
+    ['SPLUNK', 'SPLUNK'],
+    ['PALO ALTO NETWORKS', 'PALO ALTO NETWORKS'],
+    ['CROWDSTRIKE', 'CROWDSTRIKE'],
+  ],
+
   normalizeVendorName(vendorName) {
     if (!vendorName) return 'Unknown Vendor';
     
@@ -1554,115 +1628,15 @@ normalizeQuery(query) {
     // 3. Strip messy corporate suffixes
     name = name.replace(/,?\s*(LLC|INC|CORP|CORPORATION|INCORPORATED|COMPANY|CO\.|LTD|L\.P\.|LP|P\.C\.|PLLC)\.?\s*$/gi, '').trim();
 
-    // 4. Strict Exact-Match Alias Map 
-    // Only used for completely different acronyms of the exact same parent entity.
-    // Because this requires an EXACT match, it will safely map "IBM" to the full name, 
-    // but it will NOT touch "IBM Global Services", leaving divisions intact.
-    const exactAliases = {
-      // Defense & Aerospace
-      'LOCKHEED MARTIN': ['LMCO'],
-      'NORTHROP GRUMMAN': ['NGC'],
-      'GENERAL DYNAMICS INFORMATION TECHNOLOGY': ['GDIT'],
-      'L3HARRIS': ['L3 HARRIS', 'L-3 COMMUNICATIONS'],
-      'RTX': ['RAYTHEON', 'RAYTHEON TECHNOLOGIES'],
-      'SPACE EXPLORATION TECHNOLOGIES': ['SPACEX'],
-      
-      // IT & Hardware
-      'AMAZON WEB SERVICES': ['AWS'],
-      'INTERNATIONAL BUSINESS MACHINES': ['IBM'],
-      'WORLD WIDE TECHNOLOGY': ['WWT'],
-	  'CARAHSOFT TECHNOLOGY': ['Carahsoft'],
-      'HEWLETT PACKARD ENTERPRISE': ['HPE'],
-      
-      // Professional Services & Systems Integrators
-      'SCIENCE APPLICATIONS INTERNATIONAL': ['SAIC'],
-      'BOOZ ALLEN HAMILTON': ['BOOZ ALLEN'],
-      'CACI INTERNATIONAL': ['CACI'],
-      'MANTECH INTERNATIONAL': ['MANTECH'],
-      'JACOBS ENGINEERING GROUP': ['JACOBS'],
-      'ACCENTURE FEDERAL SERVICES': ['AFS'],
-	  'CGI FEDERAL': ['CGI FEDERAL INC', 'CGI TECHNOLOGIES AND SOLUTIONS'],
-	  'PERATON': ['PERATON INC'],
-	  'NOBLIS': ['NOBLIS INC'],
-      
-      // Big Four & Consulting
-      'PRICEWATERHOUSECOOPERS': ['PWC'],
-      'ERNST AND YOUNG': ['EY'], // Your cleaner already changed the '&' to 'AND'
-      
-      // FFRDCs & Non-Profits
-      'THE MITRE': ['MITRE'],
-      'BATTELLE MEMORIAL INSTITUTE': ['BATTELLE'],
-      
-      // Aerospace
-      'BOEING': ['THE BOEING', 'BOEING COMPANY', 'THE BOEING COMPANY']
-    };
-
-    for (const [cleanName, variations] of Object.entries(exactAliases)) {
-       if (variations.includes(name)) {
-          name = cleanName;
-          break;
-       }
+    // 4. Exact-match alias (e.g. "IBM" → "INTERNATIONAL BUSINESS MACHINES")
+    for (const [cleanName, variations] of Object.entries(Utils.VENDOR_ALIASES)) {
+      if (variations.includes(name)) { name = cleanName; break; }
     }
 
-    // 5. Prefix consolidation, collapses name variants that share the same root.
-    // USASpending files the same company under many suffix variants:
-    //   "BOOZ ALLEN HAMILTON INC" vs "BOOZ ALLEN HAMILTON HOLDING CORP" etc.
-    // Suffix stripping in step 3 doesn't catch everything, so we do a starts-with
-    // check against known canonical prefixes and snap them to the clean name.
-    // Order matters: longer prefixes must come before shorter ones.
-    const prefixMap = [
-      // Systems integrators, highest frequency of variant filings
-      ['BOOZ ALLEN HAMILTON', 'BOOZ ALLEN HAMILTON'],
-      ['SCIENCE APPLICATIONS INTERNATIONAL', 'SAIC'],
-      ['LEIDOS', 'LEIDOS'],
-      ['GENERAL DYNAMICS INFORMATION TECHNOLOGY', 'GENERAL DYNAMICS IT'],
-      ['GENERAL DYNAMICS', 'GENERAL DYNAMICS'],
-      ['NORTHROP GRUMMAN', 'NORTHROP GRUMMAN'],
-      ['LOCKHEED MARTIN', 'LOCKHEED MARTIN'],
-      ['RAYTHEON', 'RAYTHEON'],
-      ['BAE SYSTEMS', 'BAE SYSTEMS'],
-      ['ACCENTURE FEDERAL SERVICES', 'ACCENTURE FEDERAL SERVICES'],
-      ['ACCENTURE', 'ACCENTURE'],
-      ['DELOITTE CONSULTING', 'DELOITTE CONSULTING'],
-      ['DELOITTE', 'DELOITTE'],
-      ['PERATON', 'PERATON'],
-      ['PERSPECTA', 'PERSPECTA'],
-      ['CACI', 'CACI'],
-      ['SAIC', 'SAIC'],
-      ['MANTECH', 'MANTECH'],
-      ['UNISON', 'UNISON'],
-      ['AMENTUM', 'AMENTUM'],
-      ['VECTRUS', 'VECTRUS'],
-      ['PARSONS', 'PARSONS'],
-      ['JACOBS', 'JACOBS'],
-      ['ICF', 'ICF'],
-      ['MITRE', 'MITRE'],
-      ['NOBLIS', 'NOBLIS'],
-      ['ENGILITY', 'ENGILITY'],
-      ['SERCO', 'SERCO'],
-      ['TETRA TECH', 'TETRA TECH'],
-      ['CARAHSOFT', 'CARAHSOFT'],
-      ['GOVPLACE', 'GOVPLACE'],
-      ['WORLD WIDE TECHNOLOGY', 'WORLD WIDE TECHNOLOGY'],
-      ['INTERNATIONAL BUSINESS MACHINES', 'IBM'],
-      ['IBM', 'IBM'],
-      ['MICROSOFT', 'MICROSOFT'],
-      ['AMAZON WEB SERVICES', 'AMAZON WEB SERVICES'],
-      ['AMAZON', 'AMAZON'],
-      ['GOOGLE', 'GOOGLE'],
-      ['ORACLE', 'ORACLE'],
-      ['SAP', 'SAP'],
-      ['SPLUNK', 'SPLUNK'],
-      ['PALO ALTO NETWORKS', 'PALO ALTO NETWORKS'],
-      ['CROWDSTRIKE', 'CROWDSTRIKE'],
-      // PALANTIR intentionally excluded, Palantir USG and Palantir Technologies
-      // are separate legal entities with separate contract vehicles. Keep them distinct.
-    ];
-
-    for (const [prefix, canonical] of prefixMap) {
+    // 5. Prefix consolidation (e.g. "BOOZ ALLEN HAMILTON HOLDING CORP" → "BOOZ ALLEN HAMILTON")
+    for (const [prefix, canonical] of Utils.VENDOR_PREFIXES) {
       if (name === prefix || name.startsWith(prefix + ' ') || name.startsWith(prefix + ',')) {
-        name = canonical;
-        break;
+        name = canonical; break;
       }
     }
 
@@ -4374,7 +4348,29 @@ selectAgencySuggestion(name, inputId, boxId) {
       panelSankey:        DOM.get('panelSankey'),
       subSankeyContainer: DOM.get('subSankeyContainer'),
       panelSubSankey:     DOM.get('panelSubSankey'),
-      aiContentContainer: DOM.get('aiContentContainer'),
+      bubbleChartContainer: DOM.get('bubbleChartContainer'),
+      marketCard:           DOM.get('marketCard'),
+      marketCardDesc:       DOM.get('marketCardDesc'),
+      primesCard:           DOM.get('primesCard'),
+      primesList:           DOM.get('primesList'),
+      recentCard:           DOM.get('recentCard'),
+      recentList:           DOM.get('recentList'),
+      expiringCard:         DOM.get('expiringCard'),
+      expiringList:         DOM.get('expiringList'),
+      subawardsCard:        DOM.get('subawardsCard'),
+      subawardsList:        DOM.get('subawardsList'),
+      artiFab:              DOM.get('artiFab'),
+      artiBridge:           DOM.get('artiBridge'),
+      artiBridgeText:       DOM.get('artiBridgeText'),
+      artiSheet:            DOM.get('artiSheet'),
+      artiBackdrop:         DOM.get('artiBackdrop'),
+      shareBtn:             DOM.get('shareBtn'),
+      darkToggleIcon:       DOM.get('darkToggleIcon'),
+      searchInput:          DOM.get('searchInput'),
+      searchSuggestions:    DOM.get('searchSuggestions'),
+      scrollTopBtn:         DOM.get('scrollTopBtn'),
+      toastWrap:            DOM.get('toastWrap'),
+      aiContentContainer:   DOM.get('aiContentContainer'),
       artiProgress:       DOM.get('artiProgress'),
       artiProgressFill:   DOM.get('artiProgressFill'),
       artiTrigger:        DOM.get('artiTrigger'),
