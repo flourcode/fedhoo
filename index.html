@@ -2642,17 +2642,20 @@ const App = {
     DOM.hide('recentCard');
     DOM.hide('primesCard');
     DOM.hide('artiInlineCard');
-    const aic = DOM.get('artiInlineContent'); if (aic) { aic.innerHTML = 'Analyzing market…'; aic.className = 'strategic-read arti-inline-loading'; }
+    const aic = DOM.get('artiInlineContent'); if (aic) { aic.innerHTML = 'Analyzing market…'; aic.className = 'strategic-read arti-inline-loading'; delete aic.dataset.rawPlan; }
     DOM.hide('artiInlineActions');
-    DOM.hide('artiInlineChatHistory');
+    const inlineChatHistory = DOM.get('artiInlineChatHistory'); if (inlineChatHistory) { inlineChatHistory.innerHTML = ''; inlineChatHistory.classList.add('hidden'); }
     DOM.hide('artiInlineChatInputWrap');
+    const inlineChatInput = DOM.get('artiInlineChatInput'); if (inlineChatInput) inlineChatInput.value = '';
+    DOM.hide('artiInlineChatCounter');
     DOM.hide('artiInlineDisclaimer');
     const ais = DOM.get('artiInlineStatus'); if (ais) { ais.style.display = ''; }
     const aist = DOM.get('artiInlineStatusText'); if (aist) aist.textContent = 'Reading the data…';
     DOM.get('aiContentContainer').innerHTML = '';
     DOM.hide('artiActions');
-    DOM.hide('chatHistory');
+    const chatHistoryEl = DOM.get('chatHistory'); if (chatHistoryEl) { chatHistoryEl.innerHTML = ''; chatHistoryEl.classList.add('hidden'); }
     DOM.hide('chatInputWrap');
+    const chatInputEl = DOM.get('chatInput'); if (chatInputEl) chatInputEl.value = '';
     DOM.hide('artiDisclaimer');
     DOM.hide('artiProgress');
     DOM.show('artiTrigger');
