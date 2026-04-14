@@ -797,13 +797,11 @@ a, button, input, select { touch-action: manipulation; }
   object-fit: cover; flex-shrink: 0;
   border: 2px solid var(--border);
 }
-.bio-header-text {}
 .bio-name {
   font-size: var(--text-lg); font-weight: 700;
   color: var(--text-primary); letter-spacing: -0.02em;
   margin-bottom: 2px;
 }
-.bio-body { }
 .bio-text {
   font-size: var(--text-sm); color: var(--text-secondary);
   line-height: 1.75; margin-bottom: 12px;
@@ -1878,14 +1876,6 @@ const ChartUtils = {
     return { nameLines: [truncSafe], fontSize: fs, amountFs: 6, lineH: fs * 1.22, totalH: fs * 2.4 + 7 };
   },
   
-  fitCircleText(d) {
-    const r = d.r, name = d.data.name;
-    for (let fs = Math.min(r / 2.4, 21); fs >= 7; fs -= 0.5) { 
-      const nl = ChartUtils.wrapText(name, r * 1.62, fs), aFs = fs * 0.85, lH = fs * 1.19, tH = nl.length * lH + aFs * 1.25 + 3.5; 
-      if (tH < r * 1.62 && nl.length > 0 && nl.length <= 3) return { nameLines: nl, fontSize: fs, amountFs: aFs, lineH: lH, totalH: tH }; 
-    }
-    return null;
-  },
 attachInteractions(selection, svg, tooltip, container, w, h, isTouch, buildTip, doDrill, touchState) {
     const dismissTooltip = () => { tooltip.classList.remove('visible'); touchState.touchStateSet(null); };
     const scrollParent = DOM.get('appView');
@@ -2407,53 +2397,6 @@ const SearchPills = {
   },
 };
 
-const JobLinks = {
-  knownBrands: [
-    'KBR', 'SAIC', 'CACI', 'LEIDOS', 'SERCO', 'AECOM', 'JACOBS', 'PARSONS', 
-    'MAXIMUS', 'ICF', 'CGI', 'IBM', 'DELL', 'HP', 'CISCO', 'ORACLE', 'GOOGLE',
-    'AMAZON WEB', 'MICROSOFT', 'ACCENTURE FEDERAL', 'DELOITTE', 'KPMG', 'PWC', 'EY',
-    'PERATON', 'AMENTUM', 'MANTECH', 'BAE SYSTEMS', 'RAYTHEON', 'BOEING', 'AIRBUS',
-    'HONEYWELL', 'HARRIS', 'TEXTRON', 'VERIZON', 'ATT', 'AT&T', 'SPRINT',
-    'PALANTIR', 'ANDURIL', 'CROWDSTRIKE', 'SPLUNK', 'VMWARE', 'SALESFORCE',
-    'SERVICENOW', 'SNOWFLAKE', 'DATABRICKS', 'ELASTIC', 'GITLAB', 'ATLASSIAN'
-  ],
-  brandAliases: {
-    'BOOZ ALLEN': 'BAH', 'GENERAL DYNAMICS': 'GDIT', 'NORTHROP GRUMMAN': 'NGC',
-    'LOCKHEED MARTIN': 'LMCO', 'L3HARRIS': 'L3 HARRIS', 'L3 HARRIS': 'L3HARRIS',
-    'WORLD WIDE TECHNOLOGY': 'WWT', 'RED HAT': 'REDHAT', 'PALO ALTO': 'PANW'
-  },
-  cleanVendorName(vendorName) {
-    let cleanName = vendorName.replace(/,?\s*(LLC|INC|CORP|CORPORATION|INCORPORATED|L\.L\.C\.|L\.P\.|LP|LTD|LIMITED|CO\.)\.?\s*$/gi, '').replace(/\s+/g, ' ').trim();
-    const upperName = cleanName.toUpperCase();
-    for (const brand of this.knownBrands) { if (upperName === brand || upperName.startsWith(brand + ' ')) return brand; }
-    for (const [brand, alias] of Object.entries(this.brandAliases)) { if (upperName.startsWith(brand)) return brand; }
-    return cleanName;
-  },
-  getLinkedInUrl(vendorName) {
-    const clean = this.cleanVendorName(vendorName);
-    return `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(clean + ' federal')}&f_C=`;
-  },
-  getLinkedInPeopleUrl(vendorName, roleKeywords = '') {
-    const clean = this.cleanVendorName(vendorName);
-    // Quoted company name for precision, lands the seller at the right company,
-    // they know how to find the right person from there
-    const searchQuery = roleKeywords ? `"${clean}" ${roleKeywords}` : `"${clean}"`;
-    return `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(searchQuery)}&origin=GLOBAL_SEARCH_HEADER`;
-  },
-  getLinkedInNewsUrl(searchTerm) {
-    const cleanName = typeof searchTerm === 'string' ? this.cleanVendorName(searchTerm) : searchTerm;
-    return `https://www.linkedin.com/search/results/content/?keywords=${encodeURIComponent(cleanName)}`;
-  }
-};
-// Cache the theme meta tag so Safari updates instantly
-const THEME_META = document.querySelector('meta[name="theme-color"]');
-// ========================================
-// 5. CORE APPLICATION CONTROLLER
-// ========================================
-
-// ════════════════════════════════════════════════════════════
-// APP, Main controller (slim: search, treemap, arti, territory)
-// ════════════════════════════════════════════════════════════
 const VehicleDetector = {
   patterns: [
     { prefix: /^GS-35F/i, short: 'GSA Sched' }, { prefix: /^GS-00F/i, short: 'GSA Sched' },
@@ -3292,56 +3235,6 @@ if (this.bubbleChartType === 'treemap') {
       attachInteractions(cells, svg);
       cells.selectAll('rect').attr('opacity', 0).transition().duration(500).delay((d, i) => i * 12).ease(d3.easeCubicOut).attr('opacity', 0.85);
       cells.selectAll('text').attr('opacity', 0).transition().duration(400).delay((d, i) => 200 + i * 12).attr('opacity', 1);
-    } else {
-      const hierarchy = d3.hierarchy({ children: entities }).sum(d => d.spend).sort((a, b) => b.value - a.value);
-      const pack = d3.pack().size([w, h]).padding(1.5);
-      const root = pack(hierarchy);
-
-      const nodes = svg.selectAll('.bubble-node').data(root.leaves()).join('g').attr('class', 'bubble-node').attr('transform', d => `translate(${d.x},${d.y})`);
-
-      // --- START MODERN BUBBLE (SPOTLIGHT HOVER) ---
-      nodes.append('circle')
-        .attr('class', 'bubble-bg') // Add a target class so we can dim them all easily
-        .attr('r', d => d.r)
-        .attr('fill', (d, i) => bubbleColors[i % bubbleColors.length])
-        .attr('opacity', 0.85) // Base opacity
-        .style('transition', 'opacity 0.15s ease, filter 0.15s ease')
-        .style('cursor', d => effective !== 'vendors' ? 'pointer' : 'default'); // Smooth fading
-
-      nodes
-        .on('mouseover.modern', function(event, d) {
-            // 1. Dim ALL other bubbles to create a "spotlight" focus
-            svg.selectAll('.bubble-bg').attr('opacity', 0.25);
-            
-            // 2. Pop the hovered bubble to 100% opacity and make it brighter
-            d3.select(this).select('.bubble-bg')
-                .attr('opacity', 1)
-                .attr('fill', (d, i) => {
-                    const baseColor = bubbleColors[i % bubbleColors.length];
-                    return d3.color(baseColor).brighter(0.4); 
-                });
-        })
-        .on('mouseout.modern', function(event, d) {
-            // 1. Restore all bubbles back to normal
-            svg.selectAll('.bubble-bg')
-                .attr('opacity', 0.85)
-                .attr('fill', (d, i) => bubbleColors[i % bubbleColors.length]);
-        });
-      // --- END MODERN BUBBLE HOVER LOGIC ---
-      
-      nodes.each(function(d, idx) {
-        if (d.r < 25) return;
-        const g = d3.select(this);
-        const layout = ChartUtils.fitCircleText(d);
-        if (!layout) return;
-        const startY = -(layout.totalH / 2) + layout.fontSize * 0.8;
-        layout.nameLines.forEach((line, i) => { g.append('text').attr('class', 'bubble-label').attr('y', startY + i * layout.lineH).attr('font-size', layout.fontSize + 'px').attr('font-weight', '700').text(line); });
-        if (d.r > 35) g.append('text').attr('class', 'bubble-amount-label').attr('y', startY + layout.nameLines.length * layout.lineH + 4).attr('font-size', layout.amountFs + 'px').attr('font-weight', '800').attr('fill', App.darkMode ? '#F0EFEC' : '#2C2B28').text(Utils.money(d.data.spend));
-      });
-
-      attachInteractions(nodes, svg);
-      nodes.selectAll('circle').attr('r', 0).transition().duration(600).delay((d, i) => i * 15).ease(d3.easeCubicOut).attr('r', d => d.r);
-      nodes.selectAll('text').attr('opacity', 0).transition().duration(400).delay((d, i) => 300 + i * 15).attr('opacity', 1);
     }
 
     if (this._pendingDrillScroll) {
