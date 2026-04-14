@@ -1516,7 +1516,6 @@ buyingOffices: {},
     'aws': 'Amazon Web Services',
     'amazon': 'Amazon Web Services',
     'amazon web': 'Amazon Web Services',
-    'akamai': 'Akamai Technologies',
     'msft': 'Microsoft',
     'msft azure': 'Microsoft Azure',
     'gcp': 'Google Cloud',
@@ -2171,34 +2170,24 @@ async searchAwards(keywords, isRecipient = false) {
     };
 
     // ── RECIPIENT SEARCH (selected from autocomplete "Company" suggestions) ──────
-    // Companies sell two ways: as direct prime recipients (Akamai, Leidos) or purely
-    // through channel partners where their name only appears in description text (AWS, Palo Alto).
-    // We can't know which model applies, so run BOTH searches in parallel and merge:
-    //   1. recipient_search_text → catches direct primes (Akamai's own contracts)
-    //   2. keywords              → catches channel/description mentions (AWS sold via Carahsoft)
-    // Results are deduplicated by Award ID and sorted by amount descending.
+    // Use recipient_search_text so USASpending matches the recipient name field directly.
+    // We don't also keyword-search the legal name because legal names like
+    // "AKAMAI TECHNOLOGIES, INC." never appear verbatim in description text —
+    // users who want keyword/channel behavior type manually (e.g. "aws", "splunk").
     if (isRecipient) {
       const period = Utils.getTrailing12Mo()[0];
-      const baseFilters = { time_period: [period], award_type_codes: this.CONTRACT_TYPES };
-      const recipientFilters = { ...baseFilters, recipient_search_text: [keywords] };
-      const keywordFilters   = { ...baseFilters, keywords: [keywords] };
-      App._applySectorFilter(recipientFilters);
-      App._applySectorFilter(keywordFilters);
-      App._lastSearchFilters = recipientFilters;
+      const filters = {
+        time_period: [period],
+        award_type_codes: this.CONTRACT_TYPES,
+        recipient_search_text: [keywords],
+      };
+      App._applySectorFilter(filters);
+      App._lastSearchFilters = filters;
       try {
-        const [recipientData, keywordData] = await Promise.all([
-          this._post('/search/spending_by_award/', { filters: recipientFilters, fields: this.AWARD_FIELDS, limit: 100, sort: 'Award Amount', order: 'desc' }).then(r => r.results || []).catch(() => []),
-          this._post('/search/spending_by_award/', { filters: keywordFilters,   fields: this.AWARD_FIELDS, limit: 100, sort: 'Award Amount', order: 'desc' }).then(r => r.results || []).catch(() => []),
-        ]);
-        // Merge, deduplicate by Award ID, sort by amount
-        const seen = new Set();
-        const merged = [...recipientData, ...keywordData].filter(a => {
-          const id = a['Award ID'] || a['generated_internal_id'] || Math.random();
-          if (seen.has(id)) return false;
-          seen.add(id);
-          return true;
-        });
-        return cleanAndSort(merged);
+        const data = (await this._post('/search/spending_by_award/', {
+          filters, fields: this.AWARD_FIELDS, limit: 100, sort: 'Award Amount', order: 'desc'
+        })).results || [];
+        return cleanAndSort(data);
       } catch(e) {
         if (e.name !== 'AbortError') console.warn('Recipient search failed:', e);
         return [];
