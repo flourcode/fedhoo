@@ -2691,8 +2691,14 @@ const App = {
     this.UI.searchInput?.blur();
     DOM.get('searchInputMobile')?.blur();
     document.activeElement?.blur();
-    DOM.get('searchSuggestions')?.classList.add('hidden');
-    DOM.get('searchSuggestionsMobile')?.classList.add('hidden');
+    // Cancel any pending autocomplete — prevents the debounced callback reopening the dropdown
+    clearTimeout(this._acTimer);
+    clearTimeout(this._mobileAcTimer);
+    this._acSuppressed = true; // guard: stop any in-flight ac response from showing
+    setTimeout(() => { this._acSuppressed = false; }, 1000);
+    const hideSug = id => { const el = DOM.get(id); if (el) { el.innerHTML = ''; el.classList.add('hidden'); } };
+    hideSug('searchSuggestions');
+    hideSug('searchSuggestionsMobile');
     DOM.get('territoryDropdown')?.classList.remove('open');
 
     const rawQuery = query.toUpperCase();
@@ -4455,7 +4461,6 @@ const App = {
     const input = this.UI.searchInput;
     const sugBox = DOM.get('searchSuggestions');
     if (input) {
-      let acTimer;
       const hideBox = () => { if (sugBox) { sugBox.innerHTML = ''; sugBox.classList.add('hidden'); } };
 
       input.addEventListener('keypress', e => {
@@ -4473,11 +4478,12 @@ const App = {
         }
       });
       input.addEventListener('input', e => {
-        clearTimeout(acTimer);
+        clearTimeout(App._acTimer);
         const val = e.target.value.trim();
         if (val.length < 2) { hideBox(); return; }
-        acTimer = setTimeout(async () => {
+        App._acTimer = setTimeout(async () => {
           const suggestions = await API.fetchAgencySuggestions(val);
+          if (App._acSuppressed) return; // search already fired, don't reopen
           if (!suggestions || !suggestions.length) { hideBox(); return; }
           // Only show if input still focused or dropdown hovered
           if (document.activeElement !== input && !sugBox?.matches(':hover')) return;
@@ -4671,6 +4677,7 @@ const App = {
         if (val.length < 2) { DOM.get('searchSuggestionsMobile')?.classList.add('hidden'); return; }
         this._mobileAcTimer = setTimeout(async () => {
           const suggestions = await API.fetchAgencySuggestions(val);
+          if (App._acSuppressed) return; // search already fired, don't reopen
           const sugBox = DOM.get('searchSuggestionsMobile');
           if (!suggestions?.length || !sugBox) return;
           sugBox.innerHTML = suggestions.map(s => {
