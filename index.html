@@ -1447,20 +1447,38 @@ buyingOffices: {},
     "fcc": "Federal Communications Commission",
     "fec": "Federal Election Commission",
     "gao": "Government Accountability Office",
-    // Vendor/company shortcuts for search
-    "bah": "Booz Allen Hamilton",
-    "saic": "Science Applications International",
-    "gdit": "General Dynamics Information Technology",
-    "lmco": "Lockheed Martin",
-    "ngc": "Northrop Grumman",
-    "wwt": "World Wide Technology",
-    "aws": "Amazon",
-    "msft": "Microsoft",
-    "gcp": "Google",
-    // Combatant commands
-    "socom": "USSOCOM", "cybercom": "USCYBERCOM", "stratcom": "USSTRATCOM",
-    "transcom": "USTRANSCOM", "centcom": "USCENTCOM", "eucom": "USEUCOM",
-    "indopacom": "USINDOPACOM", "northcom": "USNORTHCOM",
+    // Vendor/company shortcuts for search — keyword searches, not agency filters
+    // These are duplicated intentionally in SEARCH_SHORTCUTS; entries here would be
+    // misrouted as agency filters by resolveAgencyAlias, so they must NOT be here.
+  },
+
+  // Subtier agency aliases — carry full tier metadata for USASpending agency filters.
+  // These are DoD components that USASpending indexes as subtiers under Department of Defense.
+  subtierAliases: {
+    "socom":      { tier: 'subtier', name: 'U.S. Special Operations Command',  toptier_name: 'Department of Defense' },
+    "ussocom":    { tier: 'subtier', name: 'U.S. Special Operations Command',  toptier_name: 'Department of Defense' },
+    "cybercom":   { tier: 'subtier', name: 'U.S. Cyber Command',               toptier_name: 'Department of Defense' },
+    "uscybercom": { tier: 'subtier', name: 'U.S. Cyber Command',               toptier_name: 'Department of Defense' },
+    "stratcom":   { tier: 'subtier', name: 'U.S. Strategic Command',           toptier_name: 'Department of Defense' },
+    "usstratcom": { tier: 'subtier', name: 'U.S. Strategic Command',           toptier_name: 'Department of Defense' },
+    "transcom":   { tier: 'subtier', name: 'U.S. Transportation Command',      toptier_name: 'Department of Defense' },
+    "ustranscom": { tier: 'subtier', name: 'U.S. Transportation Command',      toptier_name: 'Department of Defense' },
+    "centcom":    { tier: 'subtier', name: 'U.S. Central Command',             toptier_name: 'Department of Defense' },
+    "uscentcom":  { tier: 'subtier', name: 'U.S. Central Command',             toptier_name: 'Department of Defense' },
+    "eucom":      { tier: 'subtier', name: 'U.S. European Command',            toptier_name: 'Department of Defense' },
+    "useucom":    { tier: 'subtier', name: 'U.S. European Command',            toptier_name: 'Department of Defense' },
+    "indopacom":  { tier: 'subtier', name: 'U.S. Indo-Pacific Command',        toptier_name: 'Department of Defense' },
+    "usindopacom":{ tier: 'subtier', name: 'U.S. Indo-Pacific Command',        toptier_name: 'Department of Defense' },
+    "northcom":   { tier: 'subtier', name: 'U.S. Northern Command',            toptier_name: 'Department of Defense' },
+    "usnorthcom": { tier: 'subtier', name: 'U.S. Northern Command',            toptier_name: 'Department of Defense' },
+    "africom":    { tier: 'subtier', name: 'U.S. Africa Command',              toptier_name: 'Department of Defense' },
+    "southcom":   { tier: 'subtier', name: 'U.S. Southern Command',            toptier_name: 'Department of Defense' },
+    "jsoc":       { tier: 'subtier', name: 'Joint Special Operations Command', toptier_name: 'Department of Defense' },
+    "navsea":     { tier: 'subtier', name: 'Naval Sea Systems Command',        toptier_name: 'Department of Defense' },
+    "navair":     { tier: 'subtier', name: 'Naval Air Systems Command',        toptier_name: 'Department of Defense' },
+    "spawar":     { tier: 'subtier', name: 'Space and Naval Warfare Systems Command', toptier_name: 'Department of Defense' },
+    "amc":        { tier: 'subtier', name: 'Army Materiel Command',            toptier_name: 'Department of Defense' },
+    "afmc":       { tier: 'subtier', name: 'Air Force Materiel Command',       toptier_name: 'Department of Defense' },
   },
   VEHICLE_MAP: {
     'NNG15SC': 'SEWP V', 'NNG15SD': 'SEWP V',
@@ -1497,10 +1515,13 @@ buyingOffices: {},
     // 1. Check the dynamic memory bank first (for autocomplete selections)
     if (this.dynamicAgencies[lower]) { _memoAlias[lower] = this.dynamicAgencies[lower]; return this.dynamicAgencies[lower]; }
 
-    // 2. Check hardcoded acronyms
+    // 2. Check subtier aliases — DoD components that need tier:subtier + toptier_name
+    if (this.subtierAliases[lower]) { _memoAlias[lower] = this.subtierAliases[lower]; return this.subtierAliases[lower]; }
+
+    // 3. Check hardcoded toptier acronyms
     if (this.agencyAliases[lower]) { const r = { tier: 'toptier', name: this.agencyAliases[lower] }; _memoAlias[lower] = r; return r; }
 
-    // 3. Full name match (supports "Air Force", "Energy", etc.)
+    // 4. Full name match (supports "Air Force", "Energy", etc.)
     const stripPrefix = name => name.toLowerCase().replace(/^(department of (the )?|office of (the )?|u\.s\. )/, '').trim();
     const topMatch = Object.entries(this.agencyAliases).find(([abbr, fullName]) =>
       fullName.toLowerCase() === lower || abbr === lower || stripPrefix(fullName) === lower
@@ -2122,7 +2143,7 @@ async _post(endpoint, body) {
     }
   },
 
-async searchAwards(keywords, isRecipient = false) {
+async searchAwards(keywords) {
     // Lazy-load buying offices before processing results
     await Utils.loadBuyingOffices();
 
@@ -2168,31 +2189,6 @@ async searchAwards(keywords, isRecipient = false) {
         return award;
       }).sort((a,b) => (b['Award Amount'] || 0) - (a['Award Amount'] || 0));
     };
-
-    // ── RECIPIENT SEARCH (selected from autocomplete "Company" suggestions) ──────
-    // Use recipient_search_text so USASpending matches the recipient name field directly.
-    // We don't also keyword-search the legal name because legal names like
-    // "AKAMAI TECHNOLOGIES, INC." never appear verbatim in description text —
-    // users who want keyword/channel behavior type manually (e.g. "aws", "splunk").
-    if (isRecipient) {
-      const period = Utils.getTrailing12Mo()[0];
-      const filters = {
-        time_period: [period],
-        award_type_codes: this.CONTRACT_TYPES,
-        recipient_search_text: [keywords],
-      };
-      App._applySectorFilter(filters);
-      App._lastSearchFilters = filters;
-      try {
-        const data = (await this._post('/search/spending_by_award/', {
-          filters, fields: this.AWARD_FIELDS, limit: 100, sort: 'Award Amount', order: 'desc'
-        })).results || [];
-        return cleanAndSort(data);
-      } catch(e) {
-        if (e.name !== 'AbortError') console.warn('Recipient search failed:', e);
-        return [];
-      }
-    }
 
     const timePeriod = Utils.getTrailing12Mo();
     const period = timePeriod[0];
@@ -2567,7 +2563,7 @@ const App = {
 
   // Sets the active territory, persists to localStorage, re-runs search if active
 
-  async runSearch(query, isDirectSelection = false, skipUrlUpdate = false, isRecipient = false) {
+  async runSearch(query, isDirectSelection = false, skipUrlUpdate = false) {
     if (!query) {
       query = (this.UI.searchInput?.value || '').trim();
     }
@@ -2638,7 +2634,7 @@ const App = {
     } catch(e) {}
 
     try {
-      const [, results] = await Promise.all([LibLoader.loadD3(), API.searchAwards(query, isRecipient)]);
+      const [, results] = await Promise.all([LibLoader.loadD3(), API.searchAwards(query)]);
       if (thisSearch !== this._searchId) return;
 
       const filtered = Utils.filterActiveContracts(results);
@@ -4056,9 +4052,15 @@ const App = {
   selectAgencySuggestion(name, boxId, selectionType) {
     const input = this.UI.searchInput;
     const box   = DOM.get(boxId);
-    if (input) { input.value = name; input.blur(); }
+    // For Company (recipient) selections, strip legal entity suffixes so the search
+    // runs as a keyword — "AMAZON WEB SERVICES, INC." → "Amazon Web Services".
+    // This matches channel spend (VARs, resellers) in addition to direct prime contracts.
+    const searchName = selectionType === 'recipient'
+      ? name.replace(_RE_SUFFIX, '').replace(/,\s*$/, '').trim()
+      : name;
+    if (input) { input.value = searchName; input.blur(); }
     if (box)   { box.innerHTML = ''; box.classList.add('hidden'); }
-    this.runSearch(name, true, false, selectionType === 'recipient');
+    this.runSearch(searchName, true);
   },
 
   _buildArtiPayload() {
