@@ -144,7 +144,7 @@ a, button, input, select { touch-action: manipulation; }
   cursor: pointer; text-decoration: none; display: inline-flex; align-items: center;
   gap: 6px; transition: var(--transition);
 }
-.hdr-btn:hover { background: var(--bg-hover); color: var(--text-primary); } /* stub, jump nav removed */
+.hdr-btn:hover { background: var(--bg-hover); color: var(--text-primary); } 
 
 /* ── PAGE LAYOUT (minitools exact) ── */
 .page-wrap { max-width: min(96vw, 1920px); margin: 0 auto; padding: 36px 20px calc(4rem + var(--safe-bottom)); }
@@ -207,7 +207,7 @@ a, button, input, select { touch-action: manipulation; }
 }
 .contract-show-more:hover { background: var(--bg-hover); color: var(--text-primary); }
 
-/* ── SEARCH PILLS + RECENT CHIPS removed ── */
+
 
 /* ── ARTI FLOATING BUTTON ── */
 .arti-fab {
@@ -314,7 +314,7 @@ a, button, input, select { touch-action: manipulation; }
 .arti-hero-send:hover { background: var(--btn-hover); }
 .arti-hero-send:active { transform: scale(0.93); }
 
-/* Sheet body provides padding, individual section overrides removed */
+
 #chatInputWrap { border-top: 1px solid var(--border-inner); padding-top: 12px; margin-top: 8px; }
 
 .arti-bridge-text strong { color: var(--text-primary); font-weight: 700; }
@@ -1185,6 +1185,8 @@ const LibLoader = {
   }
 };
 
+const _memoVendor = {}; // normalizeVendorName cache — cleared on each new search
+const _memoAlias = {};  // resolveAgencyAlias cache — stable across searches
 const Utils = {
   downloadCSV(filename, headers, rows) {
     const csv = [headers.map(h => `"${h}"`).join(','), ...rows].join('\n');
@@ -1348,27 +1350,10 @@ const Utils = {
       }
     };
 
-    const fallbackCopy = (t) => {
-      const textArea = document.createElement("textarea");
-      textArea.value = t;
-      textArea.style.cssText = "position:fixed;opacity:0;pointer-events:none;";
-      document.body.appendChild(textArea);
-      textArea.focus();
-      textArea.select();
-      // execCommand is deprecated but kept as last-resort fallback for non-secure contexts
-      try {
-        const ok = document.execCommand('copy');
-        ok ? onSuccess() : App.toast('Copy not supported in this browser.', 'error');
-      } catch (err) {
-        App.toast('Copy failed. Please copy manually.', 'error');
-      }
-      document.body.removeChild(textArea);
-    };
-
     if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(text).then(onSuccess).catch(() => fallbackCopy(text));
+      navigator.clipboard.writeText(text).then(onSuccess).catch(() => App.toast('Copy failed.', 'error'));
     } else {
-      fallbackCopy(text);
+      App.toast('Copy requires HTTPS.', 'error');
     }
   },
 buyingOffices: {},
@@ -1492,21 +1477,22 @@ buyingOffices: {},
   dynamicAgencies: {}, 
   resolveAgencyAlias(term) {
     const lower = term.toLowerCase().trim();
+    if (_memoAlias[lower] !== undefined) return _memoAlias[lower];
     
     // 1. Check the dynamic memory bank first (for autocomplete selections)
-    if (this.dynamicAgencies[lower]) return this.dynamicAgencies[lower];
+    if (this.dynamicAgencies[lower]) _memoAlias[lower] = this.dynamicAgencies[lower]; return this.dynamicAgencies[lower];
 
     // 2. Check hardcoded acronyms
-    if (this.agencyAliases[lower]) return { tier: 'toptier', name: this.agencyAliases[lower] };
+    if (this.agencyAliases[lower]) _memoAlias[lower] = { tier: 'toptier', name: this.agencyAliases[lower] }; return { tier: 'toptier', name: this.agencyAliases[lower] };
 
     // 3. Full name match (supports "Air Force", "Energy", etc.)
     const stripPrefix = name => name.toLowerCase().replace(/^(department of (the )?|office of (the )?|u\.s\. )/, '').trim();
     const topMatch = Object.entries(this.agencyAliases).find(([abbr, fullName]) =>
       fullName.toLowerCase() === lower || abbr === lower || stripPrefix(fullName) === lower
     );
-    if (topMatch) return { tier: 'toptier', name: topMatch[1] };
+    if (topMatch) _memoAlias[lower] = { tier: 'toptier', name: topMatch[1] }; return { tier: 'toptier', name: topMatch[1] };
 
-    return null;
+    _memoAlias[lower] = null; return null;
   },
   // Common search shortcuts — maps what users type to what USASpending recognizes.
   // These are vendor/product terms that USASpending won't find via keyword alone.
@@ -1655,6 +1641,7 @@ normalizeQuery(query) {
 
   normalizeVendorName(vendorName) {
     if (!vendorName) return 'Unknown Vendor';
+    if (_memoVendor[vendorName]) return _memoVendor[vendorName];
     
     // 1. Force uppercase for baseline comparison
     let name = vendorName.toUpperCase();
@@ -1678,6 +1665,7 @@ normalizeQuery(query) {
       }
     }
 
+    _memoVendor[vendorName] = name;
     return name;
   },
 filterActiveContracts(awards) {
@@ -2623,6 +2611,7 @@ const App = {
 
     this.currentQuery = query;
     try { localStorage.setItem('fedhoo_last_query', query); } catch(e) {}
+    Object.keys(_memoVendor).forEach(k => delete _memoVendor[k]); // clear vendor memo on new search
     // Dismiss autocomplete
     const _sb = DOM.get('searchSuggestions');
     if (_sb) { _sb.innerHTML = ''; _sb.classList.add('hidden'); }
