@@ -2010,7 +2010,8 @@ const Html = {
     if (!rawText) return '';
     let text = rawText
       .replace(/<thinking>[\s\S]*?<\/thinking>/gi, '')
-      .replace(/<mark>/gi, '').replace(/<\/mark>/gi, '') // Lambda highlight tags, strip silently
+      .replace(/<mark>/gi, '').replace(/<\/mark>/gi, '')
+      .replace(/\\\$/g, '$')
       .trim();
     // Use marked if loaded; otherwise fall back to inline mini-parser
     // Mini-parser: bold, italic, headers, lists, line breaks
