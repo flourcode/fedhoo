@@ -2136,6 +2136,24 @@ async searchAwards(keywords) {
     // Lazy-load buying offices before processing results
     await Utils.loadBuyingOffices();
 
+    // If query looks like a proper agency name (no comma, no NAICS, no PSC) and
+    // dynamicAgencies is empty (fresh page load from URL param), pre-warm the cache
+    // so resolveAgencyAlias can find subtier agencies like "U.S. Special Operations Command"
+    const looksLikeAgencyName = keywords.length > 5 && !keywords.includes(',') && !/^\d{6}$/.test(keywords);
+    if (looksLikeAgencyName && Object.keys(Utils.dynamicAgencies).length === 0) {
+      try {
+        const suggestions = await API.fetchAgencySuggestions(keywords);
+        suggestions.forEach(s => {
+          if (s._type === 'agency') {
+            const sub = s.subtier_agency?.name || '';
+            const top = s.toptier_agency?.name || '';
+            if (sub && top) Utils.dynamicAgencies[sub.toLowerCase()] = { tier: 'subtier', name: sub, toptier_name: top };
+            if (top) Utils.dynamicAgencies[top.toLowerCase()] = { tier: 'toptier', name: top };
+          }
+        });
+      } catch(e) { /* non-fatal, proceed without cache */ }
+    }
+
     const cleanAndSort = (dataArray) => {
       return dataArray.map(award => {
         if (award['Recipient Name']) award['Recipient Name'] = Utils.normalizeVendorName(award['Recipient Name']);
