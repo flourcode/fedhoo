@@ -179,7 +179,12 @@ a, button, input, select { touch-action: manipulation; }
   color: var(--text-primary); letter-spacing: -0.02em; font-variant-numeric: tabular-nums;
 }
 .contract-date    { font-size: var(--text-xs); color: var(--text-quaternary); white-space: nowrap; }
-.contract-urgency { font-size: var(--text-xs); font-weight: 600; color: rgb(160,60,20); }
+.contract-urgency { font-size: var(--text-xs); font-weight: 600; color: var(--text-quaternary); }
+.set-aside-tag { background: var(--go-bg); color: var(--go-text); }
+.contract-meta { font-size: var(--text-xs); color: var(--text-quaternary); margin-top: 2px; }
+.contract-urgency.urgent { color: rgb(160,60,20); font-weight: 700; }
+.contract-urgency.warn   { color: var(--warn-text); font-weight: 600; }
+
 .contract-view {
   font-size: 10px; font-weight: 700; color: var(--btn-bg);
   text-decoration: none; white-space: nowrap;
@@ -1175,6 +1180,17 @@ const LibLoader = {
 };
 
 const Utils = {
+  downloadCSV(filename, headers, rows) {
+    const csv = [headers.map(h => `"${h}"`).join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${filename}_${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  },
+
   vibrate(duration = 10) {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
       try { navigator.vibrate(duration); } catch(e) {}
@@ -3460,135 +3476,83 @@ selectAgencySuggestion(name, inputId, boxId) {
     if (btn && origHTML) setTimeout(() => { btn.innerHTML = origHTML; }, 2100);
   },
 
+  _buildContractRow(c, timeHtml) {
+    const vendor   = c['Recipient Name'] || 'Unknown Vendor';
+    const agency   = Utils.cleanAgency(c['Awarding Agency'] || '');
+    const desc     = (c['Description'] || '').slice(0, 120);
+    const naics    = c['NAICS'] ? (typeof c['NAICS'] === 'object' ? c['NAICS'].code : c['NAICS']) : '';
+    const state    = c['pop_state_code'] || '';
+    const city     = c['pop_city_name'] ? Utils.titleCase(c['pop_city_name']) : '';
+    const place    = [city, state].filter(Boolean).join(', ');
+    const vehicle  = Utils.detectVehicle(c);
+    const setAside = VehicleDetector.getSetAsideLabel(c['Type of Set Aside'] || '');
+    const meta     = [place, naics ? `NAICS ${naics}` : ''].filter(Boolean).join(' · ');
+    const url      = c['generated_internal_id']
+      ? `https://www.usaspending.gov/award/${c['generated_internal_id']}`
+      : c['Award ID'] ? `https://www.usaspending.gov/search/?hash=&keyword=${encodeURIComponent(c['Award ID'])}` : '';
+    return `<div class="contract-row">
+      <div class="contract-body">
+        <div class="contract-vendor">${Html.escapeHtml(vendor)}</div>
+        <div class="contract-agency">${Html.escapeHtml(agency)}</div>
+        ${vehicle  ? `<span class="vehicle-tag">${Html.escapeHtml(vehicle)}</span>` : ''}
+        ${setAside ? `<span class="vehicle-tag set-aside-tag">${Html.escapeHtml(setAside)}</span>` : ''}
+        ${desc     ? `<div class="contract-desc">${Html.escapeHtml(desc)}</div>` : ''}
+        ${meta     ? `<div class="contract-meta">${Html.escapeHtml(meta)}</div>` : ''}
+      </div>
+      <div class="contract-right">
+        <span class="contract-amount">${Utils.money(c['Award Amount'])}</span>
+        ${timeHtml}
+        ${url ? `<a href="${url}" target="_blank" rel="noopener" class="contract-view">View</a>` : ''}
+      </div>
+    </div>`;
+  },
+
   renderExpiring() {
-    const data = this.searchData.active;
     const now = new Date();
     const cutoff = new Date(now); cutoff.setDate(cutoff.getDate() + 90);
-
-    const expiring = data
-      .filter(c => {
-        const end = new Date(c['End Date']);
-        return end > now && end <= cutoff && (parseFloat(c['Award Amount'])||0) > 50000;
-      })
+    const data = this.searchData.active
+      .filter(c => { const e = new Date(c['End Date']); return e > now && e <= cutoff && (parseFloat(c['Award Amount'])||0) > 50000; })
       .sort((a, b) => new Date(a['End Date']) - new Date(b['End Date']));
-
-    const list = DOM.get('expiringList');
-    const card = DOM.get('expiringCard');
+    const list = DOM.get('expiringList'), card = DOM.get('expiringCard');
     if (!list || !card) return;
-    if (!expiring.length) { card.classList.add('hidden'); return; }
+    if (!data.length) { card.classList.add('hidden'); return; }
     card.classList.remove('hidden');
-
     const SHOW = 8;
     const render = (all) => {
-      const items = all ? expiring : expiring.slice(0, SHOW);
+      const items = all ? data : data.slice(0, SHOW);
       list.innerHTML = items.map(c => {
-        const end  = new Date(c['End Date']);
-        const days = Math.ceil((end - now) / 86400000);
-        const urgencyStyle = days <= 30
-          ? 'color:rgb(160,60,20);font-weight:700;'
-          : days <= 60 ? 'color:var(--warn-text);font-weight:600;' : '';
-        const vendor  = c['Recipient Name'] || 'Unknown Vendor';
-        const agency  = Utils.cleanAgency(c['Awarding Agency'] || '');
-        const desc    = (c['Description'] || '').slice(0, 120);
-        const naics   = c['NAICS'] ? (typeof c['NAICS'] === 'object' ? c['NAICS'].code : c['NAICS']) : '';
-        const state   = c['pop_state_code'] || '';
-        const city    = c['pop_city_name'] ? Utils.titleCase(c['pop_city_name']) : '';
-        const place   = [city, state].filter(Boolean).join(', ');
-        const vehicle = Utils.detectVehicle(c);
-        const setAside = VehicleDetector.getSetAsideLabel(c['Type of Set Aside'] || '');
-        const meta    = [place, naics ? `NAICS ${naics}` : ''].filter(Boolean).join(' · ');
-        const url     = c['generated_internal_id']
-          ? `https://www.usaspending.gov/award/${c['generated_internal_id']}`
-          : c['Award ID'] ? `https://www.usaspending.gov/search/?hash=&keyword=${encodeURIComponent(c['Award ID'])}` : '';
-        const leftHtml = `<div class="contract-body">
-            <div class="contract-vendor">${Html.escapeHtml(vendor)}</div>
-            <div class="contract-agency">${Html.escapeHtml(agency)}</div>
-            ${vehicle  ? `<span class="vehicle-tag">${Html.escapeHtml(vehicle)}</span>` : ''}
-            ${setAside ? `<span class="vehicle-tag" style="background:var(--go-bg);color:var(--go-text);">${Html.escapeHtml(setAside)}</span>` : ''}
-            ${desc     ? `<div class="contract-desc">${Html.escapeHtml(desc)}</div>` : ''}
-            ${meta     ? `<div class="contract-agency" style="margin-top:2px;color:var(--text-quaternary);">${Html.escapeHtml(meta)}</div>` : ''}
-          </div>`;
-        return `<div class="contract-row">
-          ${leftHtml}
-          <div class="contract-right">
-            <span class="contract-amount">${Utils.money(c['Award Amount'])}</span>
-            <span class="contract-urgency" style="${urgencyStyle}">${days}d</span>
-            ${url ? `<a href="${url}" target="_blank" rel="noopener" class="contract-view">View</a>` : ''}
-          </div>
-        </div>`;
+        const days = Math.ceil((new Date(c['End Date']) - now) / 86400000);
+        const cls  = days <= 30 ? 'contract-urgency urgent' : days <= 60 ? 'contract-urgency warn' : 'contract-urgency';
+        return this._buildContractRow(c, `<span class="${cls}">${days}d</span>`);
       }).join('');
-      if (!all && expiring.length > SHOW) {
-        list.insertAdjacentHTML('beforeend',
-          `<button class="contract-show-more" onclick="App._renderExpiringAll()">Show all ${expiring.length} expiring contracts</button>`);
-      }
+      if (!all && data.length > SHOW) list.insertAdjacentHTML('beforeend',
+        `<button class="contract-show-more" onclick="App._renderExpiringAll()">Show all ${data.length} expiring contracts</button>`);
     };
     this._renderExpiringAll = () => render(true);
     render(false);
   },
 
   renderRecent() {
-    const data = this.searchData.active;
     const now = new Date();
     const cutoff = new Date(now); cutoff.setDate(cutoff.getDate() - 90);
-
-    const recent = data
-      .filter(c => {
-        const start = new Date(c['Start Date']);
-        return start >= cutoff && start <= now;
-      })
+    const data = this.searchData.active
+      .filter(c => { const s = new Date(c['Start Date']); return s >= cutoff && s <= now; })
       .sort((a, b) => new Date(b['Start Date']) - new Date(a['Start Date']));
-
-    const list = DOM.get('recentList');
-    const card = DOM.get('recentCard');
+    const list = DOM.get('recentList'), card = DOM.get('recentCard');
     if (!list || !card) return;
-    if (!recent.length) { card.classList.add('hidden'); return; }
+    if (!data.length) { card.classList.add('hidden'); return; }
     card.classList.remove('hidden');
-
     const SHOW = 8;
     const render = (all) => {
-      const items = all ? recent : recent.slice(0, SHOW);
+      const items = all ? data : data.slice(0, SHOW);
       list.innerHTML = items.map(c => {
-        const start   = new Date(c['Start Date']);
-        const daysAgo = Math.floor((now - start) / 86400000);
-        const ago = daysAgo === 0 ? 'Today'
-          : daysAgo === 1 ? 'Yesterday'
-          : daysAgo <= 7  ? `${daysAgo}d ago`
-          : daysAgo <= 30 ? `${Math.ceil(daysAgo/7)}w ago`
-          : `${Math.floor(daysAgo/30)}mo ago`;
-        const vendor  = c['Recipient Name'] || 'Unknown Vendor';
-        const agency  = Utils.cleanAgency(c['Awarding Agency'] || '');
-        const desc    = (c['Description'] || '').slice(0, 120);
-        const naics   = c['NAICS'] ? (typeof c['NAICS'] === 'object' ? c['NAICS'].code : c['NAICS']) : '';
-        const state   = c['pop_state_code'] || '';
-        const city    = c['pop_city_name'] ? Utils.titleCase(c['pop_city_name']) : '';
-        const place   = [city, state].filter(Boolean).join(', ');
-        const vehicle = Utils.detectVehicle(c);
-        const setAside = VehicleDetector.getSetAsideLabel(c['Type of Set Aside'] || '');
-        const meta    = [place, naics ? `NAICS ${naics}` : ''].filter(Boolean).join(' · ');
-        const url     = c['generated_internal_id']
-          ? `https://www.usaspending.gov/award/${c['generated_internal_id']}`
-          : c['Award ID'] ? `https://www.usaspending.gov/search/?hash=&keyword=${encodeURIComponent(c['Award ID'])}` : '';
-        const leftHtml = `<div class="contract-body">
-            <div class="contract-vendor">${Html.escapeHtml(vendor)}</div>
-            <div class="contract-agency">${Html.escapeHtml(agency)}</div>
-            ${vehicle  ? `<span class="vehicle-tag">${Html.escapeHtml(vehicle)}</span>` : ''}
-            ${setAside ? `<span class="vehicle-tag" style="background:var(--go-bg);color:var(--go-text);">${Html.escapeHtml(setAside)}</span>` : ''}
-            ${desc     ? `<div class="contract-desc">${Html.escapeHtml(desc)}</div>` : ''}
-            ${meta     ? `<div class="contract-agency" style="margin-top:2px;color:var(--text-quaternary);">${Html.escapeHtml(meta)}</div>` : ''}
-          </div>`;
-        return `<div class="contract-row">
-          ${leftHtml}
-          <div class="contract-right">
-            <span class="contract-amount">${Utils.money(c['Award Amount'])}</span>
-            <span class="contract-date">${ago}</span>
-            ${url ? `<a href="${url}" target="_blank" rel="noopener" class="contract-view">View</a>` : ''}
-          </div>
-        </div>`;
+        const d = Math.floor((now - new Date(c['Start Date'])) / 86400000);
+        const ago = d === 0 ? 'Today' : d === 1 ? 'Yesterday'
+          : d <= 7 ? `${d}d ago` : d <= 30 ? `${Math.ceil(d/7)}w ago` : `${Math.floor(d/30)}mo ago`;
+        return this._buildContractRow(c, `<span class="contract-date">${ago}</span>`);
       }).join('');
-      if (!all && recent.length > SHOW) {
-        list.insertAdjacentHTML('beforeend',
-          `<button class="contract-show-more" onclick="App._renderRecentAll()">Show all ${recent.length} recent awards</button>`);
-      }
+      if (!all && data.length > SHOW) list.insertAdjacentHTML('beforeend',
+        `<button class="contract-show-more" onclick="App._renderRecentAll()">Show all ${data.length} recent awards</button>`);
     };
     this._renderRecentAll = () => render(true);
     render(false);
@@ -3685,26 +3649,26 @@ selectAgencySuggestion(name, inputId, boxId) {
 
   switchChartView(view) {
     this._chartView = view;
-    const track = DOM.get('chartTrack');
-    const viewport = DOM.get('chartViewport');
+    const track = this.UI.chartTrack;
+    const viewport = this.UI.chartViewport;
     const offset = view === 'sankey' ? '-33.333%' : view === 'subsankey' ? '-66.666%' : '0%';
     if (track) track.style.transform = `translateX(${offset})`;
 
     // Tabs
-    DOM.get('tabTreemap')?.classList.toggle('active', view === 'treemap');
-    DOM.get('tabSankey')?.classList.toggle('active', view === 'sankey');
-    DOM.get('tabSubSankey')?.classList.toggle('active', view === 'subsankey');
+    this.UI.tabTreemap?.classList.toggle('active', view === 'treemap');
+    this.UI.tabSankey?.classList.toggle('active', view === 'sankey');
+    this.UI.tabSubSankey?.classList.toggle('active', view === 'subsankey');
     // Dots
-    DOM.get('dotTreemap')?.classList.toggle('active', view === 'treemap');
-    DOM.get('dotSankey')?.classList.toggle('active', view === 'sankey');
-    DOM.get('dotSubSankey')?.classList.toggle('active', view === 'subsankey');
+    this.UI.dotTreemap?.classList.toggle('active', view === 'treemap');
+    this.UI.dotSankey?.classList.toggle('active', view === 'sankey');
+    this.UI.dotSubSankey?.classList.toggle('active', view === 'subsankey');
     // Mode toggles visibility
-    const toggleRow = DOM.get('bubbleToggleRow');
+    const toggleRow = this.UI.bubbleToggleRow;
     if (toggleRow) toggleRow.style.visibility = view === 'treemap' ? '' : 'hidden';
 
     // Hero number — update to reflect what the view is actually showing
-    const heroEl = DOM.get('marketHeroNumber');
-    const titleEl = DOM.get('marketCardTitle');
+    const heroEl = this.UI.marketHeroNumber;
+    const titleEl = this.UI.marketCardTitle;
     if (view === 'subsankey') {
       // Show subaward total — different subset from main search
       const subs = this._subawardData || [];
@@ -3721,19 +3685,19 @@ selectAgencySuggestion(name, inputId, boxId) {
 
     if (view === 'sankey') {
       if (this.searchData.loaded) {
-        const c = DOM.get('sankeyContainer');
+        const c = this.UI.sankeyContainer;
         if (c && !c.dataset.rendered) this.renderSankey();
         setTimeout(() => {
-          const panel = DOM.get('panelSankey');
+          const panel = this.UI.panelSankey;
           if (viewport && panel) viewport.style.height = panel.scrollHeight + 'px';
         }, 370);
       }
     } else if (view === 'subsankey') {
       if (this.searchData.loaded) {
-        const c = DOM.get('subSankeyContainer');
+        const c = this.UI.subSankeyContainer;
         if (c && !c.dataset.rendered) this.renderSubSankey();
         setTimeout(() => {
-          const panel = DOM.get('panelSubSankey');
+          const panel = this.UI.panelSubSankey;
           if (viewport && panel) viewport.style.height = panel.scrollHeight + 'px';
         }, 370);
       }
@@ -4029,13 +3993,7 @@ selectAgencySuggestion(name, inputId, boxId) {
       esc(c['pop_state_code']),
       esc(c['generated_internal_id'] ? `https://www.usaspending.gov/award/${c['generated_internal_id']}` : ''),
     ].join(','));
-    const csv = [headers.map(h => `"${h}"`).join(','), ...rows].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `fedhoo_expiring_${(this.currentQuery||'export').replace(/\s+/g,'_')}_${new Date().toISOString().slice(0,10)}.csv`;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    Utils.downloadCSV(`fedhoo_expiring_${(this.currentQuery||'export').replace(/\s+/g,'_')}`, headers, rows);
     this.toast('Expiring contracts exported.', 'ok');
   },
 
@@ -4055,13 +4013,7 @@ selectAgencySuggestion(name, inputId, boxId) {
       esc(s['pop_state_code']),
       esc(s['prime_award_generated_internal_id'] ? `https://www.usaspending.gov/award/${s['prime_award_generated_internal_id']}` : ''),
     ].join(','));
-    const csv = [headers.map(h => `"${h}"`).join(','), ...rows].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `fedhoo_subawards_${(this.currentQuery||'export').replace(/\s+/g,'_')}_${new Date().toISOString().slice(0,10)}.csv`;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    Utils.downloadCSV(`fedhoo_subawards_${(this.currentQuery||'export').replace(/\s+/g,'_')}`, headers, rows);
     this.toast('Subawards exported.', 'ok');
   },
 
@@ -4081,15 +4033,7 @@ selectAgencySuggestion(name, inputId, boxId) {
         return esc(v);
       }), esc(url)].join(',');
     });
-    const csv = [headers.map(h => `"${h}"`).join(','), ...rows].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `fedhoo_${(this.currentQuery || 'export').replace(/\s+/g, '_')}_${new Date().toISOString().slice(0,10)}.csv`;
-    document.body.appendChild(a); a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    Utils.downloadCSV(`fedhoo_${(this.currentQuery||'export').replace(/\s+/g,'_')}`, headers, rows);
     this.toast('CSV exported.', 'ok');
   },
 
@@ -4430,6 +4374,25 @@ selectAgencySuggestion(name, inputId, boxId) {
         DOM.show('resultsGrid');
       }
     });
+
+    // Cache static DOM elements used in high-frequency functions
+    this.UI = {
+      chartTrack:       DOM.get('chartTrack'),
+      chartViewport:    DOM.get('chartViewport'),
+      tabTreemap:       DOM.get('tabTreemap'),
+      tabSankey:        DOM.get('tabSankey'),
+      tabSubSankey:     DOM.get('tabSubSankey'),
+      dotTreemap:       DOM.get('dotTreemap'),
+      dotSankey:        DOM.get('dotSankey'),
+      dotSubSankey:     DOM.get('dotSubSankey'),
+      bubbleToggleRow:  DOM.get('bubbleToggleRow'),
+      marketHeroNumber: DOM.get('marketHeroNumber'),
+      marketCardTitle:  DOM.get('marketCardTitle'),
+      sankeyContainer:  DOM.get('sankeyContainer'),
+      panelSankey:      DOM.get('panelSankey'),
+      subSankeyContainer: DOM.get('subSankeyContainer'),
+      panelSubSankey:   DOM.get('panelSubSankey'),
+    };
 
     // Preload D3
     LibLoader.preloadWhenIdle();
