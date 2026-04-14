@@ -1188,6 +1188,14 @@ const LibLoader = {
   }
 };
 
+const _RE_AMPERSAND = /\s+&\s+/g;
+const _RE_CORP_SUFFIX = /,?\s*(LLC|INC|CORP|CORPORATION|INCORPORATED|COMPANY|CO\.|LTD|L\.P\.|LP|P\.C\.|PLLC)\.?\s*$/gi;
+// Pre-compiled regexes for parseSearchTerms — defined once, reused on every search
+const _RE_PSC   = /^[A-Z]{1,2}\d{1,3}$|^\d{1,2}[A-Z]\d{0,2}$/i;
+const _RE_NAICS = /^\d{6}$/;
+const _RE_AND   = /\bAND\b/;
+const _RE_SUFFIX = /,?\s*(L\.?L\.?C\.?|INC\.?|CORP\.?|CORPORATION|INCORPORATED|COMPANY|CO\.?|LTD\.?|L\.?P\.?|P\.?C\.?|P\.?L\.?L\.?C\.?)\.?(?=\s*,|\s*$|\s+AND\b)/gi;
+
 const _memoVendor = {}; // normalizeVendorName cache — cleared on each new search
 const _memoAlias = {};  // resolveAgencyAlias cache — stable across searches
 const IS_TOUCH = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
@@ -1652,10 +1660,10 @@ normalizeQuery(query) {
 
     // 2. Standardize ampersands to "AND"
     // This perfectly fixes "Land & Armaments" vs "Land and Armaments" natively!
-    name = name.replace(/\s+&\s+/g, ' AND ');
+    name = name.replace(_RE_AMPERSAND, ' AND ');
 
     // 3. Strip messy corporate suffixes
-    name = name.replace(/,?\s*(LLC|INC|CORP|CORPORATION|INCORPORATED|COMPANY|CO\.|LTD|L\.P\.|LP|P\.C\.|PLLC)\.?\s*$/gi, '').trim();
+    name = name.replace(_RE_CORP_SUFFIX, '').trim();
 
     // 4. Exact-match alias (e.g. "IBM" → "INTERNATIONAL BUSINESS MACHINES")
     for (const [cleanName, variations] of Object.entries(Utils.VENDOR_ALIASES)) {
@@ -1686,19 +1694,14 @@ filterActiveContracts(awards) {
     });
   },
   parseSearchTerms(keywords) {
-    const pscPattern = /^[A-Z]{1,2}\d{1,3}$|^\d{1,2}[A-Z]\d{0,2}$/i;
-    const naicsPattern = /^\d{6}$/;
-    const hasAndOperator = /\bAND\b/.test(keywords);
+    const hasAndOperator = _RE_AND.test(keywords);
     
-    const cleaned = keywords
-      .replace(/,?\s*(L\.?L\.?C\.?|INC\.?|CORP\.?|CORPORATION|INCORPORATED|COMPANY|CO\.?|LTD\.?|L\.?P\.?|P\.?C\.?|P\.?L\.?L\.?C\.?)\.?(?=\s*,|\s*$|\s+AND\b)/gi, '')
-      .replace(/,\s*$/, '')
-      .trim();
+    const cleaned = keywords.replace(_RE_SUFFIX, '').replace(/,\s*$/, '').trim();
     
     const terms = cleaned.split(',').map(s => s.trim()).filter(s => s.length > 0);
-    const pscCodes = terms.filter(t => pscPattern.test(t)).map(t => t.toUpperCase());
-    const naicsCodes = terms.filter(t => naicsPattern.test(t));
-    const keywordTerms = terms.filter(t => !pscPattern.test(t) && !naicsPattern.test(t));
+    const pscCodes = terms.filter(t => _RE_PSC.test(t)).map(t => t.toUpperCase());
+    const naicsCodes = terms.filter(t => _RE_NAICS.test(t));
+    const keywordTerms = terms.filter(t => !_RE_PSC.test(t) && !_RE_NAICS.test(t));
     
     let andGroups = [];
     if (hasAndOperator) {
