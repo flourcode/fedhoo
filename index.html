@@ -4017,20 +4017,10 @@ selectAgencySuggestion(name, inputId, boxId) {
     const list = DOM.get('subawardsList');
     if (!card || !list || !this.searchData.loaded) return;
 
-    // Reuse the exact filters from the main search — avoids re-parsing AND queries incorrectly
-    // Replace prime award_type_codes with subaward type code ("2" = subcontract)
-    const filters = App._lastSearchFilters
-      ? (() => {
-          const f = JSON.parse(JSON.stringify(App._lastSearchFilters));
-          f.award_type_codes = ['2'];
-          return f;
-        })()
-      : (() => {
-          const timePeriod = Utils.getTrailing12Mo();
-          const f = { time_period: [timePeriod[0]], award_type_codes: ['2'] };
-          App._applySectorFilter(f);
-          return f;
-        })();
+    // Build filters fresh from the current query — same approach as old govhoo getSubawards()
+    const timePeriod = Utils.getTrailing12Mo();
+    const filters = Utils.buildFilters(this.currentQuery, timePeriod);
+    App._applySectorFilter(filters);
 
     let subs = [];
     try {
