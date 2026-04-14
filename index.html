@@ -96,6 +96,10 @@
 .arti-brief-avatar { width:40px; height:40px; border-radius:50%; object-fit:cover; flex-shrink:0; }
 .arti-brief-name { font-size:var(--text-sm); font-weight:800; color:var(--text-primary); letter-spacing:-0.02em; }
 .arti-brief-role { font-size:var(--text-xs); color:var(--text-quaternary); }
+.arti-avatar-lg { width:100px; height:100px; border-radius:50%; object-fit:cover; margin:0 auto 16px; display:block; }
+.sankey-empty { text-align:center; padding:4rem; color:var(--text-tertiary); font-size:var(--text-sm); }
+.inline-tag { font-size:10px; font-weight:700; padding:1px 6px; border-radius:9999px; background:var(--accent-dim); color:var(--accent); vertical-align:middle; }
+
 
 
 /* ── RESET (minitools exact) ── */
@@ -2767,7 +2771,7 @@ const App = {
     const container = DOM.get('bubbleChartContainer');
     if (container) container.innerHTML = `
       <div class="empty-state">
-        <img src="/images/arti.png" alt="Arti" style="width:100px;height:100px;border-radius:50%;object-fit:cover;margin:0 auto 16px;display:block;">
+        <img src="/images/arti.png" alt="Arti" class="arti-avatar-lg">
         <h3 class="empty-title">Well, this is awkward.</h3>
         <p class="empty-desc">Nothing came back for "<strong>${Html.escapeHtml(query)}</strong>"${territoryNote}. This is a strict government database, brand names and nicknames often don't match how contracts are filed.</p>
         ${nameHintHtml}
@@ -3771,7 +3775,7 @@ selectAgencySuggestion(name, inputId, boxId) {
   _renderSankeyInner(container) {
     const data = this.searchData.active;
     if (!data || data.length === 0) {
-      container.innerHTML = '<div style="text-align:center;padding:4rem;color:var(--text-tertiary)">No data for this view.</div>';
+      container.innerHTML = '<div class="sankey-empty">No data for this view.</div>';
       return;
     }
 
@@ -3866,7 +3870,7 @@ selectAgencySuggestion(name, inputId, boxId) {
 
     const subs = this._subawardData;
     if (!subs || !subs.length) {
-      container.innerHTML = '<div style="text-align:center;padding:4rem;color:var(--text-tertiary);font-size:var(--text-sm);">No subaward data available for this market.</div>';
+      container.innerHTML = '<div class="sankey-empty">No subaward data available for this market.</div>';
       return;
     }
 
@@ -3884,7 +3888,7 @@ selectAgencySuggestion(name, inputId, boxId) {
 
     const allPaths = Object.entries(pathMap).sort((a, b) => b[1] - a[1]).slice(0, 40);
     if (!allPaths.length) {
-      container.innerHTML = '<div style="text-align:center;padding:4rem;color:var(--text-tertiary);font-size:var(--text-sm);">No subaward relationships found.</div>';
+      container.innerHTML = '<div class="sankey-empty">No subaward relationships found.</div>';
       return;
     }
 
@@ -3986,7 +3990,7 @@ selectAgencySuggestion(name, inputId, boxId) {
       return `<div class="prime-row">
         <span class="prime-rank">${i + 1}</span>
         <div class="prime-body">
-          <div class="prime-name">${Html.escapeHtml(name)}${saLabel ? ` <span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:9999px;background:var(--accent-dim);color:var(--accent);vertical-align:middle;">${Html.escapeHtml(saLabel)}</span>` : ''}</div>
+          <div class="prime-name">${Html.escapeHtml(name)}${saLabel ? ` <span class="inline-tag">${Html.escapeHtml(saLabel)}</span>` : ''}</div>
           <div class="prime-meta">${d.contracts} contract${d.contracts !== 1 ? 's' : ''} · ${agencyCount} agenc${agencyCount !== 1 ? 'ies' : 'y'}</div>
         </div>
         <span class="prime-amount">${Utils.money(d.spend)}</span>
