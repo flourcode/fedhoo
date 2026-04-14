@@ -1384,101 +1384,203 @@ buyingOffices: {},
     return this._officesLoading;
   },
   agencyAliases: {
-    // Top-level agencies
-    "dhs": "Department of Homeland Security",
-    "dod": "Department of Defense",
-    "hhs": "Department of Health and Human Services",
-    "va": "Department of Veterans Affairs",
-    "gsa": "General Services Administration",
-    "doj": "Department of Justice",
-    "dot": "Department of Transportation",
-    "doe": "Department of Energy",
-    "doed": "Department of Education",
-    "dol": "Department of Labor",
-    "hud": "Department of Housing and Urban Development",
+    // Toptier agencies — maps acronym/shorthand → USASpending toptier name
+    "aahc": "400 Years of African-American History Commission",
+    "usab": "Access Board",
+    "acus": "Administrative Conference of the U.S.",
+    "achp": "Advisory Council on Historic Preservation",
+    "usadf": "African Development Foundation",
+    "usaid": "Agency for International Development",
+    "abmc": "American Battle Monuments Commission",
+    "arc": "Appalachian Regional Commission",
+    "afrh": "Armed Forces Retirement Home",
+    "cftc": "Commodity Futures Trading Commission",
+    "cfpb": "Consumer Financial Protection Bureau",
+    "cpsc": "Consumer Product Safety Commission",
+    "usace": "Corps of Engineers - Civil Works",
+    "dnfsb": "Defense Nuclear Facilities Safety Board",
     "usda": "Department of Agriculture",
-    "state": "Department of State",
+    "doc": "Department of Commerce",
     "commerce": "Department of Commerce",
+    "dod": "Department of Defense",
+    "doed": "Department of Education",
+    "doe": "Department of Energy",
+    "hhs": "Department of Health and Human Services",
+    "dhs": "Department of Homeland Security",
+    "hud": "Department of Housing and Urban Development",
+    "doj": "Department of Justice",
+    "dol": "Department of Labor",
+    "dos": "Department of State",
+    "state": "Department of State",
+    "dot": "Department of Transportation",
+    "va": "Department of Veterans Affairs",
+    "doi": "Department of the Interior",
+    "treas": "Department of the Treasury",
     "treasury": "Department of the Treasury",
-    "nasa": "National Aeronautics and Space Administration",
+    "eac": "Election Assistance Commission",
     "epa": "Environmental Protection Agency",
-    "opm": "Office of Personnel Management",
-    "ssa": "Social Security Administration",
-    "sba": "Small Business Administration",
-    // Military branches
-    "army": "Department of the Army",
-    "navy": "Department of the Navy",
-    "usaf": "Department of the Air Force",
-    "air force": "Department of the Air Force",
-    "usmc": "Marine Corps",
-    "marine corps": "Marine Corps",
-    "ussf": "United States Space Force",
-    "space force": "United States Space Force",
-    // Sub-agencies / components
-    "disa": "Defense Information Systems Agency",
-    "darpa": "Defense Advanced Research Projects Agency",
-    "dla": "Defense Logistics Agency",
-    "dcsa": "Defense Counterintelligence and Security Agency",
-    "mda": "Missile Defense Agency",
-    "fbi": "Federal Bureau of Investigation",
-    "dea": "Drug Enforcement Administration",
-    "atf": "Bureau of Alcohol, Tobacco, Firearms and Explosives",
-    "irs": "Internal Revenue Service",
-    "fda": "Food and Drug Administration",
-    "cdc": "Centers for Disease Control and Prevention",
-    "nih": "National Institutes of Health",
-    "cms": "Centers for Medicare and Medicaid Services",
-    "fema": "Federal Emergency Management Agency",
-    "tsa": "Transportation Security Administration",
-    "cbp": "U.S. Customs and Border Protection",
-    "ice": "U.S. Immigration and Customs Enforcement",
-    "cisa": "Cybersecurity and Infrastructure Security Agency",
-    "usss": "United States Secret Service",
-    "faa": "Federal Aviation Administration",
-    "noaa": "National Oceanic and Atmospheric Administration",
-    "nist": "National Institute of Standards and Technology",
-    "nsa": "National Security Agency",
-    "cia": "Central Intelligence Agency",
-    "dia": "Defense Intelligence Agency",
-    "nga": "National Geospatial-Intelligence Agency",
-    "nro": "National Reconnaissance Office",
-    "sec": "Securities and Exchange Commission",
-    "ftc": "Federal Trade Commission",
+    "eeoc": "Equal Employment Opportunity Commission",
+    "eop": "Executive Office of the President",
+    "exim": "Export-Import Bank of the United States",
+    "fcsic": "Farm Credit System Insurance Corporation",
     "fcc": "Federal Communications Commission",
+    "fdic": "Federal Deposit Insurance Corporation",
     "fec": "Federal Election Commission",
+    "ftc": "Federal Trade Commission",
+    "gsa": "General Services Administration",
     "gao": "Government Accountability Office",
-    // Vendor/company shortcuts for search — keyword searches, not agency filters
-    // These are duplicated intentionally in SEARCH_SHORTCUTS; entries here would be
-    // misrouted as agency filters by resolveAgencyAlias, so they must NOT be here.
+    "imls": "Institute of Museum and Library Services",
+    "usitc": "International Trade Commission",
+    "mcc": "Millennium Challenge Corporation",
+    "nasa": "National Aeronautics and Space Administration",
+    "nara": "National Archives and Records Administration",
+    "ncua": "National Credit Union Administration",
+    "nea": "National Endowment for the Arts",
+    "neh": "National Endowment for the Humanities",
+    "nlrb": "National Labor Relations Board",
+    "nsf": "National Science Foundation",
+    "ntsb": "National Transportation Safety Board",
+    "nrc": "Nuclear Regulatory Commission",
+    "oge": "Office of Government Ethics",
+    "opm": "Office of Personnel Management",
+    "pc": "Peace Corps",
+    "pbgc": "Pension Benefit Guaranty Corporation",
+    "pcortf": "Patient-Centered Outcomes Research Trust Fund",
+    "rrb": "Railroad Retirement Board",
+    "sec": "Securities and Exchange Commission",
+    "sba": "Small Business Administration",
+    "ssa": "Social Security Administration",
+    "stb": "Surface Transportation Board",
+    "usagm": "U.S. Agency for Global Media",
+    "dfc": "U.S. International Development Finance Corporation",
+    "cavc": "United States Court of Appeals for Veterans Claims",
+    "ustda": "United States Trade and Development Agency",
   },
 
-  // Subtier agency aliases — carry full tier metadata for USASpending agency filters.
-  // These are DoD components that USASpending indexes as subtiers under Department of Defense.
-  subtierAliases: {
-    "socom":      { tier: 'subtier', name: 'U.S. Special Operations Command',  toptier_name: 'Department of Defense' },
-    "ussocom":    { tier: 'subtier', name: 'U.S. Special Operations Command',  toptier_name: 'Department of Defense' },
-    "cybercom":   { tier: 'subtier', name: 'U.S. Cyber Command',               toptier_name: 'Department of Defense' },
-    "uscybercom": { tier: 'subtier', name: 'U.S. Cyber Command',               toptier_name: 'Department of Defense' },
-    "stratcom":   { tier: 'subtier', name: 'U.S. Strategic Command',           toptier_name: 'Department of Defense' },
-    "usstratcom": { tier: 'subtier', name: 'U.S. Strategic Command',           toptier_name: 'Department of Defense' },
-    "transcom":   { tier: 'subtier', name: 'U.S. Transportation Command',      toptier_name: 'Department of Defense' },
-    "ustranscom": { tier: 'subtier', name: 'U.S. Transportation Command',      toptier_name: 'Department of Defense' },
-    "centcom":    { tier: 'subtier', name: 'U.S. Central Command',             toptier_name: 'Department of Defense' },
-    "uscentcom":  { tier: 'subtier', name: 'U.S. Central Command',             toptier_name: 'Department of Defense' },
-    "eucom":      { tier: 'subtier', name: 'U.S. European Command',            toptier_name: 'Department of Defense' },
-    "useucom":    { tier: 'subtier', name: 'U.S. European Command',            toptier_name: 'Department of Defense' },
-    "indopacom":  { tier: 'subtier', name: 'U.S. Indo-Pacific Command',        toptier_name: 'Department of Defense' },
-    "usindopacom":{ tier: 'subtier', name: 'U.S. Indo-Pacific Command',        toptier_name: 'Department of Defense' },
-    "northcom":   { tier: 'subtier', name: 'U.S. Northern Command',            toptier_name: 'Department of Defense' },
-    "usnorthcom": { tier: 'subtier', name: 'U.S. Northern Command',            toptier_name: 'Department of Defense' },
-    "africom":    { tier: 'subtier', name: 'U.S. Africa Command',              toptier_name: 'Department of Defense' },
-    "southcom":   { tier: 'subtier', name: 'U.S. Southern Command',            toptier_name: 'Department of Defense' },
-    "jsoc":       { tier: 'subtier', name: 'Joint Special Operations Command', toptier_name: 'Department of Defense' },
-    "navsea":     { tier: 'subtier', name: 'Naval Sea Systems Command',        toptier_name: 'Department of Defense' },
-    "navair":     { tier: 'subtier', name: 'Naval Air Systems Command',        toptier_name: 'Department of Defense' },
-    "spawar":     { tier: 'subtier', name: 'Space and Naval Warfare Systems Command', toptier_name: 'Department of Defense' },
-    "amc":        { tier: 'subtier', name: 'Army Materiel Command',            toptier_name: 'Department of Defense' },
-    "afmc":       { tier: 'subtier', name: 'Air Force Materiel Command',       toptier_name: 'Department of Defense' },
+  // Subtier agency aliases — components that sit under a toptier in USASpending.
+  // resolveAgencyAlias returns tier:'subtier' for these so the API filter works correctly.
+  subAgencyAliases: {
+    // Each entry: { tier, name, toptier_name } — matches the shape dynamicAgencies uses,
+    // so toptier_name is always present when building USASpending agency filters.
+    // Military branches (subtier under Department of Defense)
+    "army":        { tier:'subtier', name:'Department of the Army',          toptier_name:'Department of Defense' },
+    "navy":        { tier:'subtier', name:'Department of the Navy',          toptier_name:'Department of Defense' },
+    "usaf":        { tier:'subtier', name:'Department of the Air Force',     toptier_name:'Department of Defense' },
+    "air force":   { tier:'subtier', name:'Department of the Air Force',     toptier_name:'Department of Defense' },
+    "usmc":        { tier:'subtier', name:'Marine Corps',                    toptier_name:'Department of Defense' },
+    "marine corps":{ tier:'subtier', name:'Marine Corps',                    toptier_name:'Department of Defense' },
+    "ussf":        { tier:'subtier', name:'United States Space Force',       toptier_name:'Department of Defense' },
+    "space force": { tier:'subtier', name:'United States Space Force',       toptier_name:'Department of Defense' },
+    // Combatant commands
+    "socom":       { tier:'subtier', name:'U.S. Special Operations Command', toptier_name:'Department of Defense' },
+    "ussocom":     { tier:'subtier', name:'U.S. Special Operations Command', toptier_name:'Department of Defense' },
+    "cybercom":    { tier:'subtier', name:'U.S. Cyber Command',              toptier_name:'Department of Defense' },
+    "uscybercom":  { tier:'subtier', name:'U.S. Cyber Command',              toptier_name:'Department of Defense' },
+    "stratcom":    { tier:'subtier', name:'U.S. Strategic Command',          toptier_name:'Department of Defense' },
+    "usstratcom":  { tier:'subtier', name:'U.S. Strategic Command',          toptier_name:'Department of Defense' },
+    "transcom":    { tier:'subtier', name:'U.S. Transportation Command',     toptier_name:'Department of Defense' },
+    "ustranscom":  { tier:'subtier', name:'U.S. Transportation Command',     toptier_name:'Department of Defense' },
+    "centcom":     { tier:'subtier', name:'U.S. Central Command',            toptier_name:'Department of Defense' },
+    "uscentcom":   { tier:'subtier', name:'U.S. Central Command',            toptier_name:'Department of Defense' },
+    "eucom":       { tier:'subtier', name:'U.S. European Command',           toptier_name:'Department of Defense' },
+    "useucom":     { tier:'subtier', name:'U.S. European Command',           toptier_name:'Department of Defense' },
+    "indopacom":   { tier:'subtier', name:'U.S. Indo-Pacific Command',       toptier_name:'Department of Defense' },
+    "usindopacom": { tier:'subtier', name:'U.S. Indo-Pacific Command',       toptier_name:'Department of Defense' },
+    "northcom":    { tier:'subtier', name:'U.S. Northern Command',           toptier_name:'Department of Defense' },
+    "usnorthcom":  { tier:'subtier', name:'U.S. Northern Command',           toptier_name:'Department of Defense' },
+    "southcom":    { tier:'subtier', name:'U.S. Southern Command',           toptier_name:'Department of Defense' },
+    "africom":     { tier:'subtier', name:'U.S. Africa Command',             toptier_name:'Department of Defense' },
+    "jsoc":        { tier:'subtier', name:'Joint Special Operations Command',toptier_name:'Department of Defense' },
+    // DoD acquisition/systems commands
+    "navsea": { tier:'subtier', name:'Naval Sea Systems Command',             toptier_name:'Department of Defense' },
+    "navair":  { tier:'subtier', name:'Naval Air Systems Command',            toptier_name:'Department of Defense' },
+    "spawar":  { tier:'subtier', name:'Space and Naval Warfare Systems Command', toptier_name:'Department of Defense' },
+    "amc":     { tier:'subtier', name:'Army Materiel Command',                toptier_name:'Department of Defense' },
+    "afmc":    { tier:'subtier', name:'Air Force Materiel Command',           toptier_name:'Department of Defense' },
+    "disa":    { tier:'subtier', name:'Defense Information Systems Agency',   toptier_name:'Department of Defense' },
+    "darpa":   { tier:'subtier', name:'Defense Advanced Research Projects Agency', toptier_name:'Department of Defense' },
+    "dla":     { tier:'subtier', name:'Defense Logistics Agency',             toptier_name:'Department of Defense' },
+    "dcsa":    { tier:'subtier', name:'Defense Counterintelligence and Security Agency', toptier_name:'Department of Defense' },
+    "mda":     { tier:'subtier', name:'Missile Defense Agency',               toptier_name:'Department of Defense' },
+    "nnsa":    { tier:'subtier', name:'National Nuclear Security Administration', toptier_name:'Department of Energy' },
+    // DHS components
+    "fema":  { tier:'subtier', name:'Federal Emergency Management Agency',         toptier_name:'Department of Homeland Security' },
+    "tsa":   { tier:'subtier', name:'Transportation Security Administration',      toptier_name:'Department of Homeland Security' },
+    "cbp":   { tier:'subtier', name:'U.S. Customs and Border Protection',          toptier_name:'Department of Homeland Security' },
+    "ice":   { tier:'subtier', name:'U.S. Immigration and Customs Enforcement',    toptier_name:'Department of Homeland Security' },
+    "uscis": { tier:'subtier', name:'U.S. Citizenship and Immigration Services',   toptier_name:'Department of Homeland Security' },
+    "usss":  { tier:'subtier', name:'United States Secret Service',                toptier_name:'Department of Homeland Security' },
+    "cisa":  { tier:'subtier', name:'Cybersecurity and Infrastructure Security Agency', toptier_name:'Department of Homeland Security' },
+    // DOJ components
+    "fbi": { tier:'subtier', name:'Federal Bureau of Investigation',               toptier_name:'Department of Justice' },
+    "dea": { tier:'subtier', name:'Drug Enforcement Administration',               toptier_name:'Department of Justice' },
+    "atf": { tier:'subtier', name:'Bureau of Alcohol, Tobacco, Firearms and Explosives', toptier_name:'Department of Justice' },
+    // HHS components
+    "fda":  { tier:'subtier', name:'Food and Drug Administration',                 toptier_name:'Department of Health and Human Services' },
+    "cdc":  { tier:'subtier', name:'Centers for Disease Control and Prevention',   toptier_name:'Department of Health and Human Services' },
+    "nih":  { tier:'subtier', name:'National Institutes of Health',                toptier_name:'Department of Health and Human Services' },
+    "cms":  { tier:'subtier', name:'Centers for Medicare and Medicaid Services',   toptier_name:'Department of Health and Human Services' },
+    // DOT components
+    "faa":  { tier:'subtier', name:'Federal Aviation Administration',              toptier_name:'Department of Transportation' },
+    "fhwa": { tier:'subtier', name:'Federal Highway Administration',               toptier_name:'Department of Transportation' },
+    // DOC components
+    "noaa":   { tier:'subtier', name:'National Oceanic and Atmospheric Administration', toptier_name:'Department of Commerce' },
+    "nist":   { tier:'subtier', name:'National Institute of Standards and Technology',  toptier_name:'Department of Commerce' },
+    "census": { tier:'subtier', name:'Census Bureau',                              toptier_name:'Department of Commerce' },
+    // DOI components
+    "blm":  { tier:'subtier', name:'Bureau of Land Management',                    toptier_name:'Department of the Interior' },
+    "nps":  { tier:'subtier', name:'National Park Service',                        toptier_name:'Department of the Interior' },
+    "usfs": { tier:'subtier', name:'Forest Service',                               toptier_name:'Department of the Interior' },
+    "fws":  { tier:'subtier', name:'Fish and Wildlife Service',                    toptier_name:'Department of the Interior' },
+    "usgs": { tier:'subtier', name:'Geological Survey',                            toptier_name:'Department of the Interior' },
+    // Intel community
+    "nsa": { tier:'subtier', name:'National Security Agency',                      toptier_name:'Department of Defense' },
+    "cia": { tier:'subtier', name:'Central Intelligence Agency',                   toptier_name:'Department of Defense' },
+    "dia": { tier:'subtier', name:'Defense Intelligence Agency',                   toptier_name:'Department of Defense' },
+    "nga": { tier:'subtier', name:'National Geospatial-Intelligence Agency',       toptier_name:'Department of Defense' },
+    "nro": { tier:'subtier', name:'National Reconnaissance Office',                toptier_name:'Department of Defense' },
+    // Treasury components
+    "irs": { tier:'subtier', name:'Internal Revenue Service',                      toptier_name:'Department of the Treasury' },
+  },
+
+  // Vendor/keyword shortcuts — always produce keyword searches, never agency filters.
+  // Kept separate so resolveAgencyAlias never accidentally treats these as agencies.
+  queryAliases: {
+    "aws":         "Amazon Web Services",
+    "amazon":      "Amazon Web Services",
+    "amazon web":  "Amazon Web Services",
+    "gcp":         "Google Cloud",
+    "google cloud platform": "Google Cloud",
+    "msft":        "Microsoft",
+    "msft azure":  "Microsoft Azure",
+    "ibm":         "International Business Machines",
+    "hpe":         "Hewlett Packard Enterprise",
+    "hp":          "Hewlett Packard",
+    "dell":        "Dell Technologies",
+    "gd":          "General Dynamics",
+    "gdit":        "General Dynamics Information Technology",
+    "lmco":        "Lockheed Martin",
+    "lm":          "Lockheed Martin",
+    "ngc":         "Northrop Grumman",
+    "bah":         "Booz Allen Hamilton",
+    "saic":        "Science Applications International",
+    "wwt":         "World Wide Technology",
+    "panw":        "Palo Alto Networks",
+    "splunk":      "Splunk",
+    "splk":        "Splunk",
+    "zs":          "Zscaler",
+    "rtx":         "Raytheon",
+    "crowdstrike": "CrowdStrike",
+    "cs":          "CrowdStrike",
+    "okta":        "Okta",
+    "snow":        "Snowflake",
+    "now":         "ServiceNow",
+    "servicenow":  "ServiceNow",
+    "ai/ml":       "Artificial Intelligence",
+    "genai":       "Generative AI",
+    "llm":         "Large Language Model",
+    "zta":         "Zero Trust",
+    "zt":          "Zero Trust",
   },
   VEHICLE_MAP: {
     'NNG15SC': 'SEWP V', 'NNG15SD': 'SEWP V',
@@ -1511,61 +1613,32 @@ buyingOffices: {},
   resolveAgencyAlias(term) {
     const lower = term.toLowerCase().trim();
     if (_memoAlias[lower] !== undefined) return _memoAlias[lower];
-    
-    // 1. Check the dynamic memory bank first (for autocomplete selections)
+
+    // 1. Dynamic cache (autocomplete selections — already have correct tier/toptier_name)
     if (this.dynamicAgencies[lower]) { _memoAlias[lower] = this.dynamicAgencies[lower]; return this.dynamicAgencies[lower]; }
 
-    // 2. Check subtier aliases — DoD components that need tier:subtier + toptier_name
-    if (this.subtierAliases[lower]) { _memoAlias[lower] = this.subtierAliases[lower]; return this.subtierAliases[lower]; }
+    // 2. Subtier aliases — full {tier, name, toptier_name} objects, return directly
+    if (this.subAgencyAliases[lower]) { _memoAlias[lower] = this.subAgencyAliases[lower]; return this.subAgencyAliases[lower]; }
 
-    // 3. Check hardcoded toptier acronyms
+    // 3. Toptier aliases
     if (this.agencyAliases[lower]) { const r = { tier: 'toptier', name: this.agencyAliases[lower] }; _memoAlias[lower] = r; return r; }
 
-    // 4. Full name match (supports "Air Force", "Energy", etc.)
+    // 4. Full-name fallback — supports typing "Air Force", "Homeland Security", etc.
     const stripPrefix = name => name.toLowerCase().replace(/^(department of (the )?|office of (the )?|u\.s\. )/, '').trim();
-    const topMatch = Object.entries(this.agencyAliases).find(([abbr, fullName]) =>
-      fullName.toLowerCase() === lower || abbr === lower || stripPrefix(fullName) === lower
+
+    const subMatch = Object.entries(this.subAgencyAliases).find(([, v]) => {
+      const n = v.name.toLowerCase();
+      return n === lower || stripPrefix(v.name) === lower;
+    });
+    if (subMatch) { _memoAlias[lower] = subMatch[1]; return subMatch[1]; }
+
+    const topMatch = Object.entries(this.agencyAliases).find(([, fullName]) =>
+      fullName.toLowerCase() === lower || stripPrefix(fullName) === lower
     );
     if (topMatch) { const r = { tier: 'toptier', name: topMatch[1] }; _memoAlias[lower] = r; return r; }
 
     _memoAlias[lower] = null; return null;
   },
-  // Common search shortcuts — maps what users type to what USASpending recognizes.
-  // These are vendor/product terms that USASpending won't find via keyword alone.
-  // Agency aliases are handled separately in agencyAliases.
-  SEARCH_SHORTCUTS: {
-    'aws': 'Amazon Web Services',
-    'amazon': 'Amazon Web Services',
-    'amazon web': 'Amazon Web Services',
-    'msft': 'Microsoft',
-    'msft azure': 'Microsoft Azure',
-    'gcp': 'Google Cloud',
-    'google cloud platform': 'Google Cloud',
-    'bah': 'Booz Allen Hamilton',
-    'saic': 'Science Applications International',
-    'gdit': 'General Dynamics Information Technology',
-    'lmco': 'Lockheed Martin',
-    'ngc': 'Northrop Grumman',
-    'lm': 'Lockheed Martin',
-    'rtx': 'Raytheon',
-    'hpe': 'Hewlett Packard Enterprise',
-    'wwt': 'World Wide Technology',
-    'crowdstrike': 'CrowdStrike',
-    'cs': 'CrowdStrike',
-    'panw': 'Palo Alto Networks',
-    'zs': 'Zscaler',
-    'now': 'ServiceNow',
-    'servicenow': 'ServiceNow',
-    'splk': 'Splunk',
-    'okta': 'Okta',
-    'snow': 'Snowflake',
-    'ai/ml': 'Artificial Intelligence',
-    'genai': 'Generative AI',
-    'llm': 'Large Language Model',
-    'zta': 'Zero Trust',
-    'zt': 'Zero Trust',
-  },
-
 normalizeQuery(query) {
     // 1. Clean up extra spaces and trailing commas
     let cleanQuery = query
@@ -1578,16 +1651,16 @@ normalizeQuery(query) {
     // 2. Translate acronyms into full names
     const translate = (str) => {
       const l = str.toLowerCase().trim();
-      // Check vendor/product shortcuts first (e.g. "AWS" → "Amazon Web Services")
-      if (this.SEARCH_SHORTCUTS[l]) return this.SEARCH_SHORTCUTS[l];
+      // Vendor/keyword shortcuts first — these must never route through resolveAgencyAlias
+      if (this.queryAliases[l]) return this.queryAliases[l];
       // If the string is ALREADY a full agency name, don't translate it
-      const alreadyFullName = Object.values(this.agencyAliases).some(v => v.toLowerCase() === l);
+      const alreadyFullName = Object.values(this.agencyAliases).some(v => v.toLowerCase() === l) ||
+                              Object.values(this.subAgencyAliases).some(v => v.name.toLowerCase() === l);
       if (alreadyFullName) return str.trim();
       if (this.agencyAliases[l]) return this.agencyAliases[l];
-      
+      if (this.subAgencyAliases[l]) return this.subAgencyAliases[l].name;
       const agencyMatch = this.resolveAgencyAlias(str);
       if (agencyMatch) return agencyMatch.name;
-      
       return str.trim();
     };
 
