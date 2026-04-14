@@ -1690,42 +1690,6 @@ normalizeQuery(query) {
 
     return name;
   },
-missionGapRisk(award) {
-    const endDate = new Date(award['End Date']);
-    const daysUntil = Math.ceil((endDate - new Date()) / (1000 * 60 * 60 * 24));
-    const amt = parseFloat(award['Award Amount']) || 0;
-    
-    const desc = String(award['Description'] || '').toLowerCase();
-    // Handle PSC/NAICS description from both object and string field formats
-    const pscData = award['PSC'];
-    const naicsData = award['NAICS'];
-    const pscDesc = String((pscData && typeof pscData === 'object' ? pscData.description : null) || award['PSC Description'] || '').toLowerCase();
-    const naicsDesc = String((naicsData && typeof naicsData === 'object' ? naicsData.description : null) || award['NAICS Description'] || '').toLowerCase();
-    const psc = ((pscData && typeof pscData === 'object') ? (pscData.code || '') : String(pscData || award['PSC Code'] || '')).toUpperCase();
-
-    const supportTerms = [
-      'operations', 'o&m', 'maintenance', 'sustainment', 'help desk', 'service desk',
-      'support services', 'managed services', 'hosting', 'cloud', 'network',
-      'cyber', 'security', 'monitoring', 'soc', 'continuity', 'backup', 'dr', 'patch',
-      'infrastructure', 'enterprise', 'mission', 'critical', '24/7', 'production'
-    ];
-
-    const text = `${desc} ${pscDesc} ${naicsDesc}`;
-    const supportHits = supportTerms.filter(t => {
-      const safeTerm = t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const regex = new RegExp(`\\b${safeTerm}\\b`, 'i');
-      return regex.test(text);
-    });
-    
-    const looksOperational = supportHits.length >= 2;
-    const servicePscPrefixes = ['D', 'R', 'J'];
-    const isServicePsc = servicePscPrefixes.includes(psc.slice(0, 1));
-
-    if (daysUntil <= 180 && (looksOperational || isServicePsc) && amt >= 250000) return { level: 'high', daysUntil, reasons: supportHits.slice(0, 4) };
-    if (daysUntil <= 365 && (looksOperational || isServicePsc) && amt >= 100000) return { level: 'medium', daysUntil, reasons: supportHits.slice(0, 3) };
-    return { level: 'low', daysUntil, reasons: supportHits.slice(0, 2) };
-  },
-
 filterActiveContracts(awards) {
     const now = new Date();
     
@@ -1739,19 +1703,6 @@ filterActiveContracts(awards) {
       return end > now; 
     });
   },
-  getContractTypeTag(typeDesc) {
-    if (!typeDesc) return null;
-    const t = typeDesc.toLowerCase();
-    if (t.includes('definitive')) return { short: 'DEF', full: 'Definitive Contract' };
-    if (t.includes('delivery')) return { short: 'DO', full: 'Delivery Order' };
-    if (t.includes('purchase')) return { short: 'PO', full: 'Purchase Order' };
-    if (t.includes('bpa call')) return { short: 'BPA', full: 'BPA Call' };
-    if (t.includes('blanket')) return { short: 'BPA', full: 'Blanket Purchase Agreement' };
-    if (t.includes('indefinite')) return { short: 'IDC', full: typeDesc };
-    if (t.includes('gwac')) return { short: 'GWAC', full: typeDesc };
-    return { short: typeDesc.substring(0, 4).toUpperCase(), full: typeDesc };
-  },
-
   parseSearchTerms(keywords) {
     const pscPattern = /^[A-Z]{1,2}\d{1,3}$|^\d{1,2}[A-Z]\d{0,2}$/i;
     const naicsPattern = /^\d{6}$/;
@@ -2437,7 +2388,6 @@ const App = {
   searchData: { raw: [], active: [], filter: null, loaded: false },
   drillState: { level: 0, path: [], currentAgency: null, currentSubAgency: null },
   bubbleMode: 'agencies',
-  bubbleChartType: 'treemap', // always treemap, bubble option removed
   aiState: { history: [], count: 0, max: 5 },
 
   SECTORS: {
@@ -2640,7 +2590,6 @@ const App = {
     if (inp) inp.value = query;
     document.title = `Fedhoo | ${query}`;
 
-    // Save to recent searches
     try {
       let history = JSON.parse(localStorage.getItem('govhoo-recent') || '[]');
       history = history.filter(q => q !== query);
@@ -3104,7 +3053,6 @@ const App = {
       if (vp) vp.style.height = (container.offsetTop + h + 2) + 'px';
     }
 
-if (this.bubbleChartType === 'treemap') {
       const hierarchy = d3.hierarchy({ children: entities }).sum(d => d.spend).sort((a, b) => b.value - a.value);
 
       d3.treemap()
@@ -3235,7 +3183,6 @@ if (this.bubbleChartType === 'treemap') {
       attachInteractions(cells, svg);
       cells.selectAll('rect').attr('opacity', 0).transition().duration(500).delay((d, i) => i * 12).ease(d3.easeCubicOut).attr('opacity', 0.85);
       cells.selectAll('text').attr('opacity', 0).transition().duration(400).delay((d, i) => 200 + i * 12).attr('opacity', 1);
-    }
 
     if (this._pendingDrillScroll) {
       const targetPanel = typeof this._pendingDrillScroll === 'string' ? this._pendingDrillScroll : 'marketCard';
@@ -3554,27 +3501,6 @@ selectAgencySuggestion(name, inputId, boxId) {
     Utils.copyAndAnimate(window.location.href, btn, 'Link copied!');
     // Restore SVG icon after animation (copyAndAnimate uses textContent, we need innerHTML)
     if (btn && origHTML) setTimeout(() => { btn.innerHTML = origHTML; }, 2100);
-  },
-
-  renderRecentSearches() {
-    const container = DOM.get('recentChips');
-    if (!container) return;
-    let recent = [];
-    try { recent = JSON.parse(localStorage.getItem('govhoo-recent') || '[]'); } catch(e) {}
-    if (!recent.length) {
-      // Show example searches on first visit
-      container.innerHTML = `
-        <span class="recent-chip-label">Try →</span>
-        <button class="recent-chip" onclick="App.runSearch('Zero Trust')">Zero Trust</button>
-        <button class="recent-chip" onclick="App.runSearch('Lockheed Martin')">Lockheed Martin</button>
-        <button class="recent-chip" onclick="App.runSearch('541512')">541512</button>
-        <button class="recent-chip" onclick="App.runSearch('Cloud')">Cloud</button>`;
-      return;
-    }
-    container.innerHTML = '<span class="recent-chip-label">Recent →</span>' +
-      recent.map(q =>
-        `<button class="recent-chip" onclick="App.runSearch('${Html.escapeHtml(q)}')">${Html.escapeHtml(q)}</button>`
-      ).join('');
   },
 
   renderExpiring() {
