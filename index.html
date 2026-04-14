@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#FDFCFF" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0F0E13" media="(prefers-color-scheme: dark)">
-<meta name="color-scheme" content="light">
+<meta name="color-scheme" content="light dark">
+<script>(function(){var d=localStorage.getItem('fedhoo_dark'),sys=window.matchMedia('(prefers-color-scheme: dark)').matches;if(d==='1'||(d===null&&sys))document.documentElement.classList.add('dark');}());</script>
 <meta name="format-detection" content="telephone=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -62,37 +63,7 @@
   --text-hero: clamp(2rem, 4.5vw, 2.75rem);
 }
 
-/* ── DARK MODE — system preference OR manual toggle ── */
-@media (prefers-color-scheme: dark) { :root:not(.light) {
-    --bg:        #0F0E13;
-    --bg-app:    #1A1820;
-    --bg-hover:  rgba(180,175,220,0.07);
-    --bg-active: rgba(180,175,220,0.13);
-    --text-primary:    #E8E6F0;
-    --text-secondary:  #B8B5C8;
-    --text-tertiary:   #9B98C8;
-    --text-quaternary: #5A5870;
-    --border:       #2E2B3A;
-    --border-inner: #252233;
-    --btn-bg:    #7572B7;
-    --btn-text:  #FFFFFF;
-    --btn-hover: #8885C8;
-    --chip-bg:   #252233;
-    --chip-hover:#302D42;
-    --go-bg:    rgba(52,199,89,0.12);   --go-text:   #4ADA7A;
-    --warn-bg:  rgba(200,160,0,0.12);   --warn-text: #E0B840;
-    --crit-bg:  rgba(200,50,30,0.12);   --crit-text: #F07060;
-    --accent:     #9B98C8;
-    --accent-mid: #7572B7;
-    --accent-dim: #252233;
-    --shadow:    0 1px 3px rgba(0,0,0,0.3);
-    --shadow-sm: 0 1px 2px rgba(0,0,0,0.25);
-  }
-  .site-header:not(.light *) { background: rgba(15,14,19,0.96) !important; }
-  .arti-sheet:not(.light *)  { background: #0F0E13 !important; }
-}
-
-/* Manual .dark class — overrides system preference */
+/* ── DARK MODE — applied via .dark class (JS handles system preference in init) ── */
 :root.dark {
     --bg:        #0F0E13;
     --bg-app:    #1A1820;
@@ -176,6 +147,9 @@ a, button, input, select { touch-action: manipulation; }
 
 /* ── CONTRACT LIST CARDS ── */
 .contract-list { display: flex; flex-direction: column; margin-top: 4px; }
+.card-header-row { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:4px; }
+.card-header-row-top { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:4px; }
+
 .contract-row {
   display: flex; align-items: baseline; gap: 12px;
   padding: 12px 0; border-bottom: 1px solid var(--border-inner);
@@ -1000,7 +974,7 @@ a, button, input, select { touch-action: manipulation; }
 
     <!-- MARKET SIGNALS CARD -->
     <div class="app-card wide" id="marketCard">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:4px;">
+      <div class="card-header-row-top">
         <div>
           <h2 class="card-title" id="marketCardTitle">Market Signals</h2>
           <div class="market-hero-number" id="marketHeroNumber"></div>
@@ -1072,7 +1046,7 @@ a, button, input, select { touch-action: manipulation; }
 
     <!-- RECENT AWARDS CARD -->
     <div class="app-card wide hidden" id="recentCard">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;">
+      <div class="card-header-row">
         <h2 class="card-title" style="margin:0;">Recent Awards</h2>
       </div>
       <div class="contract-list" id="recentList"></div>
@@ -1080,7 +1054,7 @@ a, button, input, select { touch-action: manipulation; }
 
     <!-- EXPIRING SOON CARD -->
     <div class="app-card wide hidden" id="expiringCard">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;">
+      <div class="card-header-row">
         <h2 class="card-title" style="margin:0;">Expiring Soon</h2>
         <button class="export-btn" onclick="App.exportExpiringCSV()" title="Export expiring contracts to CSV">Export CSV</button>
       </div>
@@ -1089,7 +1063,7 @@ a, button, input, select { touch-action: manipulation; }
 
     <!-- SUBAWARDS CARD -->
     <div class="app-card wide hidden" id="subawardsCard">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;">
+      <div class="card-header-row">
         <div>
           <h2 class="card-title" style="margin:0;">Prime to Sub Relationships</h2>
           <p class="card-desc" style="margin:2px 0 0;font-size:var(--text-xs);color:var(--text-tertiary);">Who the primes are subbing to — teaming intelligence for this market.</p>
@@ -1256,18 +1230,6 @@ const Utils = {
     }
   },
 
-  showMoreBtn(onclick, label) {
-    return `<button onclick="${onclick}" class="show-more-btn">${label}</button>`;
-  },
-  
-  animateCards(container) {
-    if (!container) return;
-    const cards = container.querySelectorAll('.deal-card');
-    cards.forEach((card, i) => {
-      card.classList.add('deal-card-animate');
-      card.style.animationDelay = `${i * 60}ms`;
-    });
-  },
 
   syncUrlState() {
     const url = new URL(window.location);
@@ -1600,14 +1562,9 @@ normalizeQuery(query) {
     const translate = (str) => {
       const l = str.toLowerCase().trim();
       // If the string is ALREADY a full agency name, don't translate it
-      const alreadyFullName = Object.values(this.agencyAliases).some(v => v.toLowerCase() === l) || 
-                              Object.values(this.subAgencyAliases).some(v => v.toLowerCase() === l);
-      
+      const alreadyFullName = Object.values(this.agencyAliases).some(v => v.toLowerCase() === l);
       if (alreadyFullName) return str.trim();
-      
-      if (this.queryAliases[l]) return this.queryAliases[l];
       if (this.agencyAliases[l]) return this.agencyAliases[l];
-      if (this.subAgencyAliases[l]) return this.subAgencyAliases[l];
       
       const agencyMatch = this.resolveAgencyAlias(str);
       if (agencyMatch) return agencyMatch.name;
@@ -2270,42 +2227,6 @@ async _post(endpoint, body) {
     return p1.results || [];
   },
   async fetchAgencySuggestions(searchText) {
-    if (searchText.length < 2) return [];
-
-    this._autocompleteController.abort();
-    this._autocompleteController = new AbortController();
-    const signal = this._autocompleteController.signal;
-
-    const proxyFetch = (endpoint, payload) => fetch(App.PROXY_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ request_type: 'usaspending_proxy', endpoint, payload }),
-      signal
-    }).then(r => r.json()).catch(e => { if (e.name === 'AbortError') throw e; return {}; });
-
-    try {
-      // Fire both endpoints in parallel, recipient call rides free inside the same debounce window
-      const [agencyData, recipientData] = await Promise.all([
-        proxyFetch('/autocomplete/awarding_agency/', { search_text: searchText, limit: 7 }),
-        proxyFetch('/autocomplete/recipient/',       { search_text: searchText, limit: 5 })
-      ]);
-
-      const agencyResults = (agencyData.results || []).map(r => ({ ...r, _type: 'agency' }));
-      const recipientResults = (recipientData.results || []).map(r => ({ ...r, _type: 'recipient' }));
-
-      // Dedupe: drop any recipient whose name already appears as an agency result
-      const agencyNames = new Set(agencyResults.map(r => (r.subtier_agency?.name || r.toptier_agency?.name || '').toLowerCase()));
-      const filteredRecipients = recipientResults.filter(r => !agencyNames.has((r.recipient_name || '').toLowerCase()));
-
-      return [...agencyResults, ...filteredRecipients];
-    } catch (e) {
-      if (e.name === 'AbortError') return [];
-      console.warn('Autocomplete failed:', e);
-      return [];
-    }
-  },
-
-  async fetchAgencySuggestions(searchText) {
     if (!searchText || searchText.length < 2) return [];
     this._autocompleteController.abort();
     this._autocompleteController = new AbortController();
@@ -2580,6 +2501,14 @@ const App = {
   territory: null,
   _searchId: 0,
   _territoryAgencyOverride: null,
+  FALLBACK_CHIPS: [
+    { label: 'Cloud',         q: 'Cloud' },
+    { label: 'Zero Trust',    q: 'Zero Trust' },
+    { label: 'NAICS 541512',  q: '541512' },
+    { label: 'Cybersecurity', q: 'Cybersecurity' },
+    { label: 'DHS AND Splunk',q: 'DHS AND Splunk' },
+  ],
+
   searchData: { raw: [], active: [], filter: null, loaded: false },
   drillState: { level: 0, path: [], currentAgency: null, currentSubAgency: null },
   bubbleMode: 'agencies',
@@ -2945,14 +2874,9 @@ const App = {
         </div>`;
     }
 
-    // Fallback suggestion chips
-    const chips = [
-      { label: 'Cloud', q: 'Cloud' },
-      { label: 'Zero Trust', q: 'Zero Trust' },
-      { label: 'NAICS 541512', q: '541512' },
-      { label: 'Cybersecurity', q: 'Cybersecurity' },
-      { label: 'DHS AND Splunk', q: 'DHS AND Splunk' },
-    ].map(s => `<button class="empty-chip" onclick="App.runSearch('${Html.escapeHtml(s.q)}')">${Html.escapeHtml(s.label)}</button>`).join('');
+    const chips = this.FALLBACK_CHIPS.map(s =>
+      `<button class="empty-chip" onclick="App.runSearch('${Html.escapeHtml(s.q)}')">${Html.escapeHtml(s.label)}</button>`
+    ).join('');
 
     const container = DOM.get('bubbleChartContainer');
     if (container) container.innerHTML = `
@@ -3751,21 +3675,11 @@ selectAgencySuggestion(name, inputId, boxId) {
   },
 
   shareSearch() {
-    const url = window.location.href;
     const btn = DOM.get('shareBtn');
-    navigator.clipboard.writeText(url).catch(() => {
-      const ta = document.createElement('textarea');
-      ta.value = url; ta.style.cssText = 'position:fixed;opacity:0;pointer-events:none;';
-      document.body.appendChild(ta); ta.focus(); ta.select();
-      try { document.execCommand('copy'); } catch(e) {}
-      document.body.removeChild(ta);
-    });
-    if (btn) {
-      const origHTML = btn.innerHTML;
-      btn.textContent = 'Link copied!';
-      btn.classList.add('copied');
-      setTimeout(() => { btn.innerHTML = origHTML; btn.classList.remove('copied'); }, 2000);
-    }
+    const origHTML = btn ? btn.innerHTML : null;
+    Utils.copyAndAnimate(window.location.href, btn, 'Link copied!');
+    // Restore SVG icon after animation (copyAndAnimate uses textContent, we need innerHTML)
+    if (btn && origHTML) setTimeout(() => { btn.innerHTML = origHTML; }, 2100);
   },
 
   renderRecentSearches() {
