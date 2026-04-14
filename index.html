@@ -174,7 +174,6 @@ a, button, input, select { touch-action: manipulation; }
 /* ── PAGE LAYOUT (minitools exact) ── */
 .page-wrap { max-width: min(96vw, 1920px); margin: 0 auto; padding: 36px 20px calc(4rem + var(--safe-bottom)); }
 
-
 /* ── CONTRACT LIST CARDS ── */
 .contract-list { display: flex; flex-direction: column; margin-top: 4px; }
 .contract-row {
@@ -186,13 +185,7 @@ a, button, input, select { touch-action: manipulation; }
 }
 .contract-row:last-child { border-bottom: none; }
 .contract-row:hover { background: var(--bg-hover); }
-.contract-badge {
-  font-size: 10px; font-weight: 700; letter-spacing: 0.03em;
-  padding: 3px 8px; border-radius: 9999px; white-space: nowrap;
-  flex-shrink: 0; align-self: flex-start; margin-top: 2px;
-}
-.badge-expiring   { background: rgba(200,100,60,0.1);  color: rgb(160,60,20); }
-.badge-recent     { background: rgba(52,199,89,0.1);   color: rgb(20,120,50); }
+
 .contract-body    { flex: 1; min-width: 0; }
 .contract-vendor  {
   font-size: var(--text-sm); font-weight: 700;
@@ -337,93 +330,25 @@ a, button, input, select { touch-action: manipulation; }
 }
 .arti-hero-send:hover { background: var(--btn-hover); }
 .arti-hero-send:active { transform: scale(0.93); }
-.arti-hero-btn {
-  display: flex; align-items: center; justify-content: center;
-  width: 100%; height: 48px;
-  background: transparent; color: var(--text-tertiary);
-  border: 1px solid var(--border); border-radius: var(--radius-sm);
-  font-size: var(--text-xs); font-weight: 600; cursor: pointer;
-  font-family: var(--font); transition: var(--transition);
-  letter-spacing: 0.01em;
-}
+
 .arti-hero-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
-.arti-avatar-wrap {
-  flex-shrink: 0;
-}
-.arti-avatar-lg {
-  width: 100px; height: 100px; border-radius: 50%;
-  object-fit: cover; display: block;
-}
-.arti-intro { flex: 1; min-width: 0; }
-.arti-intro-name {
-  font-size: var(--text-base); font-weight: 800;
-  color: var(--text-primary); letter-spacing: -0.02em;
-  margin-bottom: 3px;
-}
-.arti-intro-role {
-  font-size: var(--text-xs); font-weight: 500;
-  color: var(--text-quaternary); letter-spacing: 0;
-}
-.arti-ctx-input {
-  margin-bottom: 10px; font-size: var(--text-sm) !important;
-}
-.arti-inline {
-  margin-top: 28px;
-  background: var(--bg); border: 1px solid var(--border);
-  border-radius: var(--radius-sm); overflow: hidden;
-}
+
 /* Sheet body provides padding, individual section overrides removed */
 #chatInputWrap { border-top: 1px solid var(--border-inner); padding-top: 12px; margin-top: 8px; }
-.arti-inline-header {
-  display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px;
-}
-.arti-bridge-text {
-  font-size: var(--text-sm); color: var(--text-secondary);
-  line-height: 1.5; flex: 1;
-}
+
 .arti-bridge-text strong { color: var(--text-primary); font-weight: 700; }
-.arti-bridge-btn {
-  display: inline-flex; align-items: center; gap: 7px;
-  background: var(--btn-bg); color: var(--btn-text);
-  border: none; border-radius: var(--radius-sm);
-  width: 100%; height: 48px; justify-content: center;
-  font-size: var(--text-sm); font-weight: 600; cursor: pointer;
-  transition: var(--transition); font-family: var(--font);
-}
+
 .arti-bridge-btn:hover { background: var(--btn-hover); }
 .arti-bridge-btn:active { transform: scale(0.97); }
 
 /* ── ARTI GREETING (inline-tag editorial style) ── */
-.arti-greeting {
-  display: flex; gap: 18px; align-items: flex-start;
-  margin-bottom: 20px;
-}
-.arti-greeting-avatar {
-  flex-shrink: 0; margin-top: 4px;
-}
+
 .arti-greeting-avatar img {
   width: 72px; height: 72px; border-radius: 50%; object-fit: cover; display: block;
 }
-.arti-greeting-body {
-  flex: 1; min-width: 0;
-}
-.arti-greeting-text {
-  font-size: var(--text-xl); font-weight: 800;
-  color: var(--text-primary); letter-spacing: -0.025em;
-  line-height: 1.3; margin-bottom: 12px;
-}
+
 /* The inline pill-border tag, matches the reference screenshot exactly */
-.arti-tag {
-  display: inline-flex; align-items: center; gap: 4px;
-  border: 1.5px solid var(--text-primary); border-radius: 9999px;
-  padding: 1px 10px 2px; font-size: inherit; font-weight: inherit;
-  letter-spacing: inherit; line-height: inherit;
-  vertical-align: baseline; white-space: nowrap;
-}
-.arti-greeting-sub {
-  font-size: var(--text-sm); color: var(--text-tertiary);
-  line-height: 1.5; margin-bottom: 0;
-}
+
 /* ── SCROLL TO TOP ── */
 .scroll-top-btn {
   position: fixed;
@@ -447,13 +372,7 @@ a, button, input, select { touch-action: manipulation; }
   .scroll-top-btn:active { transform: translateX(50%) scale(0.93); }
 }
 /* ── CALENDLY EMBED ── */
-.calendly-wrap { margin-bottom: 4px; }
-.calendly-label {
-  font-size: var(--text-xs); font-weight: 700; color: var(--btn-bg);
-  text-transform: uppercase; letter-spacing: 0.06em;
-  margin-bottom: 10px;
-}
-.calendly-inline-widget { border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); }
+
 /* ── AUTOCOMPLETE DROPDOWN ── */
 .autocomplete-dropdown {
   position: absolute; top: calc(100% + 4px); left: 0; right: 0;
@@ -477,11 +396,11 @@ a, button, input, select { touch-action: manipulation; }
   font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
   flex-shrink: 0;
 }
-.suggestion-type-company { color: var(--text-tertiary); }
+
 .empty-state {
   padding: 40px 24px 32px; text-align: center;
 }
-.empty-shrug { font-size: 2.5rem; margin-bottom: 12px; }
+
 .empty-title {
   font-size: var(--text-xl); font-weight: 700;
   color: var(--text-primary); letter-spacing: -0.02em;
@@ -519,7 +438,6 @@ a, button, input, select { touch-action: manipulation; }
   white-space: nowrap; flex-shrink: 0; align-self: flex-start;
   margin-top: 3px;
 }
-
 
 .export-btn {
   font-size: var(--text-xs); font-weight: 600;
@@ -617,7 +535,7 @@ a, button, input, select { touch-action: manipulation; }
   margin: 6px 0 4px; font-variant-numeric: tabular-nums;
 }
 .search-hero { padding: 12px 0 8px; }
-.search-hero-sub { font-size: var(--text-sm); color: var(--text-tertiary); }
+
 .hero-headline {
   font-size: clamp(1.6rem, 3.5vw, 2.2rem); font-weight: 800;
   color: var(--text-primary); letter-spacing: -0.03em;
@@ -640,7 +558,7 @@ a, button, input, select { touch-action: manipulation; }
 .hero-example-label {
   font-size: var(--text-xs); color: var(--text-quaternary); margin-bottom: 8px;
 }
-.search-bar-wrap { position: relative; max-width: 680px; }
+
 .search-bar-inner {
   display: flex; align-items: stretch;
   background: var(--bg-app); border: 1px solid var(--border);
@@ -686,7 +604,7 @@ a, button, input, select { touch-action: manipulation; }
 .territory-opt.active .territory-opt-check { opacity: 1; }
 
 /* Recent search chips */
-.recent-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; max-width: 680px; }
+
 .recent-chip {
   background: var(--chip-bg); border: none; border-radius: 9999px;
   padding: 5px 12px; font-size: var(--text-sm); font-weight: 500;
@@ -708,15 +626,10 @@ a, button, input, select { touch-action: manipulation; }
   display: inline-block;
   width: 100%;
 }
-.tools-grid > .section-label { column-span: all; display: block; }
+.tools-grid > 
 
 /* Section label */
-.section-label {
-  font-size: var(--text-xs); font-weight: 700; color: var(--text-quaternary);
-  text-transform: uppercase; letter-spacing: 0.08em;
-  margin: 32px 0 12px; padding-top: 4px;
-  border-top: 1px solid var(--border);
-}
+
 .section-label:first-of-type { margin-top: 0; border-top: none; }
 
 /* ── CARD (minitools exact) ── */
@@ -744,14 +657,6 @@ a, button, input, select { touch-action: manipulation; }
 }
 .calc-btn-primary:hover  { background: var(--btn-hover); }
 .calc-btn-primary:active { transform: scale(0.97); }
-.btn-secondary {
-  background: var(--bg); border: 1px solid var(--border);
-  border-radius: var(--radius-sm); padding: 0 14px; height: 36px;
-  font-size: var(--text-sm); font-weight: 600; color: var(--text-secondary);
-  cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
-  transition: var(--transition); font-family: var(--font); white-space: nowrap;
-}
-.btn-secondary:hover { background: var(--bg-hover); color: var(--text-primary); }
 
 /* ── RESULTS (minitools exact) ── */
 .results { display: none; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-inner); }
@@ -790,7 +695,7 @@ a, button, input, select { touch-action: manipulation; }
   pointer-events: none; z-index: 50; white-space: nowrap;
   box-shadow: var(--shadow); opacity: 0; transition: opacity 0.12s;
 }
-.bubble-tooltip.visible { opacity: 1; }
+.bubble-tooltip
 .bubble-tooltip-name { font-weight: 700; color: var(--text-primary); margin-bottom: 2px; }
 .bubble-tooltip-amount { color: var(--accent); font-weight: 700; }
 .bubble-tooltip-meta { color: var(--text-tertiary); font-size: var(--text-xs); margin-top: 3px; }
@@ -823,8 +728,6 @@ a, button, input, select { touch-action: manipulation; }
 }
 .input-field:focus { border-color: var(--accent); background: var(--bg-app); box-shadow: 0 0 0 3px #E3E3F1; }
 .input-field::placeholder { color: var(--text-quaternary); }
-.arti-avatar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
-.arti-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: contain; background: var(--bg); padding: 3px; flex-shrink: 0; }
 
 /* Streaming output */
 .strategic-read { color: var(--text-secondary); font-size: var(--text-base); line-height: 1.75; }
@@ -906,9 +809,6 @@ a, button, input, select { touch-action: manipulation; }
 
 /* Empty state */
 .empty-state { text-align: center; padding: 48px 24px; color: var(--text-tertiary); }
-.empty-state-icon { font-size: 2.5rem; margin-bottom: 12px; }
-.empty-state-title { font-size: var(--text-lg); font-weight: 700; color: var(--text-primary); margin-bottom: 6px; }
-.empty-state-sub { font-size: var(--text-sm); line-height: 1.5; }
 
 /* ── TOAST (minitools exact) ── */
 .toast-wrap { position: fixed; bottom: 20px; right: 14px; z-index: 999; display: flex; flex-direction: column; gap: 7px; pointer-events: none; }
@@ -1154,7 +1054,6 @@ a, button, input, select { touch-action: manipulation; }
         <button class="bubble-toggle-btn" data-mode="vendors" id="bubbleToggleVendors">Prime</button>
       </div>
 
-
       <div style="font-size:var(--text-xs);color:var(--text-quaternary);margin-top:14px;">
         Top 100 contracts by obligated value · active funding past 12 months · USASpending.gov
       </div>
@@ -1188,7 +1087,6 @@ a, button, input, select { touch-action: manipulation; }
       <div class="contract-list" id="expiringList"></div>
     </div>
 
-
     <!-- SUBAWARDS CARD -->
     <div class="app-card wide hidden" id="subawardsCard">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;">
@@ -1200,7 +1098,6 @@ a, button, input, select { touch-action: manipulation; }
       </div>
       <div class="contract-list" id="subawardsList"></div>
     </div>
-
 
     <!-- FOOTER PANELS — inside grid so they match card width exactly -->
     <div class="app-card wide" style="margin-top:8px;">
@@ -1555,217 +1452,86 @@ buyingOffices: {},
     return this._officesLoading;
   },
   agencyAliases: {
-    "aahc": "400 Years of African-American History Commission",
-    "usab": "Access Board",
-    "acus": "Administrative Conference of the U.S.",
-    "achp": "Advisory Council on Historic Preservation",
-    "usadf": "African Development Foundation",
-    "usaid": "Agency for International Development",
-    "abmc": "American Battle Monuments Commission",
-    "arc": "Appalachian Regional Commission",
-    "afrh": "Armed Forces Retirement Home",
-    "goldwater": "Barry Goldwater Scholarship and Excellence In Education Foundation",
-    "heritageabroad": "Commission for the Preservation of America's Heritage Abroad",
-    "cfa": "Commission of Fine Arts",
-    "usccr": "Commission on Civil Rights",
-    "abilityone": "Committee for Purchase from People Who Are Blind or Severely Disabled",
-    "cftc": "Commodity Futures Trading Commission",
-    "cfpb": "Consumer Financial Protection Bureau",
-    "cpsc": "Consumer Product Safety Commission",
-    "cncs": "Corporation for National and Community Service",
-    "usace": "Corps of Engineers - Civil Works",
-    "cigie": "Council of the Inspectors General on Integrity and Efficiency",
-    "csosa": "Court Services and Offender Supervision Agency",
-    "dnfsb": "Defense Nuclear Facilities Safety Board",
-    "dra": "Delta Regional Authority",
-    "denali": "Denali Commission",
-    "usda": "Department of Agriculture",
-    "doc": "Department of Commerce",
-    "dod": "Department of Defense",
-    "ed": "Department of Education",
-    "doe": "Department of Energy",
-    "hhs": "Department of Health and Human Services",
+    // Top-level agencies
     "dhs": "Department of Homeland Security",
-    "hud": "Department of Housing and Urban Development",
-    "doj": "Department of Justice", "atf": "Department of Justice",
-    "dol": "Department of Labor",
-    "dos": "Department of State",
-    "dot": "Department of Transportation",
+    "dod": "Department of Defense",
+    "hhs": "Department of Health and Human Services",
     "va": "Department of Veterans Affairs",
-    "doi": "Department of the Interior",
-    "treas": "Department of the Treasury",
-    "treasury": "Department of the Treasury",
-    "dc courts": "District of Columbia Courts",
-    "eac": "Election Assistance Commission",
-    "epa": "Environmental Protection Agency",
-    "eeoc": "Equal Employment Opportunity Commission",
-    "eop": "Executive Office of the President",
-    "exim": "Export-Import Bank of the United States",
-    "fcsic": "Farm Credit System Insurance Corporation",
-    "fcc": "Federal Communications Commission",
-    "fdic": "Federal Deposit Insurance Corporation",
-    "fec": "Federal Election Commission",
-    "ffiec": "FedFin Institutions Examination Council",
-    "flra": "Federal Labor Relations Authority",
-    "fmc": "Federal Maritime Commission",
-    "fmcs": "Federal Mediation and Conciliation Service",
-    "fmshrc": "Federal Mine Safety and Health Review Commission",
-    "fpisc": "Federal Permitting Improvement Steering Council",
-    "ftc": "Federal Trade Commission",
     "gsa": "General Services Administration",
-    "gao": "Government Accountability Office",
-    "gcerc": "Gulf Coast Ecosystem Restoration Council",
-    "truman": "Harry S Truman Scholarship Foundation",
-    "imls": "Institute of Museum and Library Services",
-    "iaf": "Inter-American Foundation",
-    "usitc": "International Trade Commission",
-    "madison": "James Madison Memorial Fellowship Foundation",
-    "jusfc": "Japan-United States Friendship Commission",
-    "kennedy center": "John F. Kennedy Center for the Performing Arts",
-    "mmc": "Marine Mammal Commission",
-    "mspb": "Merit Systems Protection Board",
-    "mcc": "Millennium Challenge Corporation",
-    "udall": "Morris K. Udall and Stewart L. Udall Foundation",
+    "doj": "Department of Justice",
+    "dot": "Department of Transportation",
+    "doe": "Department of Energy",
+    "doed": "Department of Education",
+    "dol": "Department of Labor",
+    "hud": "Department of Housing and Urban Development",
+    "usda": "Department of Agriculture",
+    "state": "Department of State",
+    "commerce": "Department of Commerce",
+    "treasury": "Department of the Treasury",
     "nasa": "National Aeronautics and Space Administration",
-    "nara": "National Archives and Records Administration",
-    "ncpc": "National Capital Planning Commission",
-    "ncd": "National Council on Disability",
-    "ncua": "National Credit Union Administration",
-    "nea": "National Endowment for the Arts",
-    "neh": "National Endowment for the Humanities",
-    "nlrb": "National Labor Relations Board",
-    "nmb": "National Mediation Board",
-    "nsf": "National Science Foundation",
-    "ntsb": "National Transportation Safety Board",
-    "nbrc": "Northern Border Regional Commission",
-    "nrc": "Nuclear Regulatory Commission",
-    "nwtrb": "Nuclear Waste Technical Review Board",
-    "oshrc": "Occupational Safety and Health Review Commission",
-    "oge": "Office of Government Ethics",
-    "onhir": "Office of Navajo and Hopi Indian Relocation",
+    "epa": "Environmental Protection Agency",
     "opm": "Office of Personnel Management",
-    "osc": "Office of Special Counsel",
-    "opic": "Overseas Private Investment Corporation",
-    "pcortf": "Patient-Centered Outcomes Research Trust Fund",
-    "pc": "Peace Corps",
-    "pbgc": "Pension Benefit Guaranty Corporation",
-    "presidio": "Presidio Trust",
-    "pclob": "Privacy and Civil Liberties Oversight Board",
-    "pbrb": "Public Buildings Reform Board",
-    "rrb": "Railroad Retirement Board",
-    "sec": "Securities and Exchange Commission",
-    "sss": "Selective Service System",
-    "sba": "Small Business Administration",
     "ssa": "Social Security Administration",
-    "scrc": "Southeast Crescent Regional Commission",
-    "sbrc": "Southwest Border Regional Commission",
-    "stb": "Surface Transportation Board",
-    "usagm": "U.S. Agency for Global Media",
-    "usich": "U.S. Interagency Council on Homelessness",
-    "dfc": "U.S. International Development Finance Corporation",
-    "csb": "United States Chemical Safety Board",
-    "cavc": "United States Court of Appeals for Veterans Claims",
-    "ustda": "United States Trade and Development Agency",
-    "vef": "Vietnam Education Foundation"
+    "sba": "Small Business Administration",
+    // Military branches
+    "army": "Department of the Army",
+    "navy": "Department of the Navy",
+    "usaf": "Department of the Air Force",
+    "air force": "Department of the Air Force",
+    "usmc": "Marine Corps",
+    "marine corps": "Marine Corps",
+    "ussf": "United States Space Force",
+    "space force": "United States Space Force",
+    // Sub-agencies / components
+    "disa": "Defense Information Systems Agency",
+    "darpa": "Defense Advanced Research Projects Agency",
+    "dla": "Defense Logistics Agency",
+    "dcsa": "Defense Counterintelligence and Security Agency",
+    "mda": "Missile Defense Agency",
+    "fbi": "Federal Bureau of Investigation",
+    "dea": "Drug Enforcement Administration",
+    "atf": "Bureau of Alcohol, Tobacco, Firearms and Explosives",
+    "irs": "Internal Revenue Service",
+    "fda": "Food and Drug Administration",
+    "cdc": "Centers for Disease Control and Prevention",
+    "nih": "National Institutes of Health",
+    "cms": "Centers for Medicare and Medicaid Services",
+    "fema": "Federal Emergency Management Agency",
+    "tsa": "Transportation Security Administration",
+    "cbp": "U.S. Customs and Border Protection",
+    "ice": "U.S. Immigration and Customs Enforcement",
+    "cisa": "Cybersecurity and Infrastructure Security Agency",
+    "usss": "United States Secret Service",
+    "faa": "Federal Aviation Administration",
+    "noaa": "National Oceanic and Atmospheric Administration",
+    "nist": "National Institute of Standards and Technology",
+    "nsa": "National Security Agency",
+    "cia": "Central Intelligence Agency",
+    "dia": "Defense Intelligence Agency",
+    "nga": "National Geospatial-Intelligence Agency",
+    "nro": "National Reconnaissance Office",
+    "sec": "Securities and Exchange Commission",
+    "ftc": "Federal Trade Commission",
+    "fcc": "Federal Communications Commission",
+    "fec": "Federal Election Commission",
+    "gao": "Government Accountability Office",
+    // Vendor/company shortcuts for search
+    "bah": "Booz Allen Hamilton",
+    "saic": "Science Applications International",
+    "gdit": "General Dynamics Information Technology",
+    "lmco": "Lockheed Martin",
+    "ngc": "Northrop Grumman",
+    "wwt": "World Wide Technology",
+    "aws": "Amazon",
+    "msft": "Microsoft",
+    "gcp": "Google",
+    // Combatant commands
+    "socom": "USSOCOM", "cybercom": "USCYBERCOM", "stratcom": "USSTRATCOM",
+    "transcom": "USTRANSCOM", "centcom": "USCENTCOM", "eucom": "USEUCOM",
+    "indopacom": "USINDOPACOM", "northcom": "USNORTHCOM",
   },
-
-  subAgencyAliases: {
-    // --- DoD Sub-Agencies Moved Here ---
-    'army': 'Department of the Army', 'navy': 'Department of the Navy', 'usaf': 'Department of the Air Force',
-    'air force': 'Department of the Air Force',
-    
-    // --- Existing Sub-Agencies ---
-    'disa': 'Defense Information Systems Agency', 'darpa': 'Defense Advanced Research Projects Agency', 
-    'dcsa': 'Defense Counterintelligence and Security Agency', 'dla': 'Defense Logistics Agency', 
-    'mda': 'Missile Defense Agency', 'nnsa': 'National Nuclear Security Administration',
-    'fbi': 'Federal Bureau of Investigation', 'dea': 'Drug Enforcement Administration',
-    'irs': 'Internal Revenue Service', 'fda': 'Food and Drug Administration',
-    'cdc': 'Centers for Disease Control and Prevention', 'nih': 'National Institutes of Health',
-    'cms': 'Centers for Medicare and Medicaid Services',
-    'fema': 'Federal Emergency Management Agency', 'tsa': 'Transportation Security Administration',
-    'cbp': 'U.S. Customs and Border Protection', 
-    'ice': 'U.S. Immigration and Customs Enforcement',
-    'uscis': 'U.S. Citizenship and Immigration Services', 
-    'usss': 'United States Secret Service',
-    'cisa': 'Cybersecurity and Infrastructure Security Agency',
-    'faa': 'Federal Aviation Administration', 'fhwa': 'Federal Highway Administration',
-    'noaa': 'National Oceanic and Atmospheric Administration', 'nist': 'National Institute of Standards and Technology',
-    'census': 'Census Bureau', 'blm': 'Bureau of Land Management', 'nps': 'National Park Service',
-    'usfs': 'Forest Service', 'fws': 'Fish and Wildlife Service', 'usgs': 'Geological Survey',
-    'sec': 'Securities and Exchange Commission', 'ftc': 'Federal Trade Commission',
-    'fcc': 'Federal Communications Commission',
-  },
-
-  queryAliases: {
-    'aws': 'Amazon', 'gcp': 'Google Cloud', 'msft': 'Microsoft', 'ibm': 'International Business Machines', 
-    'hp': 'Hewlett Packard', 'hpe': 'Hewlett Packard Enterprise', 'dell': 'Dell Technologies',
-    'gd': 'General Dynamics', 'gdit': 'General Dynamics Information Technology',
-    'lmco': 'Lockheed Martin', 'ngc': 'Northrop Grumman', 'bah': 'Booz Allen Hamilton', 
-    'saic': 'Science Applications International', 'usps': 'Postal Service', 'amtrak': 'Amtrak',
-    'wwt': 'World Wide Technology',
-    'ai': 'Artificial Intelligence', 'genai': 'Generative AI', 'ml': 'Machine Learning',
-    'ai/ml': 'Artificial Intelligence', 'llm': 'Large Language Model', 'rpa': 'Robotic Process Automation',
-    'zta': 'Zero Trust', 'nlp': 'Natural Language Processing',
-    'socom': 'USSOCOM', 'cybercom': 'USCYBERCOM', 'stratcom': 'USSTRATCOM', 
-    'transcom': 'USTRANSCOM', 'centcom': 'USCENTCOM', 'eucom': 'USEUCOM',
-    'indopacom': 'USINDOPACOM', 'northcom': 'USNORTHCOM', 'southcom': 'USSOUTHCOM', 'africom': 'USAFRICOM',
-    'space force': 'United States Space Force',
-    'ussf': 'United States Space Force',
-    'us space force': 'United States Space Force',
-    'marine corps': 'Marine Corps',
-    'usmc': 'Marine Corps',
-    'united states marine corps': 'Marine Corps',
-    'cia': 'Central Intelligence Agency', 'nsa': 'National Security Agency',
-    'nga': 'National Geospatial-Intelligence Agency', 'nro': 'National Reconnaissance Office', 'dia': 'Defense Intelligence Agency'
-  },
-
-  // ── Contract vehicle detection ─────────────────────────────
-  // Maps known GWAC/IDIQ parent award ID prefixes or keywords to short display names
-  VEHICLE_MAP: {
-    // SEWP V
-    'NNG15SC': 'SEWP V', 'NNG15SD': 'SEWP V',
-    // CIO-SP4
-    'HHSN316': 'CIO-SP4',
-    // Alliant 2
-    'GS00Q17': 'Alliant 2', 'GS00Q14': 'Alliant 2',
-    // ITSSC / ITSSS-2
-    'EEQ7CQ': 'ITSSS-2', 'HHSN3162': 'ITSSS-2',
-    // GSA MAS / Schedule
-    'GS': 'GSA MAS',
-    // OASIS
-    'GS00F': 'OASIS+', 'GS06F': 'OASIS+',
-    // DISA SETI
-    'HC1028': 'SETI',
-    // Army ITES
-    'W52P1J': 'ITES-3S', 'W52P1': 'ITES',
-    // Navy SeaPort
-    'N00178': 'SeaPort-NxG',
-    // NETCENTS
-    'FA8771': 'NETCENTS-2',
-    // ENCORE III
-    'HC1047': 'ENCORE III',
-    // DIUx / OTA
-    'W15QKN': 'OTA',
-  },
-
-  detectVehicle(award) {
-    const parentId = String(award['parent_award_id'] || '').toUpperCase();
-    const awardId  = String(award['Award ID'] || '').toUpperCase();
-    const idvType  = String(award['idv_type'] || '');
-    if (!parentId && !idvType) return null;
-    // Check prefix matches — longest first
-    const sorted = Object.keys(this.VEHICLE_MAP).sort((a,b) => b.length - a.length);
-    for (const prefix of sorted) {
-      if (parentId.startsWith(prefix) || awardId.startsWith(prefix)) {
-        return this.VEHICLE_MAP[prefix];
-      }
-    }
-    // Fallback: IDV type indicates it's a task order but we don't know which vehicle
-    if (idvType === 'B') return 'IDIQ T.O.';
-    return null;
-  },
-
-// NEW: A memory bank for agencies found via the API
+  subAgencyAliases: {},
+  queryAliases: {},
   dynamicAgencies: {}, 
 resolveAgencyAlias(term) {
     const lower = term.toLowerCase().trim();
@@ -2304,14 +2070,15 @@ drawSankey(svgEl, { nodes, links, gradientPrefix, isDrillable, isActive, onNodeC
     return { nodes: gn, links: gl, w, h };
 }
 };
-const SUB_FIELD_MAP = { agency: ['Awarding Agency','Unknown Agency'], subagency: ['Awarding Sub Agency','Unknown Sub Agency'], prime: ['Prime Recipient Name','Unknown Prime'], sub: ['Sub-Awardee Name','Unknown Sub'] };
 function applySubDrillFilter(data, drill) {
   if (!drill || !drill.level || !drill.path || !drill.path.length) return data;
   let f = data;
-  drill.path.forEach(step => { const [field, fb] = SUB_FIELD_MAP[step.type] || []; if (field) f = f.filter(s => (s[field] || fb) === step.name); });
+  drill.path.forEach(step => {
+    if (step.type === 'agency') f = f.filter(s => (s['Awarding Agency'] || 'Unknown Agency') === step.name);
+    else if (step.type === 'subagency') f = f.filter(s => (s['Awarding Sub Agency'] || 'Unknown Sub Agency') === step.name);
+  });
   return f;
 }
-
 
 // ========================================
 // 4. BUSINESS LOGIC & ENGINES
@@ -2709,254 +2476,6 @@ const SearchPills = {
   },
 };
 
-const ForecastEngine = {
-  detectRecompetes(awards) {
-    const now = new Date();
-    const twoYears = new Date(); twoYears.setFullYear(now.getFullYear()+2);
-    return awards
-      .filter(a => {
-        const end = new Date(a['End Date']);
-        return end > now && end < twoYears && a['Award Amount'] > 50000;
-      })
-      .sort((a, b) => {
-        // Sort by value × urgency: high-dollar soon-expiring contracts rank first
-        const daysA = (new Date(a['End Date']) - now) / 86400000;
-        const daysB = (new Date(b['End Date']) - now) / 86400000;
-        const scoreA = (parseFloat(a['Award Amount']) || 0) / Math.max(daysA, 1);
-        const scoreB = (parseFloat(b['Award Amount']) || 0) / Math.max(daysB, 1);
-        return scoreB - scoreA;
-      })
-      .slice(0, 40);
-  }
-};
-const PipelineEngine = {
-  generate(data, recompetes) {
-    const now = new Date();
-    const targets = [];
-    const usedKeys = new Set();
-    const minDate = new Date(now); minDate.setMonth(minDate.getMonth() + 3);
-
-    // Build a per-award NAICS lookup so each target can carry its own code
-    // rather than falling back to the market-level top NAICS for everything
-    const naicsLookup = (App.naicsData || []).filter(n => n.code && n.amount > 0).sort((a, b) => b.amount - a.amount);
-    const topNaics = naicsLookup[0] || null;
-
-    const getNaicsForAward = (award) => {
-      const raw = award['NAICS'];
-      if (raw) return typeof raw === 'object' ? raw.code : raw;
-      // Fall back to top market NAICS only if the award has none
-      return topNaics ? topNaics.code : '';
-    };
-
-    // 1. Process Actual Contract Expirations
-    (recompetes || []).forEach(r => {
-      const key = `expiring-${r['generated_internal_id'] || r['Award ID']}`;
-      if (usedKeys.has(key)) return;
-      usedKeys.add(key);
-
-      const startDate = new Date(r['Start Date']);
-      const endDate = new Date(r['End Date']);
-      if (endDate < now) return;
-
-      const durationYears = (endDate - startDate) / (1000 * 60 * 60 * 24 * 365.25);
-      const daysUntil = Math.ceil((endDate - now) / 86400000);
-      const risk = Utils.missionGapRisk(r);
-      const vendor = r['Recipient Name'] || 'Unknown';
-      const agency = r['Awarding Agency'] || '';
-      const subAgency = r['Awarding Sub Agency'] || '';
-      const office = subAgency && subAgency !== agency ? subAgency : agency;
-      const desc = r['Description'] || 'Contract services';
-      const descLower = desc.toLowerCase();
-
-      let targetType = 'Maturing Pattern';
-      let rationale = '';
-      let scoreBoost = 0;
-
-      const rawNaics = String((typeof r['NAICS'] === 'object' ? r['NAICS'].code : r['NAICS']) || '');
-      const rawPsc = String((typeof r['PSC'] === 'object' ? r['PSC'].code : r['PSC']) || '').toUpperCase();
-      const isSaaSCode = rawNaics.startsWith('5112') || rawNaics.startsWith('5182') || rawPsc.startsWith('7A') || rawPsc === 'DA10';
-      const isSaaSDesc = /(subscription|renew|renewal|license|saas|cots)/i.test(descLower);
-
-      if (isSaaSCode || isSaaSDesc) {
-        targetType = 'Renewal Pattern';
-        rationale = `Analytical match for recurring software/SaaS licensing behavior. High-frequency renewal event.`;
-        scoreBoost = 15;
-      } else if (durationYears <= 3.0) {
-        // Fix: Short-duration SERVICE contracts are urgency signals, not low-value ones.
-        // A bridge or base-only award means the agency is in transition, exactly when to engage.
-        const isService = ['D','R','J','S'].includes(rawPsc.slice(0, 1));
-        targetType = 'Short-Term Pattern';
-        rationale = `Contract duration is short (${durationYears.toFixed(1)} years), indicating a bridge contract, base-only award, or truncated funding window. ${isService ? 'Service contract, high probability of a follow-on solicitation.' : 'High probability of transition or re-solicitation.'}`;
-        // Urgency bonus replaces penalty: short + expiring soon = act now
-        scoreBoost = daysUntil <= 180 ? 15 : daysUntil <= 365 ? 5 : -5;
-      } else {
-        targetType = 'Maturing Pattern';
-        rationale = `Analytical match for standard 3.5 to 5-year lifecycle maturity. High probability of a new solicitation.`;
-        scoreBoost = 20;
-      }
-
-      targets.push({
-        type: targetType,
-        name: desc, account: office, parentAgency: agency,
-        amount: parseFloat(r['Award Amount']) || 0,
-        closeDate: endDate, incumbent: vendor,
-        inferredNaics: getNaicsForAward(r),
-        rationale,
-        awardId: r['generated_internal_id'] || '',
-        score: 90 + scoreBoost + (risk.level === 'high' ? 10 : risk.level === 'medium' ? 5 : 0) + Math.min(10, (parseFloat(r['Award Amount']) || 0) / 1000000),
-        sourceAwards: [r]
-      });
-    });
-
-    // 2. Process Recurring Spending Patterns
-    const patternMap = {};
-    data.forEach(c => {
-      const agency = c['Awarding Agency'] || 'Unknown';
-      const sub = c['Awarding Sub Agency'] || agency;
-      if (!patternMap[sub]) patternMap[sub] = { agency, sub, awards: [], totalSpend: 0, vendors: new Set(), descriptions: [], naicsCodes: {} };
-      patternMap[sub].awards.push(c);
-      patternMap[sub].totalSpend += parseFloat(c['Award Amount']) || 0;
-      if (c['Recipient Name']) patternMap[sub].vendors.add(c['Recipient Name']);
-      if (c['Description']) patternMap[sub].descriptions.push(c['Description']);
-      // Track NAICS frequency so we can pick the dominant code for this office
-      const nc = c['NAICS'] ? (typeof c['NAICS'] === 'object' ? c['NAICS'].code : c['NAICS']) : null;
-      if (nc) patternMap[sub].naicsCodes[nc] = (patternMap[sub].naicsCodes[nc] || 0) + 1;
-    });
-
-    Object.values(patternMap).filter(p => p.awards.length >= 2 && p.totalSpend > 100000).forEach(p => {
-      const key = `recurring-${p.sub}`;
-      if (usedKeys.has(key)) return;
-      usedKeys.add(key);
-
-      // Fix: Don't suppress recurring spend just because the same office has an expiring contract.
-      // They are complementary signals. We tag the rationale to acknowledge both when they overlap.
-      const hasExpiring = targets.some(t => t.account === p.sub && (t.type === 'Maturing Pattern' || t.type === 'Short-Term Pattern'));
-
-      const amounts = p.awards.map(a => parseFloat(a['Award Amount']) || 0).sort((a,b) => a - b);
-      const medianAward = amounts.length % 2 === 0 ? (amounts[amounts.length/2 - 1] + amounts[amounts.length/2]) / 2 : amounts[Math.floor(amounts.length/2)];
-
-      const vendorCounts = {};
-      p.awards.forEach(a => { const v = a['Recipient Name']; if (v) vendorCounts[v] = (vendorCounts[v] || 0) + 1; });
-      const topVendor = Object.entries(vendorCounts).sort((a,b) => b[1] - a[1])[0];
-      const incumbentName = topVendor ? topVendor[0] : 'Multiple';
-      const dominancePct = topVendor ? Math.round((topVendor[1] / p.awards.length) * 100) : 0;
-
-      // Fix: Use the soonest future end date within 18 months as the close date when available,
-      // otherwise project from now + median contract duration.
-      const eighteenMonths = new Date(now); eighteenMonths.setMonth(eighteenMonths.getMonth() + 18);
-      const soonExpiring = p.awards
-        .map(a => new Date(a['End Date']))
-        .filter(d => !isNaN(d.getTime()) && d > now && d < eighteenMonths)
-        .sort((a, b) => a - b)[0];
-
-      let closeDate;
-      if (soonExpiring) {
-        closeDate = soonExpiring;
-      } else {
-        // Estimate from median award duration
-        const durations = p.awards
-          .map(a => ({ start: new Date(a['Start Date']), end: new Date(a['End Date']) }))
-          .filter(d => !isNaN(d.start) && !isNaN(d.end) && d.end > d.start)
-          .map(d => d.end - d.start);
-        const medianDuration = durations.length > 0 ? durations.sort((a,b) => a-b)[Math.floor(durations.length/2)] : 365 * 24 * 3600 * 1000;
-        closeDate = new Date(now.getTime() + medianDuration);
-      }
-      if (closeDate < now) return;
-
-      // Fix: Use the dominant NAICS code for this specific office, not market top-level
-      const dominantNaics = Object.entries(p.naicsCodes).sort((a,b) => b[1]-a[1])[0];
-      const inferredNaics = dominantNaics ? dominantNaics[0] : (topNaics ? topNaics.code : '');
-
-      const overlapNote = hasExpiring ? ' Also has an active expiring contract.' : '';
-
-      targets.push({
-        type: 'Spending Pattern',
-        name: p.descriptions[0] || 'Contract services',
-        account: p.sub, parentAgency: p.agency, amount: medianAward, closeDate, incumbent: incumbentName,
-        inferredNaics,
-        rationale: `Recurring requirement detected (${p.awards.length} historical awards). ${Utils.titleCase(incumbentName)} holds a ${dominancePct}% win-rate dominance in this pattern. Median historical value: ${Utils.money(medianAward)}.${overlapNote}`,
-        awardId: '',
-        score: 60 + Math.min(20, p.awards.length * 5) + Math.min(10, p.totalSpend / 5000000) + (hasExpiring ? 8 : 0),
-        sourceAwards: p.awards
-      });
-    });
-
-    // 3. Process Market Adjacencies (The Gap Detector)
-    // Fix: Expand product detection to include PSC-based product buys and hardware codes.
-    // PSC prefixes: 70xx (IT/ADP equipment), 7A (software), Z1/Z2 (construction/install).
-    // NAICS expanded to include more hardware and platform categories.
-    const productNaics = new Set([
-      '511210','518210',           // Software publishers, data processing
-      '334111','334210','334220',  // Computers, comm equipment
-      '423430','423690',           // Computer/electronics wholesale
-      '541519','541512',           // IT services (can be product-led)
-      '517110','517312',           // Telecom carriers
-    ]);
-
-    const isProductBuy = (c) => {
-      const amt = parseFloat(c['Award Amount']) || 0;
-      if (amt < 250000) return false;
-      const n = c['NAICS'] ? (typeof c['NAICS'] === 'object' ? c['NAICS'].code : c['NAICS']) : '';
-      const psc = String(c['PSC'] ? (typeof c['PSC'] === 'object' ? c['PSC'].code : c['PSC']) : '').toUpperCase();
-      const pscPrefix2 = psc.slice(0, 2);
-      const pscPrefix1 = psc.slice(0, 1);
-      // PSC 70xx = ADP/IT equipment, 7A = software, Z1/Z2 = construction/install follow-ons
-      const isProductPsc = pscPrefix2 === '70' || pscPrefix2 === '7A' || pscPrefix1 === 'Z';
-      return productNaics.has(n) || isProductPsc;
-    };
-
-    const majorProductBuys = data.filter(isProductBuy)
-      .sort((a, b) => (parseFloat(b['Award Amount']) || 0) - (parseFloat(a['Award Amount']) || 0));
-
-    const seenAdjacencyOffices = new Set();
-
-    majorProductBuys.forEach(buy => {
-      // Fix: Remove hard cap of 3, allow as many as the data supports, capped only by final slice(0,20)
-      const office = buy['Awarding Sub Agency'] || buy['Awarding Agency'] || 'Unknown';
-      if (seenAdjacencyOffices.has(office)) return;
-      seenAdjacencyOffices.add(office);
-
-      const agency = buy['Awarding Agency'] || '';
-      const buyAmount = parseFloat(buy['Award Amount']) || 0;
-      const vendor = buy['Recipient Name'] || 'Unknown Vendor';
-      const estAmount = buyAmount * 0.20;
-
-      let closeDate = new Date(buy['Start Date'] || minDate);
-      closeDate.setMonth(closeDate.getMonth() + 6);
-      if (closeDate < now) {
-        closeDate = new Date();
-        closeDate.setMonth(closeDate.getMonth() + 4);
-      }
-
-      targets.push({
-        type: 'Adjacent Pattern',
-        name: `Integration & Implementation Services (Following ${Utils.titleCase(vendor)} acquisition)`,
-        account: office, parentAgency: agency, amount: Math.round(estAmount),
-        closeDate, incumbent: '', inferredNaics: '541512',
-        rationale: `Gap Identified: Office recently obligated ${Utils.money(buyAmount)} on products/software from ${Utils.titleCase(vendor)}. Indicates a trailing requirement for implementation, migration, or managed services.`,
-        awardId: buy['generated_internal_id'] || '', score: 75, sourceAwards: [buy]
-      });
-    });
-
-    return targets.sort((a, b) => b.score - a.score).slice(0, 20);
-  },
-
-
-  toCSV(targets) {
-    const headers = ['Parent Agency', 'Account Name', 'Opportunity Name', 'Amount', 'Close Date', 'Stage', 'Type', 'Incumbent Vendor', 'Rationale', 'Inferred NAICS', 'USASpending URL'];
-    const tc = s => s && s === s.toUpperCase() ? Utils.titleCase(s) : s;
-    const fmtAmt = n => '$' + Math.round(n).toLocaleString('en-US');
-    const rows = targets.map(t => [
-      t.parentAgency, t.account, tc(t.name), fmtAmt(t.amount),
-      t.closeDate ? t.closeDate.toISOString().split('T')[0] : '',
-      'Prospecting - For Validation', t.type, tc(t.incumbent),
-      t.rationale.replace(/[^\x20-\x7E]/g, '-'), t.inferredNaics || '',
-      t.awardId ? `https://www.usaspending.gov/award/${t.awardId}` : ''
-    ]);
-    const escape = v => `"${String(v || '').replace(/"/g, '""')}"`;
-    return [headers.map(escape).join(','), ...rows.map(r => r.map(escape).join(','))].join('\n');
-  }
-};
 const JobLinks = {
   knownBrands: [
     'KBR', 'SAIC', 'CACI', 'LEIDOS', 'SERCO', 'AECOM', 'JACOBS', 'PARSONS', 
@@ -3225,7 +2744,6 @@ const App = {
 
   // Sets the active territory, persists to localStorage, re-runs search if active
 
-  // ── Search ──────────────────────────────────────────────────
   async runSearch(query, isDirectSelection = false, skipUrlUpdate = false) {
     if (!query) {
       query = (DOM.get('searchInput')?.value || '').trim();
@@ -3426,7 +2944,6 @@ const App = {
       </div>`;
   },
 
-  // ── Territory ───────────────────────────────────────────────
   toggleTerritoryMenu() {
     const dd = DOM.get('territoryDropdown');
     dd.classList.toggle('open');
@@ -3469,7 +2986,6 @@ const App = {
     if (q) this.runSearch(q);
   },
 
-  // ── Drill state ─────────────────────────────────────────────
   resetDrill(silent = false) {
     this.drillState = { level: 0, path: [], currentAgency: null, currentSubAgency: null };
     this.searchData.filter = null;
@@ -3562,7 +3078,6 @@ const App = {
     });
     inner.innerHTML = html;
   },
-
 
   renderBubbleChart() {
     const container = DOM.get('bubbleChartContainer');
@@ -3991,7 +3506,6 @@ selectAgencySuggestion(name, inputId, boxId) {
     Utils.copyAndAnimate(App._currentBriefText, btn, '');
   },
 
-  // ── Arti + Chat ─────────────────────────────────────────────
   async runAiActionPlan() {
     if (!this.searchData.loaded || this.searchData.active.length === 0) {
       this.toast('Run a search first, Arti needs market data to work with.', 'warning');
@@ -4226,7 +3740,6 @@ selectAgencySuggestion(name, inputId, boxId) {
     }
   },
 
-  // ── Recent searches ─────────────────────────────────────────
   renderRecentSearches() {
     const container = DOM.get('recentChips');
     if (!container) return;
@@ -4382,64 +3895,57 @@ selectAgencySuggestion(name, inputId, boxId) {
     render(false);
   },
 
-  // ── Pipeline Patterns ─────────────────────────────────────────
   renderPipeline() {
     const card = DOM.get('pipelineCard');
     const list = DOM.get('pipelineList');
     if (!card || !list || !this.searchData.loaded) return;
 
-    const recompetes = ForecastEngine.detectRecompetes(this.searchData.active);
-    const raw = PipelineEngine.generate(this.searchData.active, recompetes);
-
     const now = new Date();
-    const targets = raw
-      .filter(t => t.type !== 'Adjacent Pattern' && t.closeDate && t.closeDate > now)
-      .sort((a, b) => a.closeDate - b.closeDate);
+    const cutoff = new Date(now); cutoff.setDate(cutoff.getDate() + 180);
+
+    const targets = (this.searchData.active || [])
+      .filter(c => {
+        const end = new Date(c['End Date']);
+        return end > now && end <= cutoff && (parseFloat(c['Award Amount']) || 0) > 50000;
+      })
+      .sort((a, b) => new Date(a['End Date']) - new Date(b['End Date']));
 
     if (!targets.length) { card.classList.add('hidden'); return; }
     card.classList.remove('hidden');
-
     this._pipelineTargets = targets;
-    const queryWords = (this.currentQuery || '').toLowerCase().split(/[\s,&]+/).filter(w => w.length > 2);
+
     const SHOW = 8;
-
-    const badgeMap = {
-      'Renewal Pattern':    { color: 'var(--btn-bg)',    label: 'Renewal' },
-      'Short-Term Pattern': { color: 'rgb(160,60,20)',   label: 'Short-Term' },
-      'Maturing Pattern':   { color: 'rgb(20,110,60)',   label: 'Maturing' },
-      'Spending Pattern':   { color: 'rgb(30,80,140)',   label: 'Recurring' },
-    };
-
     const render = (all) => {
       const items = all ? targets : targets.slice(0, SHOW);
-      list.innerHTML = items.map(t => {
-        const days = Math.ceil((t.closeDate - now) / 86400000);
-        const daysLabel = days <= 30 ? `${days}d`
-          : days <= 90 ? `${days}d`
-          : t.closeDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-        const urgencyStyle = days <= 30
-          ? 'color:rgb(160,60,20);font-weight:700;'
+      list.innerHTML = items.map(c => {
+        const end = new Date(c['End Date']);
+        const days = Math.ceil((end - now) / 86400000);
+        const daysLabel = days <= 90 ? `${days}d`
+          : end.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        const urgencyStyle = days <= 30 ? 'color:rgb(160,60,20);font-weight:700;'
           : days <= 90 ? 'color:var(--warn-text);font-weight:600;' : 'color:var(--text-quaternary);';
-        const url = t.awardId ? `https://www.usaspending.gov/award/${t.awardId}` : '';
-        const name = Utils.titleIfCaps(t.name).slice(0, 120);
-        const agency = Utils.cleanAgency(t.account);
-        const b = badgeMap[t.type];
-        const badgeHtml = b
-          ? `<span style="font-size:10px;font-weight:700;color:${b.color};text-transform:uppercase;letter-spacing:0.04em;display:block;margin-bottom:3px;">${b.label}</span>`
-          : '';
-        const incumbentName = Utils.titleIfCaps(t.incumbent || '');
-        const incumbentMatches = queryWords.some(w => incumbentName.toLowerCase().includes(w));
-        const showIncumbent = t.incumbent && t.incumbent !== 'Multiple' && !incumbentMatches;
-
-        return `<div class="contract-row" style="align-items:flex-start;">
+        const vendor  = c['Recipient Name'] || 'Unknown Vendor';
+        const agency  = Utils.cleanAgency(c['Awarding Agency'] || '');
+        const desc    = (c['Description'] || '').slice(0, 120);
+        const naics   = c['NAICS'] ? (typeof c['NAICS'] === 'object' ? c['NAICS'].code : c['NAICS']) : '';
+        const state   = c['pop_state_code'] || '';
+        const meta    = [state, naics ? `NAICS ${naics}` : ''].filter(Boolean).join(' · ');
+        const vehicle  = Utils.detectVehicle(c);
+        const setAside = VehicleDetector.getSetAsideLabel(c['Type of Set Aside'] || '');
+        const url = c['generated_internal_id']
+          ? `https://www.usaspending.gov/award/${c['generated_internal_id']}`
+          : c['Award ID'] ? `https://www.usaspending.gov/search/?hash=&keyword=${encodeURIComponent(c['Award ID'])}` : '';
+        return `<div class="contract-row">
           <div class="contract-body">
-            ${badgeHtml}
-            <div class="contract-vendor">${Html.escapeHtml(name)}</div>
+            <div class="contract-vendor">${Html.escapeHtml(vendor)}</div>
             <div class="contract-agency">${Html.escapeHtml(agency)}</div>
-            ${showIncumbent ? `<div class="contract-agency" style="margin-top:1px;">Incumbent: ${Html.escapeHtml(incumbentName)}</div>` : ''}
+            ${vehicle  ? `<span class="vehicle-tag">${Html.escapeHtml(vehicle)}</span>` : ''}
+            ${setAside ? `<span class="vehicle-tag" style="background:var(--go-bg);color:var(--go-text);">${Html.escapeHtml(setAside)}</span>` : ''}
+            ${desc ? `<div class="contract-desc">${Html.escapeHtml(desc)}</div>` : ''}
+            ${meta ? `<div class="contract-agency" style="margin-top:2px;color:var(--text-quaternary);">${Html.escapeHtml(meta)}</div>` : ''}
           </div>
           <div class="contract-right">
-            <span class="contract-amount">${Utils.money(t.amount)}</span>
+            <span class="contract-amount">${Utils.money(c['Award Amount'])}</span>
             <span class="contract-urgency" style="${urgencyStyle}">${daysLabel}</span>
             ${url ? `<a href="${url}" target="_blank" rel="noopener" class="contract-view">View</a>` : ''}
           </div>
@@ -4456,21 +3962,28 @@ selectAgencySuggestion(name, inputId, boxId) {
 
   exportPipelineCSV() {
     if (!this._pipelineTargets || !this._pipelineTargets.length) {
-      this.toast('Run a search first to generate pipeline patterns.', 'warning'); return;
+      this.toast('Run a search first.', 'warning'); return;
     }
-    const csv = PipelineEngine.toCSV(this._pipelineTargets);
+    const esc = v => `"${String(v ?? '').replace(/"/g,'""')}"`;
+    const headers = ['Recipient Name','Awarding Agency','Award Amount','End Date','Description','NAICS','pop_state_code','USASpending URL'];
+    const rows = this._pipelineTargets.map(c => [
+      esc(c['Recipient Name']), esc(c['Awarding Agency']), esc(c['Award Amount']),
+      esc(c['End Date']), esc(c['Description']),
+      esc(c['NAICS'] && typeof c['NAICS']==='object' ? c['NAICS'].code : c['NAICS']),
+      esc(c['pop_state_code']),
+      esc(c['generated_internal_id'] ? `https://www.usaspending.gov/award/${c['generated_internal_id']}` : ''),
+    ].join(','));
+    const csv = [headers.map(h=>`"${h}"`).join(','), ...rows].join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `fedhoo_pipeline_${(this.currentQuery || 'export').replace(/\s+/g,'_')}_${new Date().toISOString().slice(0,10)}.csv`;
-    document.body.appendChild(a); a.click();
-    document.body.removeChild(a);
+    a.download = `fedhoo_expiring_${(this.currentQuery||'export').replace(/\s+/g,'_')}_${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    this.toast('Pipeline CSV exported.', 'ok');
+    this.toast('Expiring contracts exported.', 'ok');
   },
 
-  // ── Subawards (Prime to Sub) ───────────────────────────────────
   async renderSubawards() {
     const card = DOM.get('subawardsCard');
     const list = DOM.get('subawardsList');
@@ -4563,7 +4076,6 @@ selectAgencySuggestion(name, inputId, boxId) {
     if (this._chartView === 'subsankey') this.renderSubSankey();
   },
 
-  // ── Chart view switcher ─────────────────────────────────────
   _chartView: 'treemap', // 'treemap' | 'sankey' | 'subsankey'
 
   switchChartView(view) {
@@ -4984,7 +4496,6 @@ selectAgencySuggestion(name, inputId, boxId) {
     this.toast('CSV exported.', 'ok');
   },
 
-  // ── Dark mode toggle ─────────────────────────────────────────
   toggleDarkMode() {
     const isDark = document.documentElement.classList.toggle('dark');
     localStorage.setItem('fedhoo_dark', isDark ? '1' : '0');
@@ -5143,7 +4654,6 @@ selectAgencySuggestion(name, inputId, boxId) {
     if (input) { input.value = ''; input.focus(); }
   },
 
-  // ── Init ─────────────────────────────────────────────────────
   init() {
     // Wire search input + autocomplete
     const input = DOM.get('searchInput');
@@ -5328,7 +4838,6 @@ selectAgencySuggestion(name, inputId, boxId) {
     LibLoader.preloadWhenIdle();
   },
 
-  // ── Endpoints ─────────────────────────────────────────────
   PROXY_ENDPOINT: 'https://76unm1rlj0.execute-api.us-east-1.amazonaws.com/default/grumpy2',
   AI_ENDPOINT:    'https://x6cdyrfcy43r5rpw6i6aiwsegi0effvy.lambda-url.us-east-1.on.aws/',
 };
