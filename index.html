@@ -1519,23 +1519,16 @@ buyingOffices: {},
     // 1. Check the dynamic memory bank first (for autocomplete selections)
     if (this.dynamicAgencies[lower]) return this.dynamicAgencies[lower];
 
-    // 2. Check the hardcoded acronyms
+    // 2. Check hardcoded acronyms
     if (this.agencyAliases[lower]) return { tier: 'toptier', name: this.agencyAliases[lower] };
-    
-    // NEW: Helper to strip official prefixes for natural language matching
+
+    // 3. Full name match (supports "Air Force", "Energy", etc.)
     const stripPrefix = name => name.toLowerCase().replace(/^(department of (the )?|office of (the )?|u\.s\. )/, '').trim();
-
-    // 3. EXACT MATCH ONLY (But supports natural names like "Air Force" or "Energy")
-    const subMatch = Object.entries(this.subAgencyAliases).find(([abbr, fullName]) => 
-      fullName.toLowerCase() === lower || abbr === lower || stripPrefix(fullName) === lower
-    );
-    if (subMatch) return { tier: 'subtier', name: subMatch[1] };
-
-    const topMatch = Object.entries(this.agencyAliases).find(([abbr, fullName]) => 
+    const topMatch = Object.entries(this.agencyAliases).find(([abbr, fullName]) =>
       fullName.toLowerCase() === lower || abbr === lower || stripPrefix(fullName) === lower
     );
     if (topMatch) return { tier: 'toptier', name: topMatch[1] };
-    
+
     return null;
   },
 normalizeQuery(query) {
@@ -1802,7 +1795,7 @@ filterActiveContracts(awards) {
           }
           const expanded = parts.map(p => {
             const lower = p.toLowerCase().trim();
-            return Utils.queryAliases[lower] || Utils.agencyAliases[lower] || Utils.subAgencyAliases[lower] || p;
+            return Utils.agencyAliases[lower] || p;
           });
           andGroups.push(expanded);
         }
