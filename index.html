@@ -1207,7 +1207,7 @@ a, button, input, select { touch-action: manipulation; }
   <!-- RESULTS GRID -->
   <div class="tools-grid hidden" id="resultsGrid">
 
-    <!-- UNIFIED INTELLIGENCE CARD — signals + treemap + Arti in one surface -->
+    <!-- UNIFIED INTELLIGENCE CARD -->
     <div class="app-card wide" id="marketCard">
 
       <!-- Section 1: Hero + score + signals -->
@@ -1229,44 +1229,8 @@ a, button, input, select { touch-action: manipulation; }
         <div class="breadcrumb-row" id="bubbleBreadcrumbInner"></div>
       </div>
 
-      <!-- Divider -->
+      <!-- Section 2: Arti — brief + chips before treemap -->
       <div class="intel-divider"></div>
-
-      <!-- Section 2: Treemap -->
-      <div class="chart-tabs" id="chartTabs">
-        <button class="chart-tab active" id="tabTreemap" onclick="App.switchChartView('treemap')">Treemap</button>
-        <button class="chart-tab" id="tabSankey" onclick="App.switchChartView('sankey')">Agency → Vendor Flow</button>
-        <button class="chart-tab hidden" id="tabSubSankey" onclick="App.switchChartView('subsankey')">Prime → Sub Flow</button>
-      </div>
-      <div class="chart-viewport" id="chartViewport">
-        <div class="chart-track" id="chartTrack">
-          <div class="chart-panel" id="panelTreemap">
-            <div id="bubbleChartContainer"><div class="bubble-tooltip" id="bubbleTooltip"></div></div>
-          </div>
-          <div class="chart-panel" id="panelSankey">
-            <div id="sankeyContainer" style="width:100%;"></div>
-          </div>
-          <div class="chart-panel" id="panelSubSankey">
-            <div id="subSankeyContainer" style="width:100%;"></div>
-          </div>
-        </div>
-      </div>
-      <div class="chart-dots" id="chartDots">
-        <span class="chart-dot active" id="dotTreemap" onclick="App.switchChartView('treemap')"></span>
-        <span class="chart-dot" id="dotSankey" onclick="App.switchChartView('sankey')"></span>
-        <span class="chart-dot hidden" id="dotSubSankey" onclick="App.switchChartView('subsankey')"></span>
-      </div>
-      <div class="bubble-toggle-row" id="bubbleToggleRow" style="margin-top:10px;">
-        <button class="bubble-toggle-btn active" data-mode="agencies" id="bubbleToggleAgencies">Agency</button>
-        <button class="bubble-toggle-btn" data-mode="subagencies" id="bubbleToggleSubAgencies">Office</button>
-        <button class="bubble-toggle-btn" data-mode="vendors" id="bubbleToggleVendors">Prime</button>
-      </div>
-      <div class="intel-source-note">Top 100 contracts by obligated value · active funding past 12 months · USASpending.gov</div>
-
-      <!-- Divider -->
-      <div class="intel-divider"></div>
-
-      <!-- Section 3: Arti -->
       <div class="arti-inline-header">
         <svg class="arti-inline-avatar" aria-label="Arti"><use href="#icon-arti"/></svg>
         <div>
@@ -1303,7 +1267,7 @@ a, button, input, select { touch-action: manipulation; }
         <div class="hidden" id="artiInlineDisclaimer" style="font-size:var(--text-xs);color:var(--text-tertiary);margin-top:10px;">Always use your own judgment before making strategic decisions.</div>
       </div>
 
-      <!-- Section 4: Seller lens (inline) -->
+      <!-- Section 3: Seller lens -->
       <div class="hidden" id="sellerLensCard" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border-inner);">
         <div class="seller-lens-title">Make every search smarter</div>
         <div class="seller-lens-sub">Tell Fedhoo what you sell and every search gets scored for your situation.</div>
@@ -1320,7 +1284,40 @@ a, button, input, select { touch-action: manipulation; }
         </div>
       </div>
 
+      <!-- Section 4: Treemap -->
+      <div class="intel-divider"></div>
+      <div class="chart-tabs" id="chartTabs">
+        <button class="chart-tab active" id="tabTreemap" onclick="App.switchChartView('treemap')">Treemap</button>
+        <button class="chart-tab" id="tabSankey" onclick="App.switchChartView('sankey')">Agency → Vendor Flow</button>
+        <button class="chart-tab hidden" id="tabSubSankey" onclick="App.switchChartView('subsankey')">Prime → Sub Flow</button>
+      </div>
+      <div class="chart-viewport" id="chartViewport">
+        <div class="chart-track" id="chartTrack">
+          <div class="chart-panel" id="panelTreemap">
+            <div id="bubbleChartContainer"><div class="bubble-tooltip" id="bubbleTooltip"></div></div>
+          </div>
+          <div class="chart-panel" id="panelSankey">
+            <div id="sankeyContainer" style="width:100%;"></div>
+          </div>
+          <div class="chart-panel" id="panelSubSankey">
+            <div id="subSankeyContainer" style="width:100%;"></div>
+          </div>
+        </div>
+      </div>
+      <div class="chart-dots" id="chartDots">
+        <span class="chart-dot active" id="dotTreemap" onclick="App.switchChartView('treemap')"></span>
+        <span class="chart-dot" id="dotSankey" onclick="App.switchChartView('sankey')"></span>
+        <span class="chart-dot hidden" id="dotSubSankey" onclick="App.switchChartView('subsankey')"></span>
+      </div>
+      <div class="bubble-toggle-row" id="bubbleToggleRow" style="margin-top:10px;">
+        <button class="bubble-toggle-btn active" data-mode="agencies" id="bubbleToggleAgencies">Agency</button>
+        <button class="bubble-toggle-btn" data-mode="subagencies" id="bubbleToggleSubAgencies">Office</button>
+        <button class="bubble-toggle-btn" data-mode="vendors" id="bubbleToggleVendors">Prime</button>
+      </div>
+      <div class="intel-source-note">Top 100 contracts by obligated value · active funding past 12 months · USASpending.gov</div>
+
     </div><!-- /marketCard unified -->
+
 
     <!-- TOP PRIMES CARD -->
     <div class="app-card wide result-panel hidden" id="primesCard">
