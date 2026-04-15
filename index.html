@@ -528,13 +528,46 @@ a, button, input, select { touch-action: manipulation; }
   border-left: 3px solid var(--btn-bg);
   border-radius: var(--radius); padding: 20px 24px;
 }
-.arti-inline-header {
-  display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
+/* Hero row: number + faces inline */
+.hero-row { display: flex; align-items: center; gap: 14px; margin-bottom: 4px; }
+.hero-row .market-hero-number { margin: 0; }
+.hero-row .face-scale { margin: 0; }
+
+/* Arti brief block — no chrome, just face + text */
+.arti-brief-block { margin: 10px 0 0; }
+.arti-brief-body { display: flex; align-items: flex-start; gap: 10px; }
+.arti-brief-face { width: 28px; height: 28px; border-radius: 50%; display: block; overflow: hidden; flex-shrink: 0; margin-top: 2px; }
+.arti-brief-text { font-size: var(--text-sm); color: var(--text-secondary); line-height: 1.65; flex: 1; }
+.arti-brief-status { display: flex; align-items: center; gap: 5px; font-size: var(--text-xs); color: var(--text-quaternary); margin: 4px 0 0 38px; }
+.arti-inline-loading { color: var(--text-quaternary) !important; }
+
+/* AI query bar */
+.arti-query-bar { margin-top: 12px; }
+.arti-query-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
+.arti-query-input-row { display: flex; align-items: center; gap: 6px; }
+.arti-query-input {
+  flex: 1; background: var(--bg-hover); border: 1.5px solid var(--border);
+  border-radius: 9999px; padding: 8px 14px;
+  font-size: var(--text-sm); color: var(--text-primary); font-family: var(--font);
+  outline: none; transition: var(--transition); min-width: 0;
 }
+.arti-query-input:focus { border-color: var(--accent); background: var(--bg-app); box-shadow: 0 0 0 3px var(--accent-dim); }
+.arti-query-input::placeholder { color: var(--text-quaternary); }
+.arti-query-send {
+  background: var(--btn-bg); color: var(--btn-text); border: none;
+  border-radius: 9999px; padding: 0 16px; height: 36px;
+  font-size: var(--text-sm); font-weight: 600; cursor: pointer;
+  font-family: var(--font); transition: var(--transition); flex-shrink: 0;
+}
+.arti-query-send:hover { background: var(--btn-hover); }
+.arti-query-copy {
+  width: 32px; height: 32px; background: none; border: 1px solid var(--border);
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--text-tertiary); transition: var(--transition); flex-shrink: 0;
+}
+.arti-query-copy:hover { background: var(--bg-hover); color: var(--text-primary); }
 .arti-inline-avatar { width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; display:block; overflow:hidden; }
-.arti-inline-name { font-size: var(--text-sm); font-weight: 800; color: var(--text-primary); letter-spacing: -0.02em; }
-.arti-inline-role { font-size: var(--text-xs); color: var(--text-quaternary); }
-.arti-inline-status { margin-left: auto; font-size: var(--text-xs); color: var(--text-quaternary); display: flex; align-items: center; gap: 5px; }
+.arti-inline-status { display: flex; align-items: center; gap: 5px; font-size: var(--text-xs); color: var(--text-quaternary); }
 .arti-inline-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--go-text); animation: pulse-dot 2s ease-in-out infinite; flex-shrink: 0; }
 @keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
 .arti-inline-loading { color: var(--text-quaternary); font-size: var(--text-sm); padding: 8px 0; }
@@ -1229,69 +1262,68 @@ a, button, input, select { touch-action: manipulation; }
     <!-- UNIFIED INTELLIGENCE CARD -->
     <div class="app-card wide" id="marketCard">
 
-      <!-- Section 1: Hero + score + signals -->
+      <!-- Hero row: number + face scale side by side -->
       <h2 class="card-title" id="marketCardTitle">Market Signals</h2>
-      <div class="market-hero-number" id="marketHeroNumber"></div>
-      <div class="face-scale hidden" id="faceScale">
-        <div class="face-scale-item" id="faceScaleOpen">
-          <svg class="face-scale-svg" aria-label="Easy market"><use href="#icon-face-open"/></svg>
-        </div>
-        <div class="face-scale-item" id="faceScaleWatch">
-          <svg class="face-scale-svg" aria-label="Partner Play market"><use href="#icon-face-watch"/></svg>
-        </div>
-        <div class="face-scale-item" id="faceScaleLocked">
-          <svg class="face-scale-svg" aria-label="Long Game market"><use href="#icon-face-locked"/></svg>
+      <div class="hero-row">
+        <div class="market-hero-number" id="marketHeroNumber"></div>
+        <div class="face-scale hidden" id="faceScale">
+          <div class="face-scale-item" id="faceScaleOpen">
+            <svg class="face-scale-svg" aria-label="Easy market"><use href="#icon-face-open"/></svg>
+          </div>
+          <div class="face-scale-item" id="faceScaleWatch">
+            <svg class="face-scale-svg" aria-label="Partner Play market"><use href="#icon-face-watch"/></svg>
+          </div>
+          <div class="face-scale-item" id="faceScaleLocked">
+            <svg class="face-scale-svg" aria-label="Long Game market"><use href="#icon-face-locked"/></svg>
+          </div>
         </div>
       </div>
+
+      <!-- Signals: verdict + 2 prose lines + action. Max 4 lines total. -->
       <div class="market-signals hidden" id="marketSignals"></div>
       <div class="hidden" id="bubbleBreadcrumb">
         <div class="breadcrumb-row" id="bubbleBreadcrumbInner"></div>
       </div>
 
-      <!-- Section 2: Arti — brief + chips before treemap -->
-      <div class="intel-divider"></div>
-      <div class="arti-inline-header">
-        <svg class="arti-inline-avatar" aria-label="Arti"><use href="#icon-arti"/></svg>
-        <div>
-          <div class="arti-inline-name">Arti</div>
-          <div class="arti-inline-role" id="artiInlineRole">Pre-meeting briefing</div>
+      <!-- Arti brief: 2-3 lines, no chrome, streams inline -->
+      <div class="arti-brief-block hidden" id="artiBriefBlock">
+        <div class="arti-brief-body">
+          <svg class="arti-brief-face" id="artiBriefFace" aria-label="Arti"><use href="#icon-arti"/></svg>
+          <div id="artiInlineContent" class="arti-brief-text arti-inline-loading">Analyzing market…</div>
         </div>
-        <div class="arti-inline-status" id="artiInlineStatus">
+        <div class="arti-brief-status" id="artiInlineStatus">
           <span class="arti-inline-dot"></span>
           <span id="artiInlineStatusText">Reading the data…</span>
         </div>
-        <button class="export-btn hidden" id="artiInlineCopyBtn" onclick="App.copyArtiInlineBrief()" style="margin-left:8px;flex-shrink:0;">Copy brief</button>
       </div>
-      <div id="artiInlineContent" class="strategic-read arti-inline-loading">Analyzing market…</div>
-      <div class="arti-expand-row hidden" id="artiExpandRow">
-        <button class="arti-expand-btn" id="artiExpandBtn" onclick="App.toggleArtiBriefExpand()">Read full brief</button>
-        <button class="arti-copy-brief-btn" id="artiCopyBriefBtn" onclick="App.copyArtiShortBrief()">Copy briefing</button>
-      </div>
-      <div class="hidden" id="artiInlineActions" style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border-inner);">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;">
-          <span style="font-size:var(--text-xs);font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.05em;">Ask a follow-up</span>
-          <button class="export-btn" onclick="App.copyArtiInlineBrief()">Copy brief</button>
-        </div>
-        <div class="prompt-chips" id="artiInlineChips">
+
+      <!-- AI query bar: always present after load, chips appear on focus -->
+      <div class="arti-query-bar hidden" id="artiQueryBar">
+        <div class="arti-query-chips hidden" id="artiInlineChips">
           <button class="prompt-chip" onclick="App.sendArtiChat('Who is the dominant incumbent in this market and how entrenched are they? Name the top vendor, their biggest contracts, and where their grip is weakest.', true)">Who owns this?</button>
           <button class="prompt-chip" onclick="App.sendArtiChat('Given my situation, what is the single best near-term opportunity in this data for me specifically? Name the contract, the agency, the incumbent, and exactly why it\'s the right one to chase.', true)">Best opening</button>
           <button class="prompt-chip" onclick="App.sendArtiChat('Write a short cold outreach email to the procurement lead at the agency spending the most in this market. Use the actual agency name, reference their real spending from the data, and connect it to what I sell. 4 sentences, no fluff.', true)">Draft outreach</button>
           <button class="prompt-chip" onclick="App.sendArtiChat('Give me 3 things I need to know walking into a meeting with the top buyer in this market. Be specific — name the agency, the programs they\'re funding, the incumbent, and the budget cycle pressure.', true)">Meeting prep</button>
           <button class="prompt-chip" onclick="App.sendArtiChat('Who should I team with to be competitive here? Pick 2 specific companies already winning in this data and explain exactly what they bring and how I should approach them.', true)">Who to team with</button>
         </div>
-        <div class="chat-history hidden" id="artiInlineChatHistory" style="margin-top:16px;"></div>
-        <div class="hidden" id="artiInlineChatInputWrap" style="margin-top:12px;">
-          <div class="chat-input-row">
-            <input type="text" class="input-field" id="artiInlineChatInput" placeholder="Ask a follow-up question…" autocomplete="off">
-            <button class="chat-send-btn" id="artiInlineChatSendBtn">Send</button>
-          </div>
-          <div class="chat-counter hidden" id="artiInlineChatCounter"></div>
+        <div class="arti-query-input-row">
+          <input type="text" class="arti-query-input" id="artiInlineChatInput"
+            placeholder="Ask Arti a follow-up…"
+            autocomplete="off"
+            onfocus="document.getElementById('artiInlineChips').classList.remove('hidden')"
+            onblur="setTimeout(()=>document.getElementById('artiInlineChips').classList.add('hidden'),200)">
+          <button class="arti-query-send" id="artiInlineChatSendBtn">Ask</button>
+          <button class="arti-query-copy hidden" id="artiInlineCopyBtn" onclick="App.copyArtiShortBrief()" title="Copy briefing">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
         </div>
-        <div class="hidden" id="artiInlineDisclaimer" style="font-size:var(--text-xs);color:var(--text-tertiary);margin-top:10px;">Always use your own judgment before making strategic decisions.</div>
+        <div class="chat-history hidden" id="artiInlineChatHistory" style="margin-top:12px;"></div>
+        <div class="chat-counter hidden" id="artiInlineChatCounter" style="margin-top:4px;font-size:var(--text-xs);color:var(--text-quaternary);"></div>
+        <div class="hidden" id="artiInlineDisclaimer" style="font-size:var(--text-xs);color:var(--text-tertiary);margin-top:6px;">Always use your own judgment before making strategic decisions.</div>
       </div>
 
-      <!-- Section 3: Seller lens -->
-      <div class="hidden" id="sellerLensCard" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border-inner);">
+      <!-- Seller lens (inline, shown once) -->
+      <div class="hidden" id="sellerLensCard" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border-inner);">
         <div class="seller-lens-title">Make every search smarter</div>
         <div class="seller-lens-sub">Tell Fedhoo what you sell and every search gets scored for your situation.</div>
         <div class="seller-lens-row">
@@ -1307,7 +1339,7 @@ a, button, input, select { touch-action: manipulation; }
         </div>
       </div>
 
-      <!-- Section 4: Treemap -->
+      <!-- Treemap -->
       <div class="intel-divider"></div>
       <div class="treemap-context-label">Where to focus inside this market</div>
       <div class="chart-tabs" id="chartTabs">
@@ -3042,13 +3074,12 @@ const App = {
     DOM.get('marketSignals')?.classList.add('hidden');
     DOM.get('faceScale')?.classList.add('hidden');
     const fl = DOM.get('faceLabel'); if (fl) fl.classList.add('hidden');
-    const aic = DOM.get('artiInlineContent'); if (aic) { aic.innerHTML = 'Analyzing market…'; aic.className = 'strategic-read arti-inline-loading'; delete aic.dataset.rawPlan; }
-    DOM.hide('artiInlineActions');
+    const aic = DOM.get('artiInlineContent'); if (aic) { aic.innerHTML = ''; aic.className = 'arti-brief-text arti-inline-loading'; delete aic.dataset.rawPlan; }
+    DOM.hide('artiBriefBlock');
+    DOM.hide('artiQueryBar');
     DOM.hide('artiInlineCopyBtn');
-    DOM.hide('artiExpandRow');
-    const expandBtn = DOM.get('artiExpandBtn'); if (expandBtn) expandBtn.textContent = 'Read full brief';
     const inlineChatHistory = DOM.get('artiInlineChatHistory'); if (inlineChatHistory) { inlineChatHistory.innerHTML = ''; inlineChatHistory.classList.add('hidden'); }
-    DOM.hide('artiInlineChatInputWrap');
+    // input always in query bar
     const inlineChatInput = DOM.get('artiInlineChatInput'); if (inlineChatInput) inlineChatInput.value = '';
     DOM.hide('artiInlineChatCounter');
     DOM.hide('artiInlineDisclaimer');
@@ -3858,16 +3889,9 @@ const App = {
       const contentEl = DOM.get('artiInlineContent');
       const statusEl  = DOM.get('artiInlineStatus');
       const statusTxt = DOM.get('artiInlineStatusText');
-      const roleEl    = DOM.get('artiInlineRole');
-      if (roleEl) {
-        if (this._sellerLens) {
-          const short = this._sellerLens.length > 40 ? this._sellerLens.slice(0,38) + '…' : this._sellerLens;
-          roleEl.textContent = short;
-        } else {
-          roleEl.textContent = 'Pre-meeting briefing';
-        }
-      }
-      if (contentEl) { contentEl.innerHTML = ''; contentEl.className = 'strategic-read'; }
+      // Show the brief block in loading state
+      DOM.show('artiBriefBlock');
+      if (contentEl) { contentEl.innerHTML = ''; contentEl.className = 'arti-brief-text'; }
       if (statusTxt) statusTxt.textContent = 'Briefing…';
 
       await Html.streamInto(
@@ -3876,28 +3900,23 @@ const App = {
         (fullText) => {
           this._artiInlineDone = true;
           this._currentBriefText = fullText;
-          if (contentEl) contentEl.dataset.rawPlan = fullText;
-          // Wire follow-up chat to inline UI
+          if (contentEl) { contentEl.dataset.rawPlan = fullText; }
           this.aiState.history = [
             { role: 'user', content: `Give me an actionable plan in the "${query}" market.` },
             { role: 'model', content: fullText }
           ];
           this.aiState.count = 0;
-          // Collapse brief to 3 lines — user expands if they want more
-          if (contentEl) contentEl.classList.add('arti-brief-collapsed');
-          // Hide live status, show expand row + copy button
           if (statusEl) statusEl.style.display = 'none';
-          DOM.show('artiExpandRow');
           DOM.show('artiInlineCopyBtn');
-          DOM.show('artiInlineActions');
-          DOM.show('artiInlineChatInputWrap');
+          DOM.show('artiQueryBar');
           DOM.show('artiInlineDisclaimer');
           const counter = DOM.get('artiInlineChatCounter');
           if (counter) { counter.textContent = `${this.aiState.max} follow-up questions remaining.`; counter.classList.remove('hidden'); }
         },
         (msg) => {
-          if (contentEl) contentEl.innerHTML = `<p style="color:var(--text-quaternary);font-size:var(--text-sm);">Arti couldn't load a brief right now. Use the Ask Arti button below.</p>`;
+          if (contentEl) contentEl.innerHTML = `<span style="color:var(--text-quaternary);">Brief unavailable. Ask a question below.</span>`;
           if (statusEl) statusEl.style.display = 'none';
+          DOM.show('artiQueryBar');
         }
       );
     } catch(e) {
@@ -3987,7 +4006,8 @@ const App = {
     }
 
     // Show inline chat input wrap if using inline
-    if (useInline) { DOM.show('artiInlineChatInputWrap'); }
+    // input lives in the persistent query bar — no extra show needed
+    if (useInline) { /* query bar always visible */ }
 
     const chatInput = DOM.get(chatInputElId);
     const chatSend  = DOM.get(chatSendElId);
@@ -4852,6 +4872,13 @@ const App = {
     }
     const lbl = DOM.get('faceLabel');
     if (lbl) { lbl.textContent = faceLabel; lbl.className = `face-label ${faceClass}`; lbl.classList.remove('hidden'); }
+
+    // Color Arti's face to match the verdict — green=Easy, amber=Partner Play, rose=Long Game
+    const artiBriefFace = DOM.get('artiBriefFace');
+    if (artiBriefFace) {
+      const faceIconMap = { open: 'icon-face-open', watch: 'icon-face-watch', locked: 'icon-face-locked' };
+      artiBriefFace.innerHTML = `<use href="#${faceIconMap[faceClass]}"/>`;
+    }
 
     // ── Verdict sentence ──────────────────────────────────────────
     let verdictSentence;
