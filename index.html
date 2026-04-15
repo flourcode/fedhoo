@@ -617,13 +617,19 @@ a, button, input, select { touch-action: manipulation; }
 :root.dark .market-verdict.locked{ color: #C48A96; }
 /* Supporting prose lines */
 .market-prose { color: var(--text-secondary); font-size: var(--text-sm); }
-/* Action line — the money line */
+/* Intel card internal dividers */
+.intel-divider {
+  height: 1px; background: var(--border-inner);
+  margin: 16px 0;
+}
+.intel-source-note {
+  font-size: var(--text-xs); color: var(--text-quaternary); margin-top: 10px;
+}
+/* Action line — no arrow, just bold colored text */
 .market-action {
-  display: flex; align-items: baseline; gap: 4px;
   font-size: var(--text-sm); font-weight: 700;
   color: var(--btn-bg); margin-top: 6px; line-height: 1.5;
 }
-.market-action-arrow { flex-shrink: 0; opacity: 0.8; }
 :root.dark .market-action { color: var(--btn-hover); }
 
 /* Seller lens prompt card */
@@ -1201,12 +1207,12 @@ a, button, input, select { touch-action: manipulation; }
   <!-- RESULTS GRID -->
   <div class="tools-grid hidden" id="resultsGrid">
 
-    <!-- MARKET SIGNALS CARD -->
+    <!-- UNIFIED INTELLIGENCE CARD — signals + treemap + Arti in one surface -->
     <div class="app-card wide" id="marketCard">
+
+      <!-- Section 1: Hero + score + signals -->
       <h2 class="card-title" id="marketCardTitle">Market Signals</h2>
       <div class="market-hero-number" id="marketHeroNumber"></div>
-
-      <!-- Face scale — directly under hero number -->
       <div class="face-scale hidden" id="faceScale">
         <div class="face-scale-item" id="faceScaleOpen">
           <svg class="face-scale-svg" aria-label="Easy market"><use href="#icon-face-open"/></svg>
@@ -1218,80 +1224,49 @@ a, button, input, select { touch-action: manipulation; }
           <svg class="face-scale-svg" aria-label="Long Game market"><use href="#icon-face-locked"/></svg>
         </div>
       </div>
-
-      <!-- Signal prose — verdict sentence + supporting lines + action -->
       <div class="market-signals hidden" id="marketSignals"></div>
-
-      <!-- Breadcrumb — shown when drilled in -->
       <div class="hidden" id="bubbleBreadcrumb">
         <div class="breadcrumb-row" id="bubbleBreadcrumbInner"></div>
       </div>
 
-      <!-- View switcher tabs (desktop) -->
+      <!-- Divider -->
+      <div class="intel-divider"></div>
+
+      <!-- Section 2: Treemap -->
       <div class="chart-tabs" id="chartTabs">
         <button class="chart-tab active" id="tabTreemap" onclick="App.switchChartView('treemap')">Treemap</button>
         <button class="chart-tab" id="tabSankey" onclick="App.switchChartView('sankey')">Agency → Vendor Flow</button>
         <button class="chart-tab hidden" id="tabSubSankey" onclick="App.switchChartView('subsankey')">Prime → Sub Flow</button>
       </div>
-
-      <!-- Dual-view swipeable container -->
       <div class="chart-viewport" id="chartViewport">
         <div class="chart-track" id="chartTrack">
-          <!-- View 0: Treemap -->
           <div class="chart-panel" id="panelTreemap">
-            <div id="bubbleChartContainer">
-              <div class="bubble-tooltip" id="bubbleTooltip"></div>
-            </div>
+            <div id="bubbleChartContainer"><div class="bubble-tooltip" id="bubbleTooltip"></div></div>
           </div>
-          <!-- View 1: Sankey -->
           <div class="chart-panel" id="panelSankey">
             <div id="sankeyContainer" style="width:100%;"></div>
           </div>
-          <!-- View 2: Prime → Sub Sankey -->
           <div class="chart-panel" id="panelSubSankey">
             <div id="subSankeyContainer" style="width:100%;"></div>
           </div>
         </div>
       </div>
-
-      <!-- Swipe indicator dots (mobile) -->
       <div class="chart-dots" id="chartDots">
         <span class="chart-dot active" id="dotTreemap" onclick="App.switchChartView('treemap')"></span>
         <span class="chart-dot" id="dotSankey" onclick="App.switchChartView('sankey')"></span>
         <span class="chart-dot hidden" id="dotSubSankey" onclick="App.switchChartView('subsankey')"></span>
       </div>
-
-      <!-- Toggle row (treemap modes, hidden when sankey active) -->
       <div class="bubble-toggle-row" id="bubbleToggleRow" style="margin-top:10px;">
         <button class="bubble-toggle-btn active" data-mode="agencies" id="bubbleToggleAgencies">Agency</button>
         <button class="bubble-toggle-btn" data-mode="subagencies" id="bubbleToggleSubAgencies">Office</button>
         <button class="bubble-toggle-btn" data-mode="vendors" id="bubbleToggleVendors">Prime</button>
       </div>
+      <div class="intel-source-note">Top 100 contracts by obligated value · active funding past 12 months · USASpending.gov</div>
 
-      <div style="font-size:var(--text-xs);color:var(--text-quaternary);margin-top:14px;">
-        Top 100 contracts by obligated value · active funding past 12 months · USASpending.gov
-      </div>
-    </div><!-- /marketCard -->
+      <!-- Divider -->
+      <div class="intel-divider"></div>
 
-    <!-- SELLER LENS PROMPT — shown after first search, dismissed once set -->
-    <div class="app-card wide result-panel hidden" id="sellerLensCard">
-      <div class="seller-lens-title">Make every search smarter</div>
-      <div class="seller-lens-sub">Tell Fedhoo what you sell and every search gets scored against your specific situation — not just market size.</div>
-      <div class="seller-lens-row">
-        <span class="seller-lens-prefix">I sell</span>
-        <input type="text" id="sellerLensInput" class="seller-lens-input"
-          placeholder="e.g. cloud infrastructure to civilian agencies"
-          autocomplete="off" maxlength="120">
-        <button class="seller-lens-save" onclick="App.saveSellerLens()">Save</button>
-      </div>
-      <div class="seller-lens-saved hidden" id="sellerLensSaved">
-        <span class="seller-lens-saved-text" id="sellerLensSavedText"></span>
-        <button class="seller-lens-clear" onclick="App.clearSellerLens()">Clear</button>
-      </div>
-    </div>
-
-    <!-- ARTI INLINE BRIEF — auto-streams after search loads -->
-    <div class="app-card wide result-panel hidden" id="artiInlineCard">
+      <!-- Section 3: Arti -->
       <div class="arti-inline-header">
         <svg class="arti-inline-avatar" aria-label="Arti"><use href="#icon-arti"/></svg>
         <div>
@@ -1317,7 +1292,6 @@ a, button, input, select { touch-action: manipulation; }
           <button class="prompt-chip" onclick="App.sendArtiChat('Give me 3 things I need to know walking into a meeting with the top buyer in this market. Be specific — name the agency, the programs they\'re funding, the incumbent, and the budget cycle pressure.', true)">Meeting prep</button>
           <button class="prompt-chip" onclick="App.sendArtiChat('Who should I team with to be competitive here? Pick 2 specific companies already winning in this data and explain exactly what they bring and how I should approach them.', true)">Who to team with</button>
         </div>
-        <!-- Follow-up chat lives here when triggered from inline chips -->
         <div class="chat-history hidden" id="artiInlineChatHistory" style="margin-top:16px;"></div>
         <div class="hidden" id="artiInlineChatInputWrap" style="margin-top:12px;">
           <div class="chat-input-row">
@@ -1328,7 +1302,25 @@ a, button, input, select { touch-action: manipulation; }
         </div>
         <div class="hidden" id="artiInlineDisclaimer" style="font-size:var(--text-xs);color:var(--text-tertiary);margin-top:10px;">Always use your own judgment before making strategic decisions.</div>
       </div>
-    </div>
+
+      <!-- Section 4: Seller lens (inline) -->
+      <div class="hidden" id="sellerLensCard" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border-inner);">
+        <div class="seller-lens-title">Make every search smarter</div>
+        <div class="seller-lens-sub">Tell Fedhoo what you sell and every search gets scored for your situation.</div>
+        <div class="seller-lens-row">
+          <span class="seller-lens-prefix">I sell</span>
+          <input type="text" id="sellerLensInput" class="seller-lens-input"
+            placeholder="e.g. cloud infrastructure to civilian agencies"
+            autocomplete="off" maxlength="120">
+          <button class="seller-lens-save" onclick="App.saveSellerLens()">Save</button>
+        </div>
+        <div class="seller-lens-saved hidden" id="sellerLensSaved">
+          <span class="seller-lens-saved-text" id="sellerLensSavedText"></span>
+          <button class="seller-lens-clear" onclick="App.clearSellerLens()">Clear</button>
+        </div>
+      </div>
+
+    </div><!-- /marketCard unified -->
 
     <!-- TOP PRIMES CARD -->
     <div class="app-card wide result-panel hidden" id="primesCard">
@@ -3029,7 +3021,6 @@ const App = {
     DOM.get('marketSignals')?.classList.add('hidden');
     DOM.get('faceScale')?.classList.add('hidden');
     const fl = DOM.get('faceLabel'); if (fl) fl.classList.add('hidden');
-    DOM.hide('artiInlineCard');
     const aic = DOM.get('artiInlineContent'); if (aic) { aic.innerHTML = 'Analyzing market…'; aic.className = 'strategic-read arti-inline-loading'; delete aic.dataset.rawPlan; }
     DOM.hide('artiInlineActions');
     DOM.hide('artiInlineCopyBtn');
@@ -3818,7 +3809,6 @@ const App = {
     if (this._artiInlineDone) return;
 
     // Show the inline card immediately in loading state
-    DOM.show('artiInlineCard');
 
     const summaryPayload = this._artiPayloadCache || this._buildArtiPayload();
     const territoryScope = this.territory && this.SECTORS[this.territory]
@@ -4874,7 +4864,7 @@ const App = {
       container.innerHTML =
         `<div class="market-verdict ${faceClass}">${Html.escapeHtml(verdictSentence)}</div>` +
         proseLines.map(l => `<div class="market-prose">${Html.escapeHtml(l)}</div>`).join('') +
-        (action ? `<div class="market-action"><span class="market-action-arrow">→</span><span>${Html.escapeHtml(action)}</span></div>` : '');
+        (action ? `<div class="market-action">${Html.escapeHtml(action)}</div>` : '');
       container.classList.remove('hidden');
     }
 
