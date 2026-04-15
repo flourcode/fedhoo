@@ -651,6 +651,18 @@ a, button, input, select { touch-action: manipulation; }
 :root.dark .market-signal.sig-red   { color: #F07060; }
 :root.dark .market-signal.sig-red   .market-signal-dot { background: #F07060; }
 
+/* Action line — the money line */
+.market-action {
+  display: flex; align-items: flex-start; gap: 5px;
+  font-size: var(--text-xs); font-weight: 700;
+  color: var(--btn-bg); margin-top: 6px; line-height: 1.4;
+}
+.market-action-arrow {
+  font-size: var(--text-sm); line-height: 1.2;
+  flex-shrink: 0; opacity: 0.7;
+}
+:root.dark .market-action { color: var(--btn-hover); }
+
 /* Seller lens prompt card */
 .seller-lens-card {
   background: var(--bg-app); border-radius: var(--radius);
@@ -4759,40 +4771,65 @@ const App = {
     const now = Date.now();
     const total = m.total;
 
-    // ── Compute score components ──────────────────────────────────
+    // ── Input signals ─────────────────────────────────────────────
     const vendorSorted = Object.entries(m.vendors).sort((a,b)=>b[1].spend-a[1].spend);
-    const top3Spend = vendorSorted.slice(0,3).reduce((s,[,v])=>s+v.spend,0);
-    const top1Pct   = total > 0 ? (vendorSorted[0]?.[1].spend||0)/total : 0;
-    const top3Pct   = total > 0 ? top3Spend/total : 0;
-    const agencyCount = Object.keys(m.agencies).length;
+    const vendorCount  = vendorSorted.length;
+    const agencySorted = Object.entries(m.agencies).sort((a,b)=>b[1]-a[1]);
+    const agencyCount  = agencySorted.length;
+    const topVendor    = vendorSorted[0]?.[0] || '';
+    const top1Spend    = vendorSorted[0]?.[1].spend || 0;
+    const top3Spend    = vendorSorted.slice(0,3).reduce((s,[,v])=>s+v.spend,0);
+    const top1Pct      = total > 0 ? Math.round(top1Spend/total*100) : 0;
+    const top3Pct      = total > 0 ? Math.round(top3Spend/total*100) : 0;
+    const topAgency    = Utils.cleanAgency(agencySorted[0]?.[0] || '');
+    const top2Agencies = agencySorted.slice(0,2).map(([n])=>Utils.cleanAgency(n)).filter(Boolean);
 
-    // Expiring in next 90 days
-    const exp90  = (m.expiring||[]).filter(c => { const ts = c._endTs||0; return ts > now && ts < now+90*86400000 && (parseFloat(c['Award Amount'])||0)>50000; });
-    const exp60  = exp90.filter(c => c._endTs < now+60*86400000);
-    const exp90Val = exp90.reduce((s,c)=>s+(parseFloat(c['Award Amount'])||0),0);
+    // Expiring windows
+    const exp12Mo  = now + 365*86400000;
+    const exp24Mo  = now + 730*86400000;
+    const exp90d   = now + 90*86400000;
+    const expiring12 = (m.expiring||[]).filter(c=>c._endTs>now && c._endTs<=exp12Mo && (parseFloat(c['Award Amount'])||0)>50000);
+    const expiring24 = this.searchData.active.filter(c=>c._endTs>exp12Mo && c._endTs<=exp24Mo && (parseFloat(c['Award Amount'])||0)>50000);
+    const exp90      = expiring12.filter(c=>c._endTs<=exp90d);
+    const exp12Val   = expiring12.reduce((s,c)=>s+(parseFloat(c['Award Amount'])||0),0);
+    const exp90Val   = exp90.reduce((s,c)=>s+(parseFloat(c['Award Amount'])||0),0);
+    const exp24Val   = expiring24.reduce((s,c)=>s+(parseFloat(c['Award Amount'])||0),0);
 
-    // Fragmentation score: 0=locked, 10=wide open
-    const fragScore = Math.min(10, Math.max(0,
-      (1 - top3Pct) * 4 +           // vendor fragmentation (0-4)
-      (exp90Val / total) * 3 +       // expiry pressure (0-3)
-      Math.min(agencyCount/20, 1)*2 +// buyer breadth (0-2)
-      (top1Pct < 0.3 ? 1 : 0)       // no single dominant (0-1)
-    ));
+    // ── Three signal scores (0–100) ───────────────────────────────
+    // 1. Timing — is money about to move?
+    const timingScore = Math.min(100,
+      (exp12Val / Math.max(total,1)) * 70 +
+      (exp24Val / Math.max(total,1)) * 30
+    );
 
-    // ── Face verdict ──────────────────────────────────────────────
-    let verdict, faceClass, faceLabel;
-    // Use named SVG symbols — one per verdict, matches emoji style
-    const faceIds = { open: 'faceScaleOpen', watch: 'faceScaleWatch', locked: 'faceScaleLocked' };
+    // 2. Concentration — how locked is it? (high = bad for new entrant)
+    const concentrationScore = top3Pct; // 0–100, higher = more locked
 
-    if (fragScore >= 5.5) {
-      verdict = 'open'; faceClass = 'open'; faceLabel = 'Easy';
-    } else if (fragScore >= 3) {
-      verdict = 'watch'; faceClass = 'watch'; faceLabel = 'Crowded';
+    // 3. Access — breadth of entry points
+    const accessScore = Math.min(100,
+      Math.min(vendorCount * 2, 60) +   // vendor diversity (0–60)
+      Math.min(agencyCount * 5, 40)      // buyer diversity (0–40)
+    );
+
+    // ── Composite (0–100, higher = easier to enter) ───────────────
+    const composite = Math.round(
+      timingScore * 0.5 +
+      (100 - concentrationScore) * 0.3 +
+      accessScore * 0.2
+    );
+
+    // ── Label ─────────────────────────────────────────────────────
+    let faceClass, faceLabel;
+    if (composite >= 60 && concentrationScore < 70) {
+      faceClass = 'open'; faceLabel = 'Easy';
+    } else if (composite >= 38) {
+      faceClass = 'watch'; faceLabel = 'Crowded';
     } else {
-      verdict = 'locked'; faceClass = 'locked'; faceLabel = 'Tough';
+      faceClass = 'locked'; faceLabel = 'Tough';
     }
 
-    // Drive the three-face scale
+    // ── Drive the scale ───────────────────────────────────────────
+    const faceIds = { open:'faceScaleOpen', watch:'faceScaleWatch', locked:'faceScaleLocked' };
     const scale = DOM.get('faceScale');
     if (scale) {
       scale.classList.remove('hidden');
@@ -4804,49 +4841,89 @@ const App = {
     const lbl = DOM.get('faceLabel');
     if (lbl) { lbl.textContent = faceLabel; lbl.className = `face-label ${faceClass}`; lbl.classList.remove('hidden'); }
 
-    // ── Signal pills ──────────────────────────────────────────────
+    // ── Diagnosis lines — precise, no fluff ──────────────────────
     const signals = [];
-    // Expiry signal
-    if (exp90.length > 0) {
-      const urgency = exp60.length > 0 ? 'sig-green' : 'sig-amber';
-      signals.push({ cls: urgency, text: `${Utils.money(exp90Val)} expiring in 90 days · ${exp90.length} contract${exp90.length!==1?'s':''}` });
+
+    // Timing signal
+    if (exp90Val > 0) {
+      signals.push({ cls: 'sig-green', text: `${Utils.money(exp90Val)} expiring in 90 days · ${exp90.length} contract${exp90.length!==1?'s':''}` });
+    } else if (exp12Val > 0) {
+      signals.push({ cls: 'sig-amber', text: `${Utils.money(exp12Val)} expiring in 12 months · ${expiring12.length} contract${expiring12.length!==1?'s':''}` });
     } else {
-      signals.push({ cls: 'sig-amber', text: 'No major contracts expiring in 90 days' });
-    }
-    // Concentration signal
-    if (top3Pct >= 0.70) {
-      signals.push({ cls: 'sig-amber', text: `Top 3 primes hold ${Math.round(top3Pct*100)}% · tough to crack` });
-    } else if (top3Pct <= 0.40) {
-      signals.push({ cls: 'sig-green', text: `Fragmented vendors · easier to enter` });
-    } else {
-      signals.push({ cls: 'sig-amber', text: `Top 3 primes hold ${Math.round(top3Pct*100)}% · crowded but workable` });
-    }
-    // Buyer breadth signal
-    if (agencyCount >= 8) {
-      signals.push({ cls: 'sig-green', text: `${agencyCount} agencies buying · broad demand` });
-    } else if (agencyCount >= 3) {
-      signals.push({ cls: 'sig-amber', text: `${agencyCount} agencies buying · moderate buyer base` });
-    } else {
-      signals.push({ cls: 'sig-red', text: `${agencyCount} agenc${agencyCount===1?'y':'ies'} buying · concentrated demand` });
+      signals.push({ cls: 'sig-red', text: 'No significant expirations in 12 months' });
     }
 
+    // Concentration signal — precise numbers, no editorializing
+    if (top1Pct >= 60) {
+      signals.push({ cls: 'sig-red', text: `${top1Pct}% held by ${topVendor}` });
+    } else if (top3Pct >= 70) {
+      signals.push({ cls: 'sig-amber', text: `${top3Pct}% held by top 3 vendors` });
+    } else {
+      signals.push({ cls: 'sig-green', text: `${top3Pct}% held by top 3 · ${vendorCount} vendors active` });
+    }
+
+    // Access signal
+    if (agencyCount >= 8) {
+      signals.push({ cls: 'sig-green', text: `${agencyCount} agencies buying` });
+    } else if (agencyCount >= 3) {
+      signals.push({ cls: 'sig-amber', text: `${agencyCount} agencies buying` });
+    } else {
+      signals.push({ cls: 'sig-red', text: `${agencyCount} agenc${agencyCount===1?'y':'ies'} buying` });
+    }
+
+    // ── Action line — the money line ──────────────────────────────
+    let action = '';
+    if (faceLabel === 'Easy') {
+      if (exp90Val > 0 && top2Agencies.length > 0) {
+        action = `Start with ${top2Agencies.join(' + ')} — expiring contracts, fragmented field`;
+      } else if (top2Agencies.length > 0) {
+        action = `Lead with ${top2Agencies[0]} — most active buyer, open vendor field`;
+      } else {
+        action = `Market is fragmented — move now before incumbents consolidate`;
+      }
+    } else if (faceLabel === 'Crowded') {
+      if (top1Pct >= 40 && exp90Val > 0) {
+        action = `Your in: Partner with ${topVendor} or target their expiring task orders`;
+      } else if (top1Pct >= 40) {
+        action = `Your in: Subcontract under ${topVendor} — direct competition is steep`;
+      } else if (exp90Val > 0) {
+        action = `Your in: ${Utils.money(exp90Val)} turning over — target smaller task orders, not primes`;
+      } else {
+        action = `Your in: Focus on agencies where top primes have weak coverage`;
+      }
+    } else {
+      // Tough
+      if (agencyCount >= 3) {
+        const secondAgency = agencySorted[1] ? Utils.cleanAgency(agencySorted[1][0]) : '';
+        action = secondAgency
+          ? `Try: Adjacent work at ${secondAgency} — less concentrated than ${topAgency}`
+          : `Try: Partner with existing prime rather than competing direct`;
+      } else {
+        action = `Try: Partner with existing prime rather than competing direct`;
+      }
+    }
+
+    // Render signals
     const container = DOM.get('marketSignals');
     if (container) {
-      container.innerHTML = signals.map(s =>
-        `<div class="market-signal ${s.cls}"><div class="market-signal-dot"></div><span>${Html.escapeHtml(s.text)}</span></div>`
-      ).join('');
+      const actionHtml = action
+        ? `<div class="market-action"><span class="market-action-arrow">→</span><span>${Html.escapeHtml(action)}</span></div>`
+        : '';
+      container.innerHTML =
+        signals.map(s =>
+          `<div class="market-signal ${s.cls}"><div class="market-signal-dot"></div><span>${Html.escapeHtml(s.text)}</span></div>`
+        ).join('') + actionHtml;
       container.classList.remove('hidden');
     }
 
-    // ── Smart chip highlight — pre-select most actionable follow-up ──
-    // Highlight "What's expiring?" if there are significant upcoming expirations
+    // ── Smart chip highlight ──────────────────────────────────────
     const inlineChips = document.querySelectorAll('#artiInlineChips .prompt-chip');
     inlineChips.forEach(chip => chip.classList.remove('chip-hot'));
     if (inlineChips.length > 0) {
-      let hotIdx = 1; // default: "Who owns this?"
-      if (exp90Val > total * 0.05) hotIdx = 0; // expiry = most actionable
-      else if (top3Pct >= 0.70) hotIdx = 1;    // concentrated = who owns this
-      else if (fragScore >= 6) hotIdx = 2;       // open = best opening
+      let hotIdx = 1;
+      if (exp90Val > total * 0.05) hotIdx = 0;
+      else if (concentrationScore >= 70) hotIdx = 1;
+      else if (composite >= 60) hotIdx = 2;
       if (inlineChips[hotIdx]) inlineChips[hotIdx].classList.add('chip-hot');
     }
   },
