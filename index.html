@@ -159,7 +159,27 @@ a, button, input, select { touch-action: manipulation; }
 .hdr-tools-label { display: none; }
 @media (min-width: 641px) { .hdr-tools-label { display: inline; } }
 
-/* Recent searches row — shown on input focus */
+/* Search pills — related searches shown after results load */
+.search-pills-row {
+  display: flex; align-items: center; gap: 5px;
+  overflow-x: auto; scrollbar-width: none; padding: 5px 12px 6px;
+  max-width: min(96vw, 1920px); margin: 0 auto;
+}
+.search-pills-row::-webkit-scrollbar { display: none; }
+.search-pills-label {
+  font-size: var(--text-xs); color: var(--text-quaternary);
+  font-weight: 500; white-space: nowrap; flex-shrink: 0;
+}
+.search-pill {
+  background: var(--bg-app); border: 1px solid var(--border);
+  border-radius: 9999px; padding: 3px 10px;
+  font-size: var(--text-xs); font-weight: 500; color: var(--text-secondary);
+  cursor: pointer; font-family: var(--font); transition: var(--transition);
+  white-space: nowrap; flex-shrink: 0;
+}
+.search-pill:hover { background: var(--accent-dim); color: var(--btn-bg); border-color: var(--accent-dim); }
+.search-pill:active { transform: scale(0.96); }
+.search-pill-code { color: var(--text-quaternary); font-size: 10px; }
 .recent-searches {
   display: none; align-items: center; gap: 6px; overflow-x: auto;
   scrollbar-width: none; padding: 6px 0 2px;
@@ -1145,6 +1165,8 @@ a, button, input, select { touch-action: manipulation; }
   <div class="recent-searches" id="recentSearches">
     <span class="recent-label">Recent</span>
   </div>
+  <!-- Search pills — dictionary-driven related searches, shown after each result -->
+  <div class="search-pills-row hidden" id="searchPillsRow"></div>
 </header>
 
 <!-- LOADER -->
@@ -1694,6 +1716,23 @@ buyingOffices: {},
       .catch(() => { this._officesLoaded = true; }); // fail silently
     return this._officesLoading;
   },
+
+  marketIntel: {},
+  _intelLoaded: false,
+  _intelLoading: null,
+  async loadMarketIntel() {
+    if (this._intelLoaded) return;
+    if (this._intelLoading) return this._intelLoading;
+    this._intelLoading = fetch('/data/keywords.json')
+      .then(r => r.json())
+      .then(d => { this.marketIntel = d; this._intelLoaded = true; })
+      .catch(() => { this._intelLoaded = true; });
+    return this._intelLoading;
+  },
+  lookupIntel(query) {
+    if (!query || !this._intelLoaded) return null;
+    return this.marketIntel[query.toLowerCase().trim()] || null;
+  },
   agencyAliases: {
     // Toptier agencies — maps acronym/shorthand → USASpending toptier name
     "aahc": "400 Years of African-American History Commission",
@@ -1944,10 +1983,20 @@ normalizeQuery(query) {
       .replace(/,\s*$/, '')
       .trim();
 
-    // 2. Translate acronyms into full names
+    // 2. Dictionary-first expansion — check market-intel.json for multi-keyword OR expansions
+    // This is the primary fix for "AI" → "Artificial Intelligence, Machine Learning, Decision Support"
+    const intelHit = this.lookupIntel(cleanQuery);
+    if (intelHit && intelHit.keywords) {
+      return intelHit.keywords; // already comma-separated for USASpending OR search
+    }
+
+    // 3. Translate acronyms into full names
     const translate = (str) => {
       const l = str.toLowerCase().trim();
-      // Vendor/keyword shortcuts first — these must never route through resolveAgencyAlias
+      // Check market-intel.json for single-term expansion first
+      const intel = this.lookupIntel(l);
+      if (intel && intel.keywords) return intel.keywords;
+      // Vendor/keyword shortcuts next
       if (this.queryAliases[l]) return this.queryAliases[l];
       // If the string is ALREADY a full agency name, don't translate it
       const alreadyFullName = Object.values(this.agencyAliases).some(v => v.toLowerCase() === l) ||
@@ -1960,7 +2009,7 @@ normalizeQuery(query) {
       return str.trim();
     };
 
-    // 3. Process the query (respecting the AND/OR operators)
+    // 4. Process the query (respecting the AND/OR operators)
     return cleanQuery.split(',').map(commaPart => {
       if (/\bAND\b/.test(commaPart)) {
         return commaPart.split(/\bAND\b/).map(andPart => translate(andPart)).join(' AND ');
@@ -2643,22 +2692,35 @@ async searchAwards(keywords) {
 };
 // ── SEARCH PILLS — brand intelligence from Lambda/Gemini ─────────────────────
 const SearchPills = {
-  _cache: {
-    // Static seed for the default onload query — no API call needed
-    'cloud': { competitors: ['Amazon Web Services', 'Microsoft', 'Google', 'Oracle', 'IBM'] },
-  },
+  // Session cache (in-memory) — dictionary hits are instant, no localStorage needed
+  _cache: {},
   _current: null,
 
   generate(query) {
     if (!query || query.length < 2) return;
-    if (this._current === query.toLowerCase()) return;
-    this._current = query.toLowerCase();
+    const key = query.toLowerCase().trim();
+    if (this._current === key) return;
+    this._current = key;
+
+    // 1. Dictionary lookup first — deterministic, zero latency, zero cost
+    const intel = Utils.lookupIntel(query);
+    if (intel) {
+      this._cache[key] = intel;
+      this.render(intel, query);
+      return;
+    }
+
+    // 2. Skip codes — no pills useful for raw PSC/NAICS
     if (/^\d{6}$/.test(query) || /^[A-Z]{1,2}\d{1,3}$/i.test(query)) return;
-    if (this._cache[query.toLowerCase()]) return;
-    this._fetchAndCache(query);
+
+    // 3. Skip if already cached from USASpending autocomplete
+    if (this._cache[key]) { this.render(this._cache[key], query); return; }
+
+    // 4. Fall back to USASpending autocomplete for unknown company names
+    this._fetchFromAutocomplete(query);
   },
 
-  async _fetchAndCache(query) {
+  async _fetchFromAutocomplete(query) {
     try {
       const res = await fetch(App.PROXY_ENDPOINT, {
         method: 'POST',
@@ -2676,13 +2738,50 @@ const SearchPills = {
         .filter(Boolean)
         .filter(n => n.toUpperCase() !== query.toUpperCase());
       if (!names.length) return;
-      this._cache[query.toLowerCase()] = { competitors: names };
-      // If empty state is showing, refresh it with the real names
+      const entry = { pills: names.slice(0, 6) };
+      this._cache[query.toLowerCase()] = entry;
+      this.render(entry, query);
+      // Also refresh empty state if showing
       const container = App.UI.bubbleChartContainer;
-      if (container && container.querySelector('.empty-state')) {
-        App.showEmptyState(query);
-      }
+      if (container && container.querySelector('.empty-state')) App.showEmptyState(query);
     } catch(e) { /* silent */ }
+  },
+
+  render(intel, query) {
+    const container = DOM.get('searchPillsRow');
+    if (!container) return;
+    const pills = intel.pills || [];
+    if (!pills.length) { container.classList.add('hidden'); return; }
+
+    const queryKey = query.toUpperCase();
+    const seen = new Set([queryKey]);
+    const validPills = pills.filter(p => {
+      const k = p.toUpperCase();
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    }).slice(0, 10);
+
+    if (!validPills.length) { container.classList.add('hidden'); return; }
+
+    container.innerHTML = '<span class="search-pills-label">Also try</span>' +
+      validPills.map(p => {
+        const isCode = /^\d{6}$/.test(p) || /^[A-Z]\d{3,}/.test(p);
+        const cls = isCode ? 'search-pill search-pill-code' : 'search-pill';
+        const safe = p.replace(/'/g, "\\'");
+        return `<button class="${cls}" onclick="App.runSearch('${safe}')">${Html.escapeHtml(p)}</button>`;
+      }).join('') +
+      (intel.naics?.length ? intel.naics.slice(0,2).map(n =>
+        `<button class="search-pill search-pill-code" onclick="App.runSearch('${n}')">${n}</button>`
+      ).join('') : '');
+
+    container.classList.remove('hidden');
+  },
+
+  clear() {
+    const container = DOM.get('searchPillsRow');
+    if (container) { container.innerHTML = ''; container.classList.add('hidden'); }
+    this._current = null;
   },
 
   get(query) {
@@ -2970,7 +3069,8 @@ const App = {
     // Hide results while loading
     DOM.hide('resultsGrid');
     DOM.hide('shareBtn');
-    DOM.hide('artiFab'); DOM.get('artiBridge') && DOM.hide('artiBridge');
+    DOM.hide('artiFab');
+    SearchPills.clear(); DOM.get('artiBridge') && DOM.hide('artiBridge');
     this._artiPayloadCache = null;
     this._artiInlineDone = false;
     this.closeArtiSheet();
@@ -3023,7 +3123,7 @@ const App = {
     } catch(e) {}
 
     try {
-      const [, results] = await Promise.all([LibLoader.loadD3(), API.searchAwards(query)]);
+      const [, results] = await Promise.all([LibLoader.loadD3(), Utils.loadMarketIntel(), API.searchAwards(query)]);
       if (thisSearch !== this._searchId) return;
 
       const filtered = Utils.filterActiveContracts(results);
@@ -3065,6 +3165,7 @@ const App = {
         this.renderBridge();
         this.renderMarketSignals();
         this._autoFireArtiBrief(query);
+        SearchPills.generate(query);
         // Show seller lens prompt if not yet set
         if (!this._sellerLens) DOM.show('sellerLensCard');
         else DOM.hide('sellerLensCard');
@@ -5054,6 +5155,7 @@ const App = {
 
     // Preload D3
     LibLoader.preloadWhenIdle();
+    Utils.loadMarketIntel(); // preload dictionary — no-op if already loaded
 
     // Recent searches row — show on input focus, populate from localStorage
     const recentRow = DOM.get('recentSearches');
