@@ -1,0 +1,262 @@
+{
+  "_meta": {
+    "note": "Jargon expansion for USASpending keyword search. Only include terms that USASpending cannot find on its own. 'Cloud', 'Cybersecurity', 'Microsoft' etc. work fine — don't add them. keywords = what USASpending actually indexes. pills = related searches shown to user.",
+    "updated": "2026-04"
+  },
+
+  "ai": {
+    "label": "Artificial Intelligence",
+    "keywords": "Artificial Intelligence, Machine Learning",
+    "pills": ["Machine Learning", "GenAI", "Data Science", "Predictive Analytics", "Automation", "RPA"]
+  },
+  "ai/ml": {
+    "label": "AI / Machine Learning",
+    "keywords": "Artificial Intelligence, Machine Learning",
+    "pills": ["AI", "GenAI", "Data Science", "Automation"]
+  },
+  "genai": {
+    "label": "Generative AI",
+    "keywords": "Generative AI, Artificial Intelligence, Large Language Model",
+    "pills": ["AI", "Machine Learning", "LLM", "Chatbot"]
+  },
+  "llm": {
+    "label": "Large Language Model",
+    "keywords": "Large Language Model, Generative AI, Artificial Intelligence",
+    "pills": ["GenAI", "AI", "Machine Learning"]
+  },
+  "ml": {
+    "label": "Machine Learning",
+    "keywords": "Machine Learning, Artificial Intelligence",
+    "pills": ["AI", "GenAI", "Data Science", "Predictive Analytics"]
+  },
+  "rpa": {
+    "label": "Robotic Process Automation",
+    "keywords": "Robotic Process Automation, Process Automation",
+    "pills": ["AI", "Automation", "IT Modernization"]
+  },
+  "nlp": {
+    "label": "Natural Language Processing",
+    "keywords": "Natural Language Processing, Artificial Intelligence",
+    "pills": ["AI", "GenAI", "Machine Learning"]
+  },
+
+  "edr": {
+    "label": "Endpoint Detection & Response",
+    "keywords": "Endpoint Detection, Endpoint Security",
+    "pills": ["XDR", "MDR", "SIEM", "SOC", "Cybersecurity", "Zero Trust"]
+  },
+  "xdr": {
+    "label": "Extended Detection & Response",
+    "keywords": "Extended Detection, Endpoint Detection, Endpoint Security",
+    "pills": ["EDR", "MDR", "SIEM", "Cybersecurity"]
+  },
+  "mdr": {
+    "label": "Managed Detection & Response",
+    "keywords": "Managed Detection, Managed Security, Security Operations",
+    "pills": ["EDR", "XDR", "SOC", "SIEM", "Cybersecurity"]
+  },
+  "siem": {
+    "label": "Security Information & Event Management",
+    "keywords": "Security Information Event Management, Security Operations",
+    "pills": ["SOC", "EDR", "SOAR", "Cybersecurity", "Splunk"]
+  },
+  "soar": {
+    "label": "Security Orchestration & Response",
+    "keywords": "Security Orchestration, Security Automation, Security Operations",
+    "pills": ["SIEM", "SOC", "EDR", "Cybersecurity"]
+  },
+  "soc": {
+    "label": "Security Operations Center",
+    "keywords": "Security Operations, Security Operations Center",
+    "pills": ["SIEM", "EDR", "MDR", "Cybersecurity"]
+  },
+  "zta": {
+    "label": "Zero Trust Architecture",
+    "keywords": "Zero Trust, Zero Trust Architecture",
+    "pills": ["Zero Trust", "SASE", "Identity", "IAM", "Cybersecurity"]
+  },
+  "zt": {
+    "label": "Zero Trust",
+    "keywords": "Zero Trust, Zero Trust Architecture",
+    "pills": ["Zero Trust", "SASE", "Identity", "Cybersecurity"]
+  },
+  "sase": {
+    "label": "Secure Access Service Edge",
+    "keywords": "Secure Access Service Edge, SASE, Network Security",
+    "pills": ["Zero Trust", "CASB", "SD-WAN", "Cybersecurity"]
+  },
+  "casb": {
+    "label": "Cloud Access Security Broker",
+    "keywords": "Cloud Access Security, Cloud Security",
+    "pills": ["SASE", "Zero Trust", "Cloud Security", "Cybersecurity"]
+  },
+  "iam": {
+    "label": "Identity & Access Management",
+    "keywords": "Identity Management, Identity Access Management",
+    "pills": ["Zero Trust", "PAM", "MFA", "Cybersecurity"]
+  },
+  "pam": {
+    "label": "Privileged Access Management",
+    "keywords": "Privileged Access, Privileged Account Management, Identity Management",
+    "pills": ["IAM", "Zero Trust", "Cybersecurity"]
+  },
+  "mfa": {
+    "label": "Multi-Factor Authentication",
+    "keywords": "Multi-Factor Authentication, Identity Management",
+    "pills": ["IAM", "Zero Trust", "Identity", "Cybersecurity"]
+  },
+  "dlp": {
+    "label": "Data Loss Prevention",
+    "keywords": "Data Loss Prevention, Data Security",
+    "pills": ["Cybersecurity", "Zero Trust", "CASB", "IAM"]
+  },
+  "sbom": {
+    "label": "Software Bill of Materials",
+    "keywords": "Software Bill of Materials, Supply Chain Risk",
+    "pills": ["DevSecOps", "Supply Chain", "Cybersecurity", "CMMC"]
+  },
+  "cmmc": {
+    "label": "Cybersecurity Maturity Model Certification",
+    "keywords": "CMMC, Cybersecurity Maturity Model, Compliance",
+    "pills": ["Cybersecurity", "Zero Trust", "Supply Chain", "SBOM"]
+  },
+  "fedramp": {
+    "label": "FedRAMP",
+    "keywords": "FedRAMP, Federal Risk Authorization, Cloud Authorization",
+    "pills": ["Cloud Security", "Cloud", "Cybersecurity", "Compliance"]
+  },
+
+  "devsecops": {
+    "label": "DevSecOps",
+    "keywords": "DevSecOps, DevOps, Software Development",
+    "pills": ["SBOM", "CI/CD", "Cloud", "Cybersecurity", "Agile"]
+  },
+  "ci/cd": {
+    "label": "CI/CD Pipeline",
+    "keywords": "Continuous Integration, Continuous Deployment, DevSecOps",
+    "pills": ["DevSecOps", "Cloud", "Agile", "SBOM"]
+  },
+  "itsm": {
+    "label": "IT Service Management",
+    "keywords": "IT Service Management, Help Desk, Service Desk",
+    "pills": ["IT Modernization", "ServiceNow", "ITIL"]
+  },
+  "itil": {
+    "label": "ITIL",
+    "keywords": "IT Service Management, ITIL, Help Desk",
+    "pills": ["ITSM", "IT Modernization", "ServiceNow"]
+  },
+  "erp": {
+    "label": "Enterprise Resource Planning",
+    "keywords": "Enterprise Resource Planning, Financial Management System",
+    "pills": ["IT Modernization", "Cloud", "SAP", "Oracle"]
+  },
+  "sd-wan": {
+    "label": "SD-WAN",
+    "keywords": "Software Defined Networking, Network Modernization",
+    "pills": ["SASE", "Zero Trust", "Network", "Cybersecurity"]
+  },
+  "sdwan": {
+    "label": "SD-WAN",
+    "keywords": "Software Defined Networking, Network Modernization",
+    "pills": ["SASE", "Zero Trust", "Network", "Cybersecurity"]
+  },
+
+  "observability": {
+    "label": "Observability",
+    "keywords": "Observability, Application Performance, Network Monitoring",
+    "pills": ["SIEM", "DevSecOps", "Cloud", "AIOps"]
+  },
+  "aiops": {
+    "label": "AIOps",
+    "keywords": "AIOps, Artificial Intelligence Operations, IT Operations",
+    "pills": ["Observability", "AI", "IT Modernization"]
+  },
+  "ehr": {
+    "label": "Electronic Health Records",
+    "keywords": "Electronic Health Record, EHR, Clinical Information System",
+    "pills": ["FHIR", "Health IT", "Interoperability"]
+  },
+  "fhir": {
+    "label": "FHIR",
+    "keywords": "FHIR, Health Data Exchange, Interoperability",
+    "pills": ["EHR", "Health IT", "Interoperability"]
+  },
+  "ehr modernization": {
+    "label": "EHR Modernization",
+    "keywords": "Electronic Health Record, EHR Modernization, Clinical Modernization",
+    "pills": ["EHR", "FHIR", "Health IT", "IT Modernization"]
+  },
+
+  "iaas": {
+    "label": "Infrastructure as a Service",
+    "keywords": "Infrastructure as a Service, Cloud Hosting",
+    "pills": ["Cloud", "SaaS", "PaaS", "AWS", "Azure"]
+  },
+  "paas": {
+    "label": "Platform as a Service",
+    "keywords": "Platform as a Service, Cloud Platform",
+    "pills": ["Cloud", "IaaS", "SaaS", "DevSecOps"]
+  },
+  "saas": {
+    "label": "Software as a Service",
+    "keywords": "Software as a Service, Cloud Software",
+    "pills": ["Cloud", "IaaS", "PaaS", "IT Modernization"]
+  },
+
+  "panw": {
+    "label": "Palo Alto Networks",
+    "keywords": "Palo Alto Networks",
+    "pills": ["Zero Trust", "SASE", "Cybersecurity", "EDR"]
+  },
+  "bah": {
+    "label": "Booz Allen Hamilton",
+    "keywords": "Booz Allen Hamilton",
+    "pills": ["SAIC", "Leidos", "Peraton", "GDIT"]
+  },
+  "gdit": {
+    "label": "General Dynamics IT",
+    "keywords": "General Dynamics Information Technology",
+    "pills": ["SAIC", "Leidos", "Booz Allen Hamilton", "Peraton"]
+  },
+  "lmco": {
+    "label": "Lockheed Martin",
+    "keywords": "Lockheed Martin",
+    "pills": ["Northrop Grumman", "Raytheon", "Boeing", "L3Harris"]
+  },
+  "ngc": {
+    "label": "Northrop Grumman",
+    "keywords": "Northrop Grumman",
+    "pills": ["Lockheed Martin", "Raytheon", "Boeing", "L3Harris"]
+  },
+  "rtx": {
+    "label": "Raytheon / RTX",
+    "keywords": "Raytheon",
+    "pills": ["Northrop Grumman", "Lockheed Martin", "L3Harris", "Boeing"]
+  },
+  "wwt": {
+    "label": "World Wide Technology",
+    "keywords": "World Wide Technology",
+    "pills": ["Carahsoft", "CDW-G", "Immersion Technology", "SHI"]
+  },
+  "gcp": {
+    "label": "Google Cloud Platform",
+    "keywords": "Google Cloud",
+    "pills": ["AWS", "Azure", "Cloud", "IaaS"]
+  },
+  "msft": {
+    "label": "Microsoft",
+    "keywords": "Microsoft",
+    "pills": ["Azure", "M365", "Cloud", "Teams"]
+  },
+  "aws": {
+    "label": "Amazon Web Services",
+    "keywords": "Amazon Web Services",
+    "pills": ["Cloud", "Azure", "Google Cloud", "IaaS"]
+  },
+  "hpe": {
+    "label": "Hewlett Packard Enterprise",
+    "keywords": "Hewlett Packard Enterprise",
+    "pills": ["Dell Technologies", "Cisco", "Network", "IT Modernization"]
+  }
+}
