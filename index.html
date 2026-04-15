@@ -3135,7 +3135,7 @@ const App = {
     } catch(e) {}
 
     try {
-      const [, results] = await Promise.all([LibLoader.loadD3(), Utils.loadMarketIntel(), API.searchAwards(query)]);
+      const [, , results] = await Promise.all([LibLoader.loadD3(), Utils.loadMarketIntel(), API.searchAwards(query)]);
       if (thisSearch !== this._searchId) return;
 
       const filtered = Utils.filterActiveContracts(results);
