@@ -1,262 +1,996 @@
 {
   "_meta": {
-    "note": "Jargon expansion for USASpending keyword search. Only include terms that USASpending cannot find on its own. 'Cloud', 'Cybersecurity', 'Microsoft' etc. work fine — don't add them. keywords = what USASpending actually indexes. pills = related searches shown to user.",
+    "note": "Jargon expansion for USASpending keyword search. Only include terms that USASpending cannot find on its own. 'Cloud', 'Cybersecurity', 'Microsoft' etc. work fine \u2014 don't add them. keywords = what USASpending actually indexes. pills = related searches shown to user.",
     "updated": "2026-04"
   },
-
   "ai": {
     "label": "Artificial Intelligence",
     "keywords": "Artificial Intelligence, Machine Learning",
-    "pills": ["Machine Learning", "GenAI", "Data Science", "Predictive Analytics", "Automation", "RPA"]
+    "pills": [
+      "Machine Learning",
+      "GenAI",
+      "Data Science",
+      "Predictive Analytics",
+      "Automation",
+      "RPA"
+    ]
   },
   "ai/ml": {
     "label": "AI / Machine Learning",
     "keywords": "Artificial Intelligence, Machine Learning",
-    "pills": ["AI", "GenAI", "Data Science", "Automation"]
+    "pills": [
+      "AI",
+      "GenAI",
+      "Data Science",
+      "Automation"
+    ]
   },
   "genai": {
     "label": "Generative AI",
     "keywords": "Generative AI, Artificial Intelligence, Large Language Model",
-    "pills": ["AI", "Machine Learning", "LLM", "Chatbot"]
+    "pills": [
+      "AI",
+      "Machine Learning",
+      "LLM",
+      "Chatbot"
+    ]
   },
   "llm": {
     "label": "Large Language Model",
     "keywords": "Large Language Model, Generative AI, Artificial Intelligence",
-    "pills": ["GenAI", "AI", "Machine Learning"]
+    "pills": [
+      "GenAI",
+      "AI",
+      "Machine Learning"
+    ]
   },
   "ml": {
     "label": "Machine Learning",
     "keywords": "Machine Learning, Artificial Intelligence",
-    "pills": ["AI", "GenAI", "Data Science", "Predictive Analytics"]
+    "pills": [
+      "AI",
+      "GenAI",
+      "Data Science",
+      "Predictive Analytics"
+    ]
   },
   "rpa": {
     "label": "Robotic Process Automation",
     "keywords": "Robotic Process Automation, Process Automation",
-    "pills": ["AI", "Automation", "IT Modernization"]
+    "pills": [
+      "AI",
+      "Automation",
+      "IT Modernization"
+    ]
   },
   "nlp": {
     "label": "Natural Language Processing",
     "keywords": "Natural Language Processing, Artificial Intelligence",
-    "pills": ["AI", "GenAI", "Machine Learning"]
+    "pills": [
+      "AI",
+      "GenAI",
+      "Machine Learning"
+    ]
   },
-
   "edr": {
     "label": "Endpoint Detection & Response",
     "keywords": "Endpoint Detection, Endpoint Security",
-    "pills": ["XDR", "MDR", "SIEM", "SOC", "Cybersecurity", "Zero Trust"]
+    "pills": [
+      "XDR",
+      "MDR",
+      "SIEM",
+      "SOC",
+      "Cybersecurity",
+      "Zero Trust"
+    ]
   },
   "xdr": {
     "label": "Extended Detection & Response",
     "keywords": "Extended Detection, Endpoint Detection, Endpoint Security",
-    "pills": ["EDR", "MDR", "SIEM", "Cybersecurity"]
+    "pills": [
+      "EDR",
+      "MDR",
+      "SIEM",
+      "Cybersecurity"
+    ]
   },
   "mdr": {
     "label": "Managed Detection & Response",
     "keywords": "Managed Detection, Managed Security, Security Operations",
-    "pills": ["EDR", "XDR", "SOC", "SIEM", "Cybersecurity"]
+    "pills": [
+      "EDR",
+      "XDR",
+      "SOC",
+      "SIEM",
+      "Cybersecurity"
+    ]
   },
   "siem": {
     "label": "Security Information & Event Management",
     "keywords": "Security Information Event Management, Security Operations",
-    "pills": ["SOC", "EDR", "SOAR", "Cybersecurity", "Splunk"]
+    "pills": [
+      "SOC",
+      "EDR",
+      "SOAR",
+      "Cybersecurity",
+      "Splunk"
+    ]
   },
   "soar": {
     "label": "Security Orchestration & Response",
     "keywords": "Security Orchestration, Security Automation, Security Operations",
-    "pills": ["SIEM", "SOC", "EDR", "Cybersecurity"]
+    "pills": [
+      "SIEM",
+      "SOC",
+      "EDR",
+      "Cybersecurity"
+    ]
   },
   "soc": {
     "label": "Security Operations Center",
     "keywords": "Security Operations, Security Operations Center",
-    "pills": ["SIEM", "EDR", "MDR", "Cybersecurity"]
+    "pills": [
+      "SIEM",
+      "EDR",
+      "MDR",
+      "Cybersecurity"
+    ]
   },
   "zta": {
     "label": "Zero Trust Architecture",
     "keywords": "Zero Trust, Zero Trust Architecture",
-    "pills": ["Zero Trust", "SASE", "Identity", "IAM", "Cybersecurity"]
+    "pills": [
+      "Zero Trust",
+      "SASE",
+      "Identity",
+      "IAM",
+      "Cybersecurity"
+    ]
   },
   "zt": {
     "label": "Zero Trust",
     "keywords": "Zero Trust, Zero Trust Architecture",
-    "pills": ["Zero Trust", "SASE", "Identity", "Cybersecurity"]
+    "pills": [
+      "Zero Trust",
+      "SASE",
+      "Identity",
+      "Cybersecurity"
+    ]
   },
   "sase": {
     "label": "Secure Access Service Edge",
     "keywords": "Secure Access Service Edge, SASE, Network Security",
-    "pills": ["Zero Trust", "CASB", "SD-WAN", "Cybersecurity"]
+    "pills": [
+      "Zero Trust",
+      "CASB",
+      "SD-WAN",
+      "Cybersecurity"
+    ]
   },
   "casb": {
     "label": "Cloud Access Security Broker",
     "keywords": "Cloud Access Security, Cloud Security",
-    "pills": ["SASE", "Zero Trust", "Cloud Security", "Cybersecurity"]
+    "pills": [
+      "SASE",
+      "Zero Trust",
+      "Cloud Security",
+      "Cybersecurity"
+    ]
   },
   "iam": {
     "label": "Identity & Access Management",
     "keywords": "Identity Management, Identity Access Management",
-    "pills": ["Zero Trust", "PAM", "MFA", "Cybersecurity"]
+    "pills": [
+      "Zero Trust",
+      "PAM",
+      "MFA",
+      "Cybersecurity"
+    ]
   },
   "pam": {
     "label": "Privileged Access Management",
     "keywords": "Privileged Access, Privileged Account Management, Identity Management",
-    "pills": ["IAM", "Zero Trust", "Cybersecurity"]
+    "pills": [
+      "IAM",
+      "Zero Trust",
+      "Cybersecurity"
+    ]
   },
   "mfa": {
     "label": "Multi-Factor Authentication",
     "keywords": "Multi-Factor Authentication, Identity Management",
-    "pills": ["IAM", "Zero Trust", "Identity", "Cybersecurity"]
+    "pills": [
+      "IAM",
+      "Zero Trust",
+      "Identity",
+      "Cybersecurity"
+    ]
   },
   "dlp": {
     "label": "Data Loss Prevention",
     "keywords": "Data Loss Prevention, Data Security",
-    "pills": ["Cybersecurity", "Zero Trust", "CASB", "IAM"]
+    "pills": [
+      "Cybersecurity",
+      "Zero Trust",
+      "CASB",
+      "IAM"
+    ]
   },
   "sbom": {
     "label": "Software Bill of Materials",
     "keywords": "Software Bill of Materials, Supply Chain Risk",
-    "pills": ["DevSecOps", "Supply Chain", "Cybersecurity", "CMMC"]
+    "pills": [
+      "DevSecOps",
+      "Supply Chain",
+      "Cybersecurity",
+      "CMMC"
+    ]
   },
   "cmmc": {
     "label": "Cybersecurity Maturity Model Certification",
     "keywords": "CMMC, Cybersecurity Maturity Model, Compliance",
-    "pills": ["Cybersecurity", "Zero Trust", "Supply Chain", "SBOM"]
+    "pills": [
+      "Cybersecurity",
+      "Zero Trust",
+      "Supply Chain",
+      "SBOM"
+    ]
   },
   "fedramp": {
     "label": "FedRAMP",
     "keywords": "FedRAMP, Federal Risk Authorization, Cloud Authorization",
-    "pills": ["Cloud Security", "Cloud", "Cybersecurity", "Compliance"]
+    "pills": [
+      "Cloud Security",
+      "Cloud",
+      "Cybersecurity",
+      "Compliance"
+    ]
   },
-
   "devsecops": {
     "label": "DevSecOps",
     "keywords": "DevSecOps, DevOps, Software Development",
-    "pills": ["SBOM", "CI/CD", "Cloud", "Cybersecurity", "Agile"]
+    "pills": [
+      "SBOM",
+      "CI/CD",
+      "Cloud",
+      "Cybersecurity",
+      "Agile"
+    ]
   },
   "ci/cd": {
     "label": "CI/CD Pipeline",
     "keywords": "Continuous Integration, Continuous Deployment, DevSecOps",
-    "pills": ["DevSecOps", "Cloud", "Agile", "SBOM"]
+    "pills": [
+      "DevSecOps",
+      "Cloud",
+      "Agile",
+      "SBOM"
+    ]
   },
   "itsm": {
     "label": "IT Service Management",
     "keywords": "IT Service Management, Help Desk, Service Desk",
-    "pills": ["IT Modernization", "ServiceNow", "ITIL"]
+    "pills": [
+      "IT Modernization",
+      "ServiceNow",
+      "ITIL"
+    ]
   },
   "itil": {
     "label": "ITIL",
     "keywords": "IT Service Management, ITIL, Help Desk",
-    "pills": ["ITSM", "IT Modernization", "ServiceNow"]
+    "pills": [
+      "ITSM",
+      "IT Modernization",
+      "ServiceNow"
+    ]
   },
   "erp": {
     "label": "Enterprise Resource Planning",
     "keywords": "Enterprise Resource Planning, Financial Management System",
-    "pills": ["IT Modernization", "Cloud", "SAP", "Oracle"]
+    "pills": [
+      "IT Modernization",
+      "Cloud",
+      "SAP",
+      "Oracle"
+    ]
   },
   "sd-wan": {
     "label": "SD-WAN",
     "keywords": "Software Defined Networking, Network Modernization",
-    "pills": ["SASE", "Zero Trust", "Network", "Cybersecurity"]
+    "pills": [
+      "SASE",
+      "Zero Trust",
+      "Network",
+      "Cybersecurity"
+    ]
   },
   "sdwan": {
     "label": "SD-WAN",
     "keywords": "Software Defined Networking, Network Modernization",
-    "pills": ["SASE", "Zero Trust", "Network", "Cybersecurity"]
+    "pills": [
+      "SASE",
+      "Zero Trust",
+      "Network",
+      "Cybersecurity"
+    ]
   },
-
   "observability": {
     "label": "Observability",
     "keywords": "Observability, Application Performance, Network Monitoring",
-    "pills": ["SIEM", "DevSecOps", "Cloud", "AIOps"]
+    "pills": [
+      "SIEM",
+      "DevSecOps",
+      "Cloud",
+      "AIOps"
+    ]
   },
   "aiops": {
     "label": "AIOps",
     "keywords": "AIOps, Artificial Intelligence Operations, IT Operations",
-    "pills": ["Observability", "AI", "IT Modernization"]
+    "pills": [
+      "Observability",
+      "AI",
+      "IT Modernization"
+    ]
   },
   "ehr": {
     "label": "Electronic Health Records",
     "keywords": "Electronic Health Record, EHR, Clinical Information System",
-    "pills": ["FHIR", "Health IT", "Interoperability"]
+    "pills": [
+      "FHIR",
+      "Health IT",
+      "Interoperability"
+    ]
   },
   "fhir": {
     "label": "FHIR",
     "keywords": "FHIR, Health Data Exchange, Interoperability",
-    "pills": ["EHR", "Health IT", "Interoperability"]
+    "pills": [
+      "EHR",
+      "Health IT",
+      "Interoperability"
+    ]
   },
   "ehr modernization": {
     "label": "EHR Modernization",
     "keywords": "Electronic Health Record, EHR Modernization, Clinical Modernization",
-    "pills": ["EHR", "FHIR", "Health IT", "IT Modernization"]
+    "pills": [
+      "EHR",
+      "FHIR",
+      "Health IT",
+      "IT Modernization"
+    ]
   },
-
   "iaas": {
     "label": "Infrastructure as a Service",
     "keywords": "Infrastructure as a Service, Cloud Hosting",
-    "pills": ["Cloud", "SaaS", "PaaS", "AWS", "Azure"]
+    "pills": [
+      "Cloud",
+      "SaaS",
+      "PaaS",
+      "AWS",
+      "Azure"
+    ]
   },
   "paas": {
     "label": "Platform as a Service",
     "keywords": "Platform as a Service, Cloud Platform",
-    "pills": ["Cloud", "IaaS", "SaaS", "DevSecOps"]
+    "pills": [
+      "Cloud",
+      "IaaS",
+      "SaaS",
+      "DevSecOps"
+    ]
   },
   "saas": {
     "label": "Software as a Service",
     "keywords": "Software as a Service, Cloud Software",
-    "pills": ["Cloud", "IaaS", "PaaS", "IT Modernization"]
+    "pills": [
+      "Cloud",
+      "IaaS",
+      "PaaS",
+      "IT Modernization"
+    ]
   },
-
   "panw": {
     "label": "Palo Alto Networks",
     "keywords": "Palo Alto Networks",
-    "pills": ["Zero Trust", "SASE", "Cybersecurity", "EDR"]
+    "pills": [
+      "Zero Trust",
+      "SASE",
+      "Cybersecurity",
+      "EDR"
+    ]
   },
   "bah": {
     "label": "Booz Allen Hamilton",
     "keywords": "Booz Allen Hamilton",
-    "pills": ["SAIC", "Leidos", "Peraton", "GDIT"]
+    "pills": [
+      "SAIC",
+      "Leidos",
+      "Peraton",
+      "GDIT"
+    ]
   },
   "gdit": {
     "label": "General Dynamics IT",
     "keywords": "General Dynamics Information Technology",
-    "pills": ["SAIC", "Leidos", "Booz Allen Hamilton", "Peraton"]
+    "pills": [
+      "SAIC",
+      "Leidos",
+      "Booz Allen Hamilton",
+      "Peraton"
+    ]
   },
   "lmco": {
     "label": "Lockheed Martin",
     "keywords": "Lockheed Martin",
-    "pills": ["Northrop Grumman", "Raytheon", "Boeing", "L3Harris"]
+    "pills": [
+      "Northrop Grumman",
+      "Raytheon",
+      "Boeing",
+      "L3Harris"
+    ]
   },
   "ngc": {
     "label": "Northrop Grumman",
     "keywords": "Northrop Grumman",
-    "pills": ["Lockheed Martin", "Raytheon", "Boeing", "L3Harris"]
+    "pills": [
+      "Lockheed Martin",
+      "Raytheon",
+      "Boeing",
+      "L3Harris"
+    ]
   },
   "rtx": {
     "label": "Raytheon / RTX",
     "keywords": "Raytheon",
-    "pills": ["Northrop Grumman", "Lockheed Martin", "L3Harris", "Boeing"]
+    "pills": [
+      "Northrop Grumman",
+      "Lockheed Martin",
+      "L3Harris",
+      "Boeing"
+    ]
   },
   "wwt": {
     "label": "World Wide Technology",
     "keywords": "World Wide Technology",
-    "pills": ["Carahsoft", "CDW-G", "Immersion Technology", "SHI"]
+    "pills": [
+      "Carahsoft",
+      "CDW-G",
+      "Immersion Technology",
+      "SHI"
+    ]
   },
   "gcp": {
     "label": "Google Cloud Platform",
     "keywords": "Google Cloud",
-    "pills": ["AWS", "Azure", "Cloud", "IaaS"]
+    "pills": [
+      "AWS",
+      "Azure",
+      "Cloud",
+      "IaaS"
+    ]
   },
   "msft": {
     "label": "Microsoft",
     "keywords": "Microsoft",
-    "pills": ["Azure", "M365", "Cloud", "Teams"]
+    "pills": [
+      "Azure",
+      "M365",
+      "Cloud",
+      "Teams"
+    ]
   },
   "aws": {
     "label": "Amazon Web Services",
     "keywords": "Amazon Web Services",
-    "pills": ["Cloud", "Azure", "Google Cloud", "IaaS"]
+    "pills": [
+      "Cloud",
+      "Azure",
+      "Google Cloud",
+      "IaaS"
+    ]
   },
   "hpe": {
     "label": "Hewlett Packard Enterprise",
     "keywords": "Hewlett Packard Enterprise",
-    "pills": ["Dell Technologies", "Cisco", "Network", "IT Modernization"]
+    "pills": [
+      "Dell Technologies",
+      "Cisco",
+      "Network",
+      "IT Modernization"
+    ]
+  },
+  "nvidia": {
+    "label": "NVIDIA",
+    "keywords": "NVIDIA",
+    "pills": [
+      "AI",
+      "Machine Learning",
+      "GPU",
+      "Data Science",
+      "GenAI"
+    ]
+  },
+  "sentinelone": {
+    "label": "SentinelOne",
+    "keywords": "SentinelOne",
+    "pills": [
+      "EDR",
+      "XDR",
+      "Cybersecurity",
+      "CrowdStrike",
+      "541512"
+    ]
+  },
+  "tanium": {
+    "label": "Tanium",
+    "keywords": "Tanium",
+    "pills": [
+      "EDR",
+      "Endpoint Security",
+      "Cybersecurity",
+      "541512"
+    ]
+  },
+  "tenable": {
+    "label": "Tenable",
+    "keywords": "Tenable",
+    "pills": [
+      "Vulnerability Management",
+      "Cybersecurity",
+      "SIEM",
+      "541512"
+    ]
+  },
+  "qualys": {
+    "label": "Qualys",
+    "keywords": "Qualys",
+    "pills": [
+      "Vulnerability Management",
+      "Cybersecurity",
+      "Tenable",
+      "541512"
+    ]
+  },
+  "rubrik": {
+    "label": "Rubrik",
+    "keywords": "Rubrik",
+    "pills": [
+      "Data Management",
+      "Backup Recovery",
+      "Cloud",
+      "541512"
+    ]
+  },
+  "veeam": {
+    "label": "Veeam",
+    "keywords": "Veeam",
+    "pills": [
+      "Backup Recovery",
+      "Data Management",
+      "Cloud",
+      "541512"
+    ]
+  },
+  "dynatrace": {
+    "label": "Dynatrace",
+    "keywords": "Dynatrace",
+    "pills": [
+      "Observability",
+      "AIOps",
+      "DevSecOps",
+      "541512"
+    ]
+  },
+  "datadog": {
+    "label": "Datadog",
+    "keywords": "Datadog",
+    "pills": [
+      "Observability",
+      "AIOps",
+      "Cloud",
+      "541512"
+    ]
+  },
+  "elastic": {
+    "label": "Elastic",
+    "keywords": "Elastic",
+    "pills": [
+      "SIEM",
+      "Observability",
+      "Data Analytics",
+      "Splunk",
+      "541512"
+    ]
+  },
+  "cloudera": {
+    "label": "Cloudera",
+    "keywords": "Cloudera",
+    "pills": [
+      "Data Analytics",
+      "Data Management",
+      "Cloud",
+      "541512"
+    ]
+  },
+  "mongodb": {
+    "label": "MongoDB",
+    "keywords": "MongoDB",
+    "pills": [
+      "Data Management",
+      "Cloud",
+      "DevSecOps",
+      "541512"
+    ]
+  },
+  "redis": {
+    "label": "Redis",
+    "keywords": "Redis",
+    "pills": [
+      "Data Management",
+      "Cloud",
+      "DevSecOps",
+      "541512"
+    ]
+  },
+  "hashicorp": {
+    "label": "HashiCorp",
+    "keywords": "HashiCorp",
+    "pills": [
+      "DevSecOps",
+      "Cloud",
+      "Zero Trust",
+      "541512"
+    ]
+  },
+  "ansible": {
+    "label": "Ansible / Red Hat",
+    "keywords": "Ansible, Red Hat",
+    "pills": [
+      "DevSecOps",
+      "IT Automation",
+      "Cloud",
+      "541512"
+    ]
+  },
+  "red hat": {
+    "label": "Red Hat",
+    "keywords": "Red Hat",
+    "pills": [
+      "DevSecOps",
+      "Cloud",
+      "Ansible",
+      "OpenShift",
+      "541512"
+    ]
+  },
+  "openshift": {
+    "label": "OpenShift",
+    "keywords": "OpenShift, Red Hat",
+    "pills": [
+      "DevSecOps",
+      "Cloud",
+      "Kubernetes",
+      "541512"
+    ]
+  },
+  "kubernetes": {
+    "label": "Kubernetes",
+    "keywords": "Kubernetes, Container",
+    "pills": [
+      "DevSecOps",
+      "OpenShift",
+      "Cloud",
+      "541512"
+    ]
+  },
+  "gitlab": {
+    "label": "GitLab",
+    "keywords": "GitLab",
+    "pills": [
+      "DevSecOps",
+      "CI/CD",
+      "SBOM",
+      "541512"
+    ]
+  },
+  "github": {
+    "label": "GitHub",
+    "keywords": "GitHub",
+    "pills": [
+      "DevSecOps",
+      "CI/CD",
+      "GitLab",
+      "541512"
+    ]
+  },
+  "jira": {
+    "label": "Jira / Atlassian",
+    "keywords": "Atlassian, Jira",
+    "pills": [
+      "ITSM",
+      "DevSecOps",
+      "IT Modernization",
+      "541512"
+    ]
+  },
+  "sailpoint": {
+    "label": "SailPoint",
+    "keywords": "SailPoint",
+    "pills": [
+      "IAM",
+      "Identity",
+      "Zero Trust",
+      "Cybersecurity",
+      "541512"
+    ]
+  },
+  "beyondtrust": {
+    "label": "BeyondTrust",
+    "keywords": "BeyondTrust",
+    "pills": [
+      "PAM",
+      "IAM",
+      "Zero Trust",
+      "Cybersecurity",
+      "541512"
+    ]
+  },
+  "cyberark": {
+    "label": "CyberArk",
+    "keywords": "CyberArk",
+    "pills": [
+      "PAM",
+      "IAM",
+      "Zero Trust",
+      "Cybersecurity",
+      "541512"
+    ]
+  },
+  "abnormal": {
+    "label": "Abnormal Security",
+    "keywords": "Abnormal Security",
+    "pills": [
+      "Email Security",
+      "Cybersecurity",
+      "AI",
+      "541512"
+    ]
+  },
+  "proofpoint": {
+    "label": "Proofpoint",
+    "keywords": "Proofpoint",
+    "pills": [
+      "Email Security",
+      "Cybersecurity",
+      "541512"
+    ]
+  },
+  "netskope": {
+    "label": "Netskope",
+    "keywords": "Netskope",
+    "pills": [
+      "SASE",
+      "CASB",
+      "Zero Trust",
+      "Cybersecurity",
+      "541512"
+    ]
+  },
+  "illumio": {
+    "label": "Illumio",
+    "keywords": "Illumio",
+    "pills": [
+      "Zero Trust",
+      "Microsegmentation",
+      "Cybersecurity",
+      "541512"
+    ]
+  },
+  "vectra": {
+    "label": "Vectra AI",
+    "keywords": "Vectra",
+    "pills": [
+      "XDR",
+      "AI",
+      "Cybersecurity",
+      "541512"
+    ]
+  },
+  "recorded future": {
+    "label": "Recorded Future",
+    "keywords": "Recorded Future",
+    "pills": [
+      "Threat Intelligence",
+      "Cybersecurity",
+      "AI",
+      "541512"
+    ]
+  },
+  "mandiant": {
+    "label": "Mandiant / Google",
+    "keywords": "Mandiant",
+    "pills": [
+      "Threat Intelligence",
+      "MDR",
+      "Cybersecurity",
+      "541512"
+    ]
+  },
+  "f5": {
+    "label": "F5",
+    "keywords": "F5 Networks",
+    "pills": [
+      "Network",
+      "Zero Trust",
+      "Cybersecurity",
+      "541512"
+    ]
+  },
+  "cisco": {
+    "label": "Cisco",
+    "keywords": "Cisco",
+    "pills": [
+      "Network",
+      "Zero Trust",
+      "SASE",
+      "Cybersecurity",
+      "541512"
+    ]
+  },
+  "juniper": {
+    "label": "Juniper Networks",
+    "keywords": "Juniper Networks",
+    "pills": [
+      "Network",
+      "SD-WAN",
+      "Cybersecurity",
+      "541512"
+    ]
+  },
+  "commvault": {
+    "label": "Commvault",
+    "keywords": "Commvault",
+    "pills": [
+      "Backup Recovery",
+      "Data Management",
+      "Cloud",
+      "541512"
+    ]
+  },
+  "pure storage": {
+    "label": "Pure Storage",
+    "keywords": "Pure Storage",
+    "pills": [
+      "Storage",
+      "Cloud",
+      "Data Management",
+      "541512"
+    ]
+  },
+  "nutanix": {
+    "label": "Nutanix",
+    "keywords": "Nutanix",
+    "pills": [
+      "Cloud",
+      "Hyperconverged",
+      "IT Modernization",
+      "541512"
+    ]
+  },
+  "vmware": {
+    "label": "VMware / Broadcom",
+    "keywords": "VMware",
+    "pills": [
+      "Cloud",
+      "Virtualization",
+      "IT Modernization",
+      "541512"
+    ]
+  },
+  "sap": {
+    "label": "SAP",
+    "keywords": "SAP",
+    "pills": [
+      "ERP",
+      "IT Modernization",
+      "Cloud",
+      "541512"
+    ]
+  },
+  "oracle": {
+    "label": "Oracle",
+    "keywords": "Oracle",
+    "pills": [
+      "ERP",
+      "Database",
+      "Cloud",
+      "SAP",
+      "541512"
+    ]
+  },
+  "palantir": {
+    "label": "Palantir",
+    "keywords": "Palantir",
+    "pills": [
+      "AI",
+      "Data Analytics",
+      "Machine Learning",
+      "541512"
+    ]
+  },
+  "c3.ai": {
+    "label": "C3.ai",
+    "keywords": "C3 AI",
+    "pills": [
+      "AI",
+      "Machine Learning",
+      "Data Analytics",
+      "541512"
+    ]
+  },
+  "scale ai": {
+    "label": "Scale AI",
+    "keywords": "Scale AI",
+    "pills": [
+      "AI",
+      "Machine Learning",
+      "Data Science",
+      "541512"
+    ]
+  },
+  "peraton": {
+    "label": "Peraton",
+    "keywords": "Peraton",
+    "pills": [
+      "SAIC",
+      "Leidos",
+      "Booz Allen Hamilton",
+      "GDIT",
+      "541512"
+    ]
+  },
+  "accenture federal": {
+    "label": "Accenture Federal",
+    "keywords": "Accenture Federal",
+    "pills": [
+      "Booz Allen Hamilton",
+      "SAIC",
+      "IT Modernization",
+      "541512"
+    ]
+  },
+  "cdw": {
+    "label": "CDW-G",
+    "keywords": "CDW Government",
+    "pills": [
+      "WWT",
+      "Carahsoft",
+      "Cloud",
+      "541512"
+    ]
+  },
+  "immersion": {
+    "label": "Immersion Technology",
+    "keywords": "Immersion Technology",
+    "pills": [
+      "WWT",
+      "Carahsoft",
+      "Cloud",
+      "541512"
+    ]
+  },
+  "shi": {
+    "label": "SHI International",
+    "keywords": "SHI International",
+    "pills": [
+      "WWT",
+      "CDW-G",
+      "Cloud",
+      "541512"
+    ]
   }
 }
