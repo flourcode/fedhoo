@@ -588,13 +588,16 @@ a, button, input, select { touch-action: manipulation; }
 .face-badge.watch { background: rgba(200,160,0,0.10); border-color: #6B5000; }
 .face-badge.locked{ background: rgba(200,50,30,0.10);  border-color: #8C1A0E; }
 .face-label {
-  font-size: 8px; font-weight: 800; text-transform: uppercase;
-  letter-spacing: .06em; text-align: center; display: block; margin-top: 2px;
+  font-size: 9px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: .08em; display: inline-block; margin-top: 3px;
 }
-.face-badge.open  .face-label { color: #1A6E31; }
-.face-badge.watch .face-label { color: #6B5000; }
-.face-badge.locked .face-label { color: #8C1A0E; }
-.face-badge-wrap { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+.face-label.open   { color: #1A6E31; }
+.face-label.watch  { color: #6B5000; }
+.face-label.locked { color: #8C1A0E; }
+:root.dark .face-label.open   { color: #4ADA7A; }
+:root.dark .face-label.watch  { color: #E0B840; }
+:root.dark .face-label.locked { color: #F07060; }
+.face-badge-wrap { display: flex; align-items: flex-start; flex-shrink: 0; margin-top: 4px; }
 
 /* Signal pills */
 .market-signals { display: flex; flex-direction: column; gap: 4px; margin: 6px 0 10px; }
@@ -1149,13 +1152,13 @@ a, button, input, select { touch-action: manipulation; }
         <div class="market-header-left">
           <h2 class="card-title" id="marketCardTitle">Market Signals</h2>
           <div class="market-hero-number" id="marketHeroNumber"></div>
+          <span class="face-label hidden" id="faceLabel"></span>
           <p class="card-desc card-desc--hidden" id="marketCardDesc"></p>
         </div>
         <div class="face-badge-wrap hidden" id="faceBadgeWrap">
           <div class="face-badge" id="faceBadge">
             <svg id="faceSvg" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></svg>
           </div>
-          <span class="face-label" id="faceLabel"></span>
         </div>
       </div>
 
@@ -2931,6 +2934,7 @@ const App = {
     DOM.hide('sellerLensCard');
     DOM.get('marketSignals')?.classList.add('hidden');
     DOM.get('faceBadgeWrap')?.classList.add('hidden');
+    const fl = DOM.get('faceLabel'); if (fl) fl.classList.add('hidden');
     DOM.hide('artiInlineCard');
     const aic = DOM.get('artiInlineContent'); if (aic) { aic.innerHTML = 'Analyzing market…'; aic.className = 'strategic-read arti-inline-loading'; delete aic.dataset.rawPlan; }
     DOM.hide('artiInlineActions');
@@ -4629,10 +4633,11 @@ const App = {
 
     // ── Face verdict ──────────────────────────────────────────────
     let verdict, faceClass, faceLabel;
-    // SVG paths: smile, neutral, frown — no inner circle, border IS the face
-    const smilePath  = `<path d="M8 10.5q1-1.5 3-1.5t3 1.5"/><path d="M14 10.5q1-1.5 3-1.5t3 1.5"/><path d="M6 17q2.5 4 8 4t8-4"/>`;
-    const neutralPath= `<line x1="8" y1="10" x2="11" y2="10" stroke-width="2.5" stroke-linecap="round"/><line x1="17" y1="10" x2="20" y2="10" stroke-width="2.5" stroke-linecap="round"/><line x1="8" y1="18" x2="20" y2="18" stroke-linecap="round"/>`;
-    const frownPath  = `<path d="M8 10.5q1-1.5 3-1.5t3 1.5"/><path d="M14 10.5q1-1.5 3-1.5t3 1.5"/><path d="M6 21q2.5-4 8-4t8 4"/>`;
+    // SVG paths — open filled dot eyes, large mouth curves, no inner circle
+    // Dots: filled circles at eye positions; mouth: wide arc
+    const smilePath  = `<circle cx="10" cy="11" r="1.5" fill="currentColor" stroke="none"/><circle cx="18" cy="11" r="1.5" fill="currentColor" stroke="none"/><path d="M7 17q3 4 7 4t7-4"/>`;
+    const neutralPath= `<circle cx="10" cy="11" r="1.5" fill="currentColor" stroke="none"/><circle cx="18" cy="11" r="1.5" fill="currentColor" stroke="none"/><line x1="8" y1="18" x2="20" y2="18" stroke-linecap="round"/>`;
+    const frownPath  = `<circle cx="10" cy="11" r="1.5" fill="currentColor" stroke="none"/><circle cx="18" cy="11" r="1.5" fill="currentColor" stroke="none"/><path d="M7 21q3-4 7-4t7 4"/>`;
 
     if (fragScore >= 5.5) {
       verdict = 'open'; faceClass = 'open'; faceLabel = 'Open';
@@ -4651,7 +4656,7 @@ const App = {
     const wrap  = DOM.get('faceBadgeWrap');
     const lbl   = DOM.get('faceLabel');
     if (badge) { badge.className = `face-badge ${faceClass}`; }
-    if (lbl)   { lbl.textContent = faceLabel; }
+    if (lbl)   { lbl.textContent = faceLabel; lbl.className = `face-label ${faceClass}`; lbl.classList.remove('hidden'); }
     if (wrap)  { wrap.classList.remove('hidden'); }
 
     // ── Signal pills ──────────────────────────────────────────────
