@@ -2732,7 +2732,6 @@ async searchAwards(keywords) {
 };
 // ── SEARCH PILLS — brand intelligence from Lambda/Gemini ─────────────────────
 const SearchPills = {
-  // Session cache (in-memory) — dictionary hits are instant, no localStorage needed
   _cache: {},
   _current: null,
 
@@ -2741,50 +2740,9 @@ const SearchPills = {
     const key = query.toLowerCase().trim();
     if (this._current === key) return;
     this._current = key;
-
-    // 1. Dictionary lookup first — deterministic, zero latency, zero cost
+    // Dictionary only — USASpending autocomplete returns garbage for tech vendors
     const intel = Utils.lookupIntel(query);
-    if (intel) {
-      this._cache[key] = intel;
-      this.render(intel, query);
-      return;
-    }
-
-    // 2. Skip codes — no pills useful for raw PSC/NAICS
-    if (/^\d{6}$/.test(query) || /^[A-Z]{1,2}\d{1,3}$/i.test(query)) return;
-
-    // 3. Skip if already cached from USASpending autocomplete
-    if (this._cache[key]) { this.render(this._cache[key], query); return; }
-
-    // 4. Fall back to USASpending autocomplete for unknown company names
-    this._fetchFromAutocomplete(query);
-  },
-
-  async _fetchFromAutocomplete(query) {
-    try {
-      const res = await fetch(App.PROXY_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          request_type: 'usaspending_proxy',
-          endpoint: '/autocomplete/recipient/',
-          payload: { search_text: query, limit: 8 }
-        }),
-      });
-      if (!res.ok) return;
-      const data = await res.json();
-      const names = (data.results || [])
-        .map(r => r.recipient_name)
-        .filter(Boolean)
-        .filter(n => n.toUpperCase() !== query.toUpperCase());
-      if (!names.length) return;
-      const entry = { pills: names.slice(0, 6) };
-      this._cache[query.toLowerCase()] = entry;
-      this.render(entry, query);
-      // Also refresh empty state if showing
-      const container = App.UI.bubbleChartContainer;
-      if (container && container.querySelector('.empty-state')) App.showEmptyState(query);
-    } catch(e) { /* silent */ }
+    if (intel) { this._cache[key] = intel; this.render(intel, query); }
   },
 
   render(intel, query) {
@@ -2792,41 +2750,29 @@ const SearchPills = {
     if (!container) return;
     const pills = intel.pills || [];
     if (!pills.length) { container.classList.add('hidden'); return; }
-
-    const queryKey = query.toUpperCase();
-    const seen = new Set([queryKey]);
+    const seen = new Set([query.toUpperCase()]);
     const validPills = pills.filter(p => {
       const k = p.toUpperCase();
       if (seen.has(k)) return false;
-      seen.add(k);
-      return true;
+      seen.add(k); return true;
     }).slice(0, 10);
-
     if (!validPills.length) { container.classList.add('hidden'); return; }
-
     container.innerHTML = '<span class="search-pills-label">Also try</span>' +
       validPills.map(p => {
         const isCode = /^\d{6}$/.test(p) || /^[A-Z]\d{3,}/.test(p);
-        const cls = isCode ? 'search-pill search-pill-code' : 'search-pill';
         const safe = p.replace(/'/g, "\\'");
-        return `<button class="${cls}" onclick="App.runSearch('${safe}')">${Html.escapeHtml(p)}</button>`;
-      }).join('') +
-      (intel.naics?.length ? intel.naics.slice(0,2).map(n =>
-        `<button class="search-pill search-pill-code" onclick="App.runSearch('${n}')">${n}</button>`
-      ).join('') : '');
-
+        return `<button class="search-pill${isCode ? ' search-pill-code' : ''}" onclick="App.runSearch('${safe}')">${Html.escapeHtml(p)}</button>`;
+      }).join('');
     container.classList.remove('hidden');
   },
 
   clear() {
-    const container = DOM.get('searchPillsRow');
-    if (container) { container.innerHTML = ''; container.classList.add('hidden'); }
+    const el = DOM.get('searchPillsRow');
+    if (el) { el.innerHTML = ''; el.classList.add('hidden'); }
     this._current = null;
   },
 
-  get(query) {
-    return this._cache[(query || '').toLowerCase()] || null;
-  },
+  get(query) { return this._cache[(query || '').toLowerCase()] || null; },
 };
 
 const VehicleDetector = {
