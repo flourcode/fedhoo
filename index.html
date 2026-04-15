@@ -576,14 +576,32 @@ a, button, input, select { touch-action: manipulation; }
 }
 .market-header-left { flex: 1; min-width: 0; }
 
-/* Face badge — emoji circle is self-contained, no extra border needed */
-.face-badge {
-  width: 52px; height: 52px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0; overflow: hidden; margin-top: 2px;
-  transition: var(--transition);
+/* Three-face market scale */
+.face-scale {
+  display: flex; align-items: center; gap: 6px;
+  flex-shrink: 0; margin-top: 4px;
 }
-.face-badge svg { width: 52px; height: 52px; display: block; border-radius: 50%; }
+.face-scale-item {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+.face-scale-svg {
+  display: block; border-radius: 50%;
+  transition: width 0.2s ease, height 0.2s ease, opacity 0.2s ease, filter 0.2s ease;
+}
+/* Inactive: small, greyed */
+.face-scale-item .face-scale-svg {
+  width: 28px; height: 28px;
+  opacity: 0.22;
+  filter: grayscale(100%);
+}
+/* Active: full size, full color, slightly elevated */
+.face-scale-item.active .face-scale-svg {
+  width: 44px; height: 44px;
+  opacity: 1;
+  filter: none;
+}
+.face-scale-item.active { transform: translateY(-2px); }
 .face-label {
   font-size: 9px; font-weight: 800; text-transform: uppercase;
   letter-spacing: .08em; display: inline-block; margin-top: 3px;
@@ -1180,8 +1198,17 @@ a, button, input, select { touch-action: manipulation; }
           <span class="face-label hidden" id="faceLabel"></span>
           <p class="card-desc card-desc--hidden" id="marketCardDesc"></p>
         </div>
-        <div class="face-badge-wrap hidden" id="faceBadgeWrap">
-          <div class="face-badge" id="faceBadge"></div>
+        <!-- Three-face scale: greyed out except the active verdict -->
+        <div class="face-scale hidden" id="faceScale">
+          <div class="face-scale-item" id="faceScaleOpen">
+            <svg class="face-scale-svg" aria-label="Open market"><use href="#icon-face-open"/></svg>
+          </div>
+          <div class="face-scale-item" id="faceScaleWatch">
+            <svg class="face-scale-svg" aria-label="Watch market"><use href="#icon-face-watch"/></svg>
+          </div>
+          <div class="face-scale-item" id="faceScaleLocked">
+            <svg class="face-scale-svg" aria-label="Locked market"><use href="#icon-face-locked"/></svg>
+          </div>
         </div>
       </div>
 
@@ -2956,7 +2983,7 @@ const App = {
     DOM.hide('bioCard');
     DOM.hide('sellerLensCard');
     DOM.get('marketSignals')?.classList.add('hidden');
-    DOM.get('faceBadgeWrap')?.classList.add('hidden');
+    DOM.get('faceScale')?.classList.add('hidden');
     const fl = DOM.get('faceLabel'); if (fl) fl.classList.add('hidden');
     DOM.hide('artiInlineCard');
     const aic = DOM.get('artiInlineContent'); if (aic) { aic.innerHTML = 'Analyzing market…'; aic.className = 'strategic-read arti-inline-loading'; delete aic.dataset.rawPlan; }
@@ -4657,7 +4684,7 @@ const App = {
     // ── Face verdict ──────────────────────────────────────────────
     let verdict, faceClass, faceLabel;
     // Use named SVG symbols — one per verdict, matches emoji style
-    const faceSymbols = { open: 'icon-face-open', watch: 'icon-face-watch', locked: 'icon-face-locked' };
+    const faceIds = { open: 'faceScaleOpen', watch: 'faceScaleWatch', locked: 'faceScaleLocked' };
 
     if (fragScore >= 5.5) {
       verdict = 'open'; faceClass = 'open'; faceLabel = 'Open';
@@ -4666,15 +4693,18 @@ const App = {
     } else {
       verdict = 'locked'; faceClass = 'locked'; faceLabel = 'Locked';
     }
-    const badge = DOM.get('faceBadge');
-    const wrap  = DOM.get('faceBadgeWrap');
-    const lbl   = DOM.get('faceLabel');
-    if (badge) {
-      badge.className = `face-badge ${faceClass}`;
-      badge.innerHTML = `<svg width="52" height="52" aria-label="${faceLabel} market"><use href="#${faceSymbols[faceClass]}"/></svg>`;
+
+    // Drive the three-face scale
+    const scale = DOM.get('faceScale');
+    if (scale) {
+      scale.classList.remove('hidden');
+      ['open','watch','locked'].forEach(v => {
+        const el = DOM.get(faceIds[v]);
+        if (el) el.classList.toggle('active', v === faceClass);
+      });
     }
-    if (lbl)   { lbl.textContent = faceLabel; lbl.className = `face-label ${faceClass}`; lbl.classList.remove('hidden'); }
-    if (wrap)  { wrap.classList.remove('hidden'); }
+    const lbl = DOM.get('faceLabel');
+    if (lbl) { lbl.textContent = faceLabel; lbl.className = `face-label ${faceClass}`; lbl.classList.remove('hidden'); }
 
     // ── Signal pills ──────────────────────────────────────────────
     const signals = [];
