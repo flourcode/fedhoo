@@ -653,13 +653,12 @@ a, button, input, select { touch-action: manipulation; }
 
 /* Action line — the money line */
 .market-action {
-  display: flex; align-items: flex-start; gap: 5px;
+  display: flex; align-items: baseline; gap: 4px;
   font-size: var(--text-xs); font-weight: 700;
-  color: var(--btn-bg); margin-top: 6px; line-height: 1.4;
+  color: var(--btn-bg); margin-top: 7px; line-height: 1.45;
 }
 .market-action-arrow {
-  font-size: var(--text-sm); line-height: 1.2;
-  flex-shrink: 0; opacity: 0.7;
+  flex-shrink: 0; opacity: 0.8;
 }
 :root.dark .market-action { color: var(--btn-hover); }
 
@@ -3048,31 +3047,34 @@ const App = {
     hideSug('searchSuggestionsMobile');
     DOM.get('territoryDropdown')?.classList.remove('open');
 
-    const rawQuery = query.toUpperCase();
-    if (!isDirectSelection) query = Utils.normalizeQuery(rawQuery);
+    const rawQuery = query.trim();
+    const displayQuery = rawQuery; // always show what the user typed
+    const apiQuery = isDirectSelection ? rawQuery : Utils.normalizeQuery(rawQuery.toUpperCase());
 
-    // Update search input to show normalized query
+    // Search input always shows the display term (what the user typed)
     const inp = this.UI.searchInput;
-    if (inp) inp.value = query;
+    if (inp) inp.value = displayQuery;
     const mobileInp = DOM.get('searchInputMobile');
-    if (mobileInp) mobileInp.value = query;
-    document.title = `Fedhoo | ${query}`;
+    if (mobileInp) mobileInp.value = displayQuery;
+    document.title = `Fedhoo | ${displayQuery}`;
 
+    // Recent searches stores display term too
     try {
       let history = JSON.parse(localStorage.getItem('govhoo-recent') || '[]');
-      history = history.filter(q => q !== query);
-      history.unshift(query);
+      history = history.filter(q => q.toLowerCase() !== displayQuery.toLowerCase());
+      history.unshift(displayQuery);
       localStorage.setItem('govhoo-recent', JSON.stringify(history.slice(0, 5)));
     } catch(e) {}
 
-    if (query !== this.currentQuery) {
+    if (apiQuery !== this.currentQuery) {
       this.searchData = { raw: [], active: [], filter: null, loaded: false };
       this.resetDrill(true);
       this.aiState = { history: [], count: 0, max: 5 };
     }
 
-    this.currentQuery = query;
-    try { localStorage.setItem('fedhoo_last_query', query); } catch(e) { /* private browsing */ }
+    this.currentQuery = apiQuery;       // used for API calls
+    this.displayQuery = displayQuery;   // used for UI display
+    try { localStorage.setItem('fedhoo_last_query', displayQuery); } catch(e) {}
     // Dismiss autocomplete
     const _sb = DOM.get('searchSuggestions');
     if (_sb) { _sb.innerHTML = ''; _sb.classList.add('hidden'); }
@@ -3144,7 +3146,7 @@ const App = {
       this.hideLoader();
 
       if (!filtered || filtered.length === 0 || totalSpend <= 0) {
-        SearchPills.generate(query); // background lookup to power smart empty state
+        SearchPills.generate(App.displayQuery || query); // background lookup to power smart empty state
         this.showEmptyState(query);
         return;
       }
@@ -3153,8 +3155,8 @@ const App = {
       this.analyzeMarket(filtered);
 
       // Card title = title-cased search query, no "Market" suffix
-      const rawForTitle = (this.UI.searchInput?.value || query).trim();
-      const titleLabel = rawForTitle.split(/,\s*/).map(t => t.trim()).map(t => t.length <= 3 ? t.toUpperCase() : Utils.titleCase(t)).join(', ');
+      const rawForTitle = (this.displayQuery || this.UI.searchInput?.value || query).trim();
+      const titleLabel = rawForTitle.length <= 3 ? rawForTitle.toUpperCase() : Utils.titleCase(rawForTitle);
       if (this.UI.marketCardTitle) this.UI.marketCardTitle.textContent = titleLabel;
       if (this.UI.marketCardDesc) this.UI.marketCardDesc.textContent = 'Where the money is concentrated. Click any segment to drill in.';
 
@@ -3177,7 +3179,7 @@ const App = {
         this.renderBridge();
         this.renderMarketSignals();
         this._autoFireArtiBrief(query);
-        SearchPills.generate(query);
+        SearchPills.generate(App.displayQuery || query);
         // Show seller lens prompt if not yet set
         if (!this._sellerLens) DOM.show('sellerLensCard');
         else DOM.hide('sellerLensCard');
@@ -3906,7 +3908,14 @@ const App = {
       const statusEl  = DOM.get('artiInlineStatus');
       const statusTxt = DOM.get('artiInlineStatusText');
       const roleEl    = DOM.get('artiInlineRole');
-      if (roleEl) roleEl.textContent = this._sellerLens ? `Briefing for: ${this._sellerLens}` : 'Pre-meeting briefing';
+      if (roleEl) {
+        if (this._sellerLens) {
+          const short = this._sellerLens.length > 40 ? this._sellerLens.slice(0,38) + '…' : this._sellerLens;
+          roleEl.textContent = short;
+        } else {
+          roleEl.textContent = 'Pre-meeting briefing';
+        }
+      }
       if (contentEl) { contentEl.innerHTML = ''; contentEl.className = 'strategic-read'; }
       if (statusTxt) statusTxt.textContent = 'Briefing…';
 
