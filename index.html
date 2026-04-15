@@ -1195,6 +1195,18 @@ a, button, input, select { touch-action: manipulation; }
       <div class="contract-list" id="subawardsList"></div>
     </div>
 
+    <!-- BIO CARD — always shown at the bottom of results -->
+    <div class="app-card wide result-panel hidden" id="bioCard" style="margin-top:0;">
+      <div style="display:flex;align-items:center;gap:16px;">
+        <img src="/images/oldmark.jpg" alt="Mark Flournoy" style="width:52px;height:52px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid var(--border);">
+        <div style="min-width:0;">
+          <div style="font-size:var(--text-sm);font-weight:700;color:var(--text-primary);letter-spacing:-0.01em;margin-bottom:3px;">Hi, I'm Mark Flournoy</div>
+          <div style="font-size:var(--text-xs);color:var(--text-secondary);line-height:1.55;">Retired federal sales — AWS, F5, Red Hat, DISA COTR, 20 years Marines. I built Fedhoo because I spent too many years pulling this data by hand before pipeline reviews. No pitch — if you want to look at your territory together, grab 20 minutes.</div>
+          <a href="https://calendly.com/markflournoy/chat-with-mark" target="_blank" rel="noopener" class="footer-chat-btn" style="margin-top:12px;height:34px;font-size:var(--text-xs);padding:0 14px;">Book a chat →</a>
+        </div>
+      </div>
+    </div>
+
   </div><!-- /tools-grid -->
 
 <!-- ARTI FLOATING BUTTON, shown after search loads -->
@@ -2791,6 +2803,7 @@ const App = {
     DOM.hide('expiringCard');
     DOM.hide('recentCard');
     DOM.hide('primesCard');
+    DOM.hide('bioCard');
     DOM.hide('artiInlineCard');
     const aic = DOM.get('artiInlineContent'); if (aic) { aic.innerHTML = 'Analyzing market…'; aic.className = 'strategic-read arti-inline-loading'; delete aic.dataset.rawPlan; }
     DOM.hide('artiInlineActions');
@@ -2859,6 +2872,7 @@ const App = {
       DOM.show('resultsGrid');
       DOM.hide('searchHero');
       DOM.show('shareBtn');
+      DOM.show('bioCard');
 
       // Render chart and panels immediately
       this._treemapDirty = true;
