@@ -595,10 +595,10 @@ a, button, input, select { touch-action: manipulation; }
 .face-scale {
   display: flex; align-items: center; gap: 8px; margin: 8px 0 10px;
 }
-.face-scale-item { display: flex; align-items: center; transition: opacity 0.2s ease, filter 0.2s ease; }
+.face-scale-item { display: flex; align-items: center; transition: opacity 0.15s ease, filter 0.15s ease; }
 .face-scale-svg {
   display: block; border-radius: 50%; width: 36px; height: 36px;
-  transition: opacity 0.2s ease, filter 0.2s ease;
+  transition: opacity 0.15s ease, filter 0.15s ease;
 }
 .face-scale-item .face-scale-svg { opacity: 0.2; filter: grayscale(100%); }
 .face-scale-item.active .face-scale-svg { opacity: 1; filter: none; }
@@ -4772,14 +4772,42 @@ const App = {
     }
 
     // ── Drive the scale ───────────────────────────────────────────
+    // ── Drive the scale with slot-machine animation ───────────────
     const faceIds = { open:'faceScaleOpen', watch:'faceScaleWatch', locked:'faceScaleLocked' };
+    const faceOrder = ['open','watch','locked'];
     const scale = DOM.get('faceScale');
     if (scale) {
       scale.classList.remove('hidden');
-      ['open','watch','locked'].forEach(v => {
-        const el = DOM.get(faceIds[v]);
-        if (el) el.classList.toggle('active', v === faceClass);
-      });
+
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        // Instant for reduced motion
+        faceOrder.forEach(v => {
+          const el = DOM.get(faceIds[v]);
+          if (el) el.classList.toggle('active', v === faceClass);
+        });
+      } else {
+        // Slot machine: cycle all faces at full color rapidly, then land on verdict
+        const setActive = (v) => {
+          faceOrder.forEach(id => {
+            const el = DOM.get(faceIds[id]);
+            if (el) el.classList.toggle('active', id === v);
+          });
+        };
+
+        // Quick cycle — 3 full loops then land
+        const cycleMs = 80;     // ms per face during spin
+        const spinCount = 9;    // total face-flashes before landing (3 full loops)
+        let tick = 0;
+        const spin = setInterval(() => {
+          setActive(faceOrder[tick % 3]);
+          tick++;
+          if (tick >= spinCount) {
+            clearInterval(spin);
+            // Land on verdict with a brief pause for drama
+            setTimeout(() => setActive(faceClass), cycleMs);
+          }
+        }, cycleMs);
+      }
     }
     const lbl = DOM.get('faceLabel');
     if (lbl) { lbl.textContent = faceLabel; lbl.className = `face-label ${faceClass}`; lbl.classList.remove('hidden'); }
