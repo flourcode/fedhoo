@@ -583,25 +583,22 @@ a, button, input, select { touch-action: manipulation; }
 }
 .face-scale-item {
   display: flex; flex-direction: column; align-items: center; gap: 3px;
-  transition: transform 0.2s ease, opacity 0.2s ease;
+  transition: opacity 0.2s ease, filter 0.2s ease;
 }
 .face-scale-svg {
-  display: block; border-radius: 50%;
-  transition: width 0.2s ease, height 0.2s ease, opacity 0.2s ease, filter 0.2s ease;
+  display: block; border-radius: 50%; width: 38px; height: 38px;
+  transition: opacity 0.2s ease, filter 0.2s ease;
 }
-/* Inactive: small, greyed */
+/* Inactive: greyed out */
 .face-scale-item .face-scale-svg {
-  width: 28px; height: 28px;
   opacity: 0.22;
   filter: grayscale(100%);
 }
-/* Active: full size, full color, slightly elevated */
+/* Active: full color */
 .face-scale-item.active .face-scale-svg {
-  width: 44px; height: 44px;
   opacity: 1;
   filter: none;
 }
-.face-scale-item.active { transform: translateY(-2px); }
 .face-label {
   font-size: 9px; font-weight: 800; text-transform: uppercase;
   letter-spacing: .08em; display: inline-block; margin-top: 3px;
@@ -1044,21 +1041,21 @@ a, button, input, select { touch-action: manipulation; }
     <circle cx="25.5" cy="16.5" r="2" fill="#3D5C3D"/>
     <path d="M13 23.5 Q20 29.5 27 23.5" fill="none" stroke="#3D5C3D" stroke-width="2.4" stroke-linecap="round"/>
   </symbol>
-  <!-- Open market face — washed sage green -->
+  <!-- Easy market face — washed sage green -->
   <symbol id="icon-face-open" viewBox="0 0 40 40">
     <circle cx="20" cy="20" r="20" fill="#8EAF8E"/>
     <circle cx="14" cy="16" r="2.4" fill="#3D5C3D"/>
     <circle cx="26" cy="16" r="2.4" fill="#3D5C3D"/>
     <path d="M12 24 Q20 31 28 24" fill="none" stroke="#3D5C3D" stroke-width="2.8" stroke-linecap="round"/>
   </symbol>
-  <!-- Watch market face — washed amber -->
+  <!-- Crowded market face — washed amber -->
   <symbol id="icon-face-watch" viewBox="0 0 40 40">
     <circle cx="20" cy="20" r="20" fill="#D4AA72"/>
     <circle cx="14" cy="16" r="2.4" fill="#7A5520"/>
     <circle cx="26" cy="16" r="2.4" fill="#7A5520"/>
     <line x1="13" y1="26" x2="27" y2="26" stroke="#7A5520" stroke-width="2.8" stroke-linecap="round"/>
   </symbol>
-  <!-- Locked market face — washed rose -->
+  <!-- Tough market face — washed rose -->
   <symbol id="icon-face-locked" viewBox="0 0 40 40">
     <circle cx="20" cy="20" r="20" fill="#C48A96"/>
     <circle cx="14" cy="16" r="2.4" fill="#6B3040"/>
@@ -1201,13 +1198,13 @@ a, button, input, select { touch-action: manipulation; }
         <!-- Three-face scale: greyed out except the active verdict -->
         <div class="face-scale hidden" id="faceScale">
           <div class="face-scale-item" id="faceScaleOpen">
-            <svg class="face-scale-svg" aria-label="Open market"><use href="#icon-face-open"/></svg>
+            <svg class="face-scale-svg" aria-label="Easy market"><use href="#icon-face-open"/></svg>
           </div>
           <div class="face-scale-item" id="faceScaleWatch">
-            <svg class="face-scale-svg" aria-label="Watch market"><use href="#icon-face-watch"/></svg>
+            <svg class="face-scale-svg" aria-label="Crowded market"><use href="#icon-face-watch"/></svg>
           </div>
           <div class="face-scale-item" id="faceScaleLocked">
-            <svg class="face-scale-svg" aria-label="Locked market"><use href="#icon-face-locked"/></svg>
+            <svg class="face-scale-svg" aria-label="Tough market"><use href="#icon-face-locked"/></svg>
           </div>
         </div>
       </div>
@@ -4687,11 +4684,11 @@ const App = {
     const faceIds = { open: 'faceScaleOpen', watch: 'faceScaleWatch', locked: 'faceScaleLocked' };
 
     if (fragScore >= 5.5) {
-      verdict = 'open'; faceClass = 'open'; faceLabel = 'Open';
+      verdict = 'open'; faceClass = 'open'; faceLabel = 'Easy';
     } else if (fragScore >= 3) {
-      verdict = 'watch'; faceClass = 'watch'; faceLabel = 'Watch';
+      verdict = 'watch'; faceClass = 'watch'; faceLabel = 'Crowded';
     } else {
-      verdict = 'locked'; faceClass = 'locked'; faceLabel = 'Locked';
+      verdict = 'locked'; faceClass = 'locked'; faceLabel = 'Tough';
     }
 
     // Drive the three-face scale
@@ -4717,11 +4714,11 @@ const App = {
     }
     // Concentration signal
     if (top3Pct >= 0.70) {
-      signals.push({ cls: 'sig-amber', text: `Top 3 primes hold ${Math.round(top3Pct*100)}% · market concentrated` });
+      signals.push({ cls: 'sig-amber', text: `Top 3 primes hold ${Math.round(top3Pct*100)}% · tough to crack` });
     } else if (top3Pct <= 0.40) {
-      signals.push({ cls: 'sig-green', text: `Vendor share is fragmented · no dominant incumbent` });
+      signals.push({ cls: 'sig-green', text: `Fragmented vendors · easier to enter` });
     } else {
-      signals.push({ cls: 'sig-amber', text: `Top 3 primes hold ${Math.round(top3Pct*100)}% · moderate concentration` });
+      signals.push({ cls: 'sig-amber', text: `Top 3 primes hold ${Math.round(top3Pct*100)}% · crowded but workable` });
     }
     // Buyer breadth signal
     if (agencyCount >= 8) {
