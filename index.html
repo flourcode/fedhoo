@@ -2983,7 +2983,7 @@ const App = {
 
     const rawQuery = query.trim();
     const displayQuery = rawQuery; // always show what the user typed
-    const apiQuery = isDirectSelection ? rawQuery : Utils.normalizeQuery(rawQuery.toUpperCase());
+    // NOTE: apiQuery is computed AFTER loadMarketIntel resolves below — don't normalize here
 
     // Search input always shows the display term (what the user typed)
     const inp = this.UI.searchInput;
@@ -3000,14 +3000,13 @@ const App = {
       localStorage.setItem('govhoo-recent', JSON.stringify(history.slice(0, 5)));
     } catch(e) {}
 
-    if (apiQuery !== this.currentQuery) {
+    if (rawQuery !== this.currentQuery) {
       this.searchData = { raw: [], active: [], filter: null, loaded: false };
       this.resetDrill(true);
       this.aiState = { history: [], count: 0, max: 5 };
     }
 
-    this.currentQuery = apiQuery;       // used for API calls
-    this.displayQuery = displayQuery;   // used for UI display
+    this.displayQuery = displayQuery;
     try { localStorage.setItem('fedhoo_last_query', displayQuery); } catch(e) {}
     // Dismiss autocomplete
     const _sb = DOM.get('searchSuggestions');
@@ -3071,7 +3070,12 @@ const App = {
     } catch(e) {}
 
     try {
-      const [, , results] = await Promise.all([LibLoader.loadD3(), Utils.loadMarketIntel(), API.searchAwards(query)]);
+      // Load dictionary first, then normalize — fixes race condition where "AI" wasn't expanding
+      await Utils.loadMarketIntel();
+      const apiQuery = isDirectSelection ? rawQuery : Utils.normalizeQuery(rawQuery.toUpperCase());
+      this.currentQuery = apiQuery;
+
+      const [, results] = await Promise.all([LibLoader.loadD3(), API.searchAwards(apiQuery)]);
       if (thisSearch !== this._searchId) return;
 
       const filtered = Utils.filterActiveContracts(results);
