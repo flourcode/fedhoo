@@ -1061,14 +1061,14 @@ a, button, input, select { touch-action: manipulation; }
     <circle cx="26" cy="16" r="2.4" fill="#3D5C3D"/>
     <path d="M12 24 Q20 31 28 24" fill="none" stroke="#3D5C3D" stroke-width="2.8" stroke-linecap="round"/>
   </symbol>
-  <!-- Crowded market face — washed amber -->
+  <!-- Partner Play market face — washed amber -->
   <symbol id="icon-face-watch" viewBox="0 0 40 40">
     <circle cx="20" cy="20" r="20" fill="#D4AA72"/>
     <circle cx="14" cy="16" r="2.4" fill="#7A5520"/>
     <circle cx="26" cy="16" r="2.4" fill="#7A5520"/>
     <line x1="13" y1="26" x2="27" y2="26" stroke="#7A5520" stroke-width="2.8" stroke-linecap="round"/>
   </symbol>
-  <!-- Tough market face — washed rose -->
+  <!-- Long Game market face — washed rose -->
   <symbol id="icon-face-locked" viewBox="0 0 40 40">
     <circle cx="20" cy="20" r="20" fill="#C48A96"/>
     <circle cx="14" cy="16" r="2.4" fill="#6B3040"/>
@@ -1212,10 +1212,10 @@ a, button, input, select { touch-action: manipulation; }
           <svg class="face-scale-svg" aria-label="Easy market"><use href="#icon-face-open"/></svg>
         </div>
         <div class="face-scale-item" id="faceScaleWatch">
-          <svg class="face-scale-svg" aria-label="Crowded market"><use href="#icon-face-watch"/></svg>
+          <svg class="face-scale-svg" aria-label="Partner Play market"><use href="#icon-face-watch"/></svg>
         </div>
         <div class="face-scale-item" id="faceScaleLocked">
-          <svg class="face-scale-svg" aria-label="Tough market"><use href="#icon-face-locked"/></svg>
+          <svg class="face-scale-svg" aria-label="Long Game market"><use href="#icon-face-locked"/></svg>
         </div>
       </div>
 
@@ -4632,21 +4632,33 @@ const App = {
 
   analyzeMarket(data) {
     const nowTs = Date.now();
-    const exp90Ts = nowTs + 90 * 86400000;
-    const m = { total: 0, agencies: {}, vendors: {}, expiring: [] };
+    const exp90Ts  = nowTs + 90  * 86400000;
+    const exp12Ts  = nowTs + 365 * 86400000;
+    const rec90Ts  = nowTs - 90  * 86400000; // recent = started in last 90 days
+    const m = {
+      total: 0, agencies: {}, vendors: {}, expiring: [],
+      // New signals
+      recentAwards: [],      // contracts awarded (started) in last 90 days
+      contractSizes: [],     // all award amounts for distribution analysis
+      contractCount: 0,
+    };
     data.forEach(c => {
       const amt = parseFloat(c['Award Amount']) || 0;
       const agency = c['Awarding Agency'] || 'Unknown';
       const vendor = c['Recipient Name'] || 'Unknown';
       m.total += amt;
+      m.contractCount++;
+      m.contractSizes.push(amt);
       m.agencies[agency] = (m.agencies[agency] || 0) + amt;
       if (!m.vendors[vendor]) m.vendors[vendor] = { spend: 0, count: 0, agencies: new Set(), setAside: c['Type of Set Aside'] || '' };
       m.vendors[vendor].spend += amt;
       m.vendors[vendor].count++;
       m.vendors[vendor].agencies.add(c['Awarding Agency'] || '');
       if (c._endTs > nowTs && c._endTs <= exp90Ts && amt > 50000) m.expiring.push(c);
+      if (c._startTs && c._startTs >= rec90Ts && amt > 50000) m.recentAwards.push(c);
     });
     m.expiring.sort((a, b) => a._endTs - b._endTs);
+    m.recentAwards.sort((a, b) => b._startTs - a._startTs);
     this.marketMetrics = m;
   },
 
@@ -4714,180 +4726,151 @@ const App = {
     const now = Date.now();
     const total = m.total;
 
-    // ── Input signals ─────────────────────────────────────────────
-    const vendorSorted = Object.entries(m.vendors).sort((a,b)=>b[1].spend-a[1].spend);
-    const vendorCount  = vendorSorted.length;
-    const agencySorted = Object.entries(m.agencies).sort((a,b)=>b[1]-a[1]);
-    const agencyCount  = agencySorted.length;
-    const topVendor    = vendorSorted[0]?.[0] || '';
-    const top1Spend    = vendorSorted[0]?.[1].spend || 0;
-    const top3Spend    = vendorSorted.slice(0,3).reduce((s,[,v])=>s+v.spend,0);
-    const top1Pct      = total > 0 ? Math.round(top1Spend/total*100) : 0;
-    const top3Pct      = total > 0 ? Math.round(top3Spend/total*100) : 0;
-    const topAgency    = Utils.cleanAgency(agencySorted[0]?.[0] || '');
-    const top2Agencies = agencySorted.slice(0,2).map(([n])=>Utils.cleanAgency(n)).filter(Boolean);
+    // ── Core inputs ───────────────────────────────────────────────
+    const vendorSorted  = Object.entries(m.vendors).sort((a,b)=>b[1].spend-a[1].spend);
+    const agencySorted  = Object.entries(m.agencies).sort((a,b)=>b[1]-a[1]);
+    const vendorCount   = vendorSorted.length;
+    const agencyCount   = agencySorted.length;
+    const contractCount = m.contractCount || 0;
+    const topVendor     = vendorSorted[0]?.[0] || '';
+    const top1Spend     = vendorSorted[0]?.[1].spend || 0;
+    const top3Spend     = vendorSorted.slice(0,3).reduce((s,[,v])=>s+v.spend,0);
+    const top1Pct       = total > 0 ? Math.round(top1Spend/total*100) : 0;
+    const top3Pct       = total > 0 ? Math.round(top3Spend/total*100) : 0;
+    const topAgency     = Utils.cleanAgency(agencySorted[0]?.[0] || '');
+    const top2Agencies  = agencySorted.slice(0,2).map(([n])=>Utils.cleanAgency(n)).filter(Boolean);
+    const avgContract   = contractCount > 0 ? total / contractCount : 0;
+    const smallContracts = (m.contractSizes||[]).filter(a => a > 0 && a < 5000000).length;
+    const smallPct      = contractCount > 0 ? smallContracts / contractCount : 0;
 
-    // Expiring windows
-    const exp12Mo  = now + 365*86400000;
-    const exp24Mo  = now + 730*86400000;
-    const exp90d   = now + 90*86400000;
-    const expiring12 = (m.expiring||[]).filter(c=>c._endTs>now && c._endTs<=exp12Mo && (parseFloat(c['Award Amount'])||0)>50000);
-    const expiring24 = this.searchData.active.filter(c=>c._endTs>exp12Mo && c._endTs<=exp24Mo && (parseFloat(c['Award Amount'])||0)>50000);
-    const exp90      = expiring12.filter(c=>c._endTs<=exp90d);
-    const exp12Val   = expiring12.reduce((s,c)=>s+(parseFloat(c['Award Amount'])||0),0);
-    const exp90Val   = exp90.reduce((s,c)=>s+(parseFloat(c['Award Amount'])||0),0);
-    const exp24Val   = expiring24.reduce((s,c)=>s+(parseFloat(c['Award Amount'])||0),0);
+    // Expiry windows
+    const exp90d  = now + 90  * 86400000;
+    const exp12Mo = now + 365 * 86400000;
+    const exp90   = (m.expiring||[]).filter(c=>c._endTs<=exp90d);
+    const exp12   = (m.expiring||[]);
+    const exp90Val  = exp90.reduce((s,c)=>s+(parseFloat(c['Award Amount'])||0),0);
+    const exp12Val  = exp12.reduce((s,c)=>s+(parseFloat(c['Award Amount'])||0),0);
+    const exp90Pct  = total > 0 ? exp90Val/total : 0;
 
-    // ── Three signal scores (0–100) ───────────────────────────────
-    // 1. Timing — is money about to move?
-    const timingScore = Math.min(100,
-      (exp12Val / Math.max(total,1)) * 70 +
-      (exp24Val / Math.max(total,1)) * 30
-    );
+    // Recent awards (started in last 90 days)
+    const recentCount = (m.recentAwards||[]).length;
 
-    // 2. Concentration — how locked is it? (high = bad for new entrant)
-    const concentrationScore = top3Pct; // 0–100, higher = more locked
+    // Sub-award signal
+    const subCount    = (this._subawardData||[]).length;
+    const hasRichSubData = subCount >= 5;
 
-    // 3. Access — breadth of entry points
-    const accessScore = Math.min(100,
-      Math.min(vendorCount * 2, 60) +   // vendor diversity (0–60)
-      Math.min(agencyCount * 5, 40)      // buyer diversity (0–40)
-    );
+    // ── Scoring — three distinct selling motions ──────────────────
+    const isActive      = recentCount >= 3 || exp90Pct > 0.03;
+    const isExpiring    = exp90Val > 0 || exp12Val > 0;
+    const isFragmented  = top3Pct < 60;
+    const isConcentrated = top3Pct >= 60;
+    const isTaskOrder   = avgContract < 10000000;
+    const hasSubActivity = hasRichSubData || (isConcentrated && isExpiring);
 
-    // ── Composite (0–100, higher = easier to enter) ───────────────
-    const composite = Math.round(
-      timingScore * 0.5 +
-      (100 - concentrationScore) * 0.3 +
-      accessScore * 0.2
-    );
-
-    // ── Label ─────────────────────────────────────────────────────
     let faceClass, faceLabel;
-    if (composite >= 60 && concentrationScore < 70) {
-      faceClass = 'open'; faceLabel = 'Easy';
-    } else if (composite >= 38) {
-      faceClass = 'watch'; faceLabel = 'Crowded';
+    if (isActive && (isFragmented || isTaskOrder) && exp90Pct > 0.02) {
+      faceClass = 'open';   faceLabel = 'Easy';
+    } else if (isConcentrated && (isActive || hasSubActivity)) {
+      faceClass = 'watch';  faceLabel = 'Partner Play';
+    } else if (isActive && isFragmented) {
+      faceClass = 'open';   faceLabel = 'Easy';
+    } else if (isExpiring || recentCount >= 2) {
+      faceClass = 'watch';  faceLabel = 'Partner Play';
     } else {
-      faceClass = 'locked'; faceLabel = 'Tough';
+      faceClass = 'locked'; faceLabel = 'Long Game';
     }
 
-    // ── Drive the scale ───────────────────────────────────────────
-    // ── Drive the scale with slot-machine animation ───────────────
-    const faceIds = { open:'faceScaleOpen', watch:'faceScaleWatch', locked:'faceScaleLocked' };
+    // ── Slot-machine animation ────────────────────────────────────
+    const faceIds   = { open:'faceScaleOpen', watch:'faceScaleWatch', locked:'faceScaleLocked' };
     const faceOrder = ['open','watch','locked'];
     const scale = DOM.get('faceScale');
     if (scale) {
       scale.classList.remove('hidden');
-
       if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        // Instant for reduced motion
-        faceOrder.forEach(v => {
-          const el = DOM.get(faceIds[v]);
-          if (el) el.classList.toggle('active', v === faceClass);
-        });
+        faceOrder.forEach(v => { const el = DOM.get(faceIds[v]); if (el) el.classList.toggle('active', v === faceClass); });
       } else {
-        // Slot machine: cycle all faces at full color rapidly, then land on verdict
-        const setActive = (v) => {
-          faceOrder.forEach(id => {
-            const el = DOM.get(faceIds[id]);
-            if (el) el.classList.toggle('active', id === v);
-          });
-        };
-
-        // Quick cycle — 3 full loops then land
-        const cycleMs = 80;     // ms per face during spin
-        const spinCount = 9;    // total face-flashes before landing (3 full loops)
-        let tick = 0;
+        const setActive = (v) => faceOrder.forEach(id => { const el = DOM.get(faceIds[id]); if (el) el.classList.toggle('active', id === v); });
+        const cycleMs = 80; const spinCount = 9; let tick = 0;
         const spin = setInterval(() => {
-          setActive(faceOrder[tick % 3]);
-          tick++;
-          if (tick >= spinCount) {
-            clearInterval(spin);
-            // Land on verdict with a brief pause for drama
-            setTimeout(() => setActive(faceClass), cycleMs);
-          }
+          setActive(faceOrder[tick % 3]); tick++;
+          if (tick >= spinCount) { clearInterval(spin); setTimeout(() => setActive(faceClass), cycleMs); }
         }, cycleMs);
       }
     }
     const lbl = DOM.get('faceLabel');
     if (lbl) { lbl.textContent = faceLabel; lbl.className = `face-label ${faceClass}`; lbl.classList.remove('hidden'); }
 
-    // ── Verdict sentence — one highlighted line that names the condition ──
-    let verdictSentence = '';
+    // ── Verdict sentence ──────────────────────────────────────────
+    let verdictSentence;
     if (faceLabel === 'Easy') {
-      verdictSentence = top3Pct < 40
-        ? `This market is easy to enter.`
-        : `This market has real opportunity right now.`;
-    } else if (faceLabel === 'Crowded') {
-      verdictSentence = `This market is crowded.`;
+      verdictSentence = exp90Pct > 0.05
+        ? `This market has real near-term opportunity.`
+        : `This market is open and fragmented.`;
+    } else if (faceLabel === 'Partner Play') {
+      verdictSentence = isConcentrated
+        ? `The big primes own this — get in through them.`
+        : `This market is active but competitive.`;
     } else {
-      verdictSentence = `This market is tough to crack.`;
+      verdictSentence = `This is a long game market.`;
     }
 
-    // ── Supporting prose lines — sentences, not bullets ───────────
+    // ── Supporting prose ──────────────────────────────────────────
     const proseLines = [];
-
-    // Timing
     if (exp90Val > 0) {
-      proseLines.push(`About ${Utils.money(exp90Val)} is turning over in the next 90 days.`);
+      proseLines.push(`About ${Utils.money(exp90Val)} is expiring in 90 days — active recompete window.`);
+    } else if (recentCount >= 3) {
+      proseLines.push(`${recentCount} contracts awarded recently — buying season is active.`);
     } else if (exp12Val > 0) {
-      proseLines.push(`About ${Utils.money(exp12Val)} is expiring in the next 12 months.`);
+      proseLines.push(`About ${Utils.money(exp12Val)} expiring in 12 months — time to position, not close.`);
     } else {
-      proseLines.push(`No significant contracts are expiring in the next 12 months.`);
+      proseLines.push(`No significant expirations in 12 months — incumbents are dug in.`);
     }
-
-    // Concentration
-    if (top1Pct >= 60) {
-      proseLines.push(`${topVendor} holds ${top1Pct}% — one vendor owns this market.`);
-    } else if (top3Pct >= 70) {
-      proseLines.push(`Top 3 vendors hold ${top3Pct}% — limited room for new entrants.`);
-    } else if (top3Pct <= 35) {
-      proseLines.push(`No clear owner across vendors — field is fragmented.`);
+    if (top1Pct >= 50) {
+      proseLines.push(`${topVendor} holds ${top1Pct}% — one vendor owns the paper.`);
+    } else if (top3Pct >= 60 && hasSubActivity) {
+      proseLines.push(`Top 3 primes hold ${top3Pct}% but sub-award activity suggests they're buying tech.`);
+    } else if (top3Pct >= 60) {
+      proseLines.push(`Top 3 primes hold ${top3Pct}% across ${vendorCount} vendors.`);
+    } else if (smallPct >= 0.5) {
+      proseLines.push(`${Math.round(smallPct*100)}% of contracts are under $5M — task-order sized, more entry points.`);
     } else {
-      proseLines.push(`Top 3 vendors hold ${top3Pct}% across ${vendorCount} active vendors.`);
+      proseLines.push(`No clear owner — ${vendorCount} vendors active across ${agencyCount} agencies.`);
     }
 
     // ── Action line ───────────────────────────────────────────────
     let action = '';
     if (faceLabel === 'Easy') {
-      if (exp90Val > 0 && top2Agencies.length > 0) {
-        action = `Start with ${top2Agencies.join(' + ')} — expiring contracts, fragmented field`;
+      if (exp90Val > 0 && top2Agencies.length >= 2) {
+        action = `Start with ${top2Agencies.join(' + ')} — recompetes visible, field is open`;
       } else if (top2Agencies.length > 0) {
-        action = `Lead with ${top2Agencies[0]} — most active buyer, open vendor field`;
+        action = `Lead with ${top2Agencies[0]} — most active buyer, fragmented field`;
       } else {
-        action = `Market is fragmented — move now before incumbents consolidate`;
+        action = `Move now — conditions favor a new entrant`;
       }
-    } else if (faceLabel === 'Crowded') {
+    } else if (faceLabel === 'Partner Play') {
       if (top1Pct >= 40 && exp90Val > 0) {
-        action = `Your in: Partner with ${topVendor} or target their expiring task orders`;
+        action = `Target ${topVendor}'s expiring task orders — that's your opening`;
       } else if (top1Pct >= 40) {
-        action = `Your in: Subcontract under ${topVendor} — direct competition is steep`;
-      } else if (exp90Val > 0) {
-        action = `Smaller task orders are the opening, not prime contracts`;
+        action = `Get on ${topVendor}'s team — subcontract before you compete direct`;
+      } else if (hasRichSubData) {
+        action = `Find which primes are subbing tech — get on their approved vendor list`;
       } else {
-        action = `Your in: Focus on agencies where top primes have weak coverage`;
+        action = `Smaller task orders are the entry point, not prime contracts`;
       }
     } else {
-      if (agencyCount >= 3) {
-        const secondAgency = agencySorted[1] ? Utils.cleanAgency(agencySorted[1][0]) : '';
-        action = secondAgency
-          ? `Try adjacent work at ${secondAgency} — less concentrated than ${topAgency}`
-          : `Partner with an existing prime rather than competing direct`;
-      } else {
-        action = `Partner with an existing prime rather than competing direct`;
-      }
+      const secondAgency = agencySorted[1] ? Utils.cleanAgency(agencySorted[1][0]) : '';
+      action = secondAgency && secondAgency !== topAgency
+        ? `Start at ${secondAgency} — less entrenched than ${topAgency}, better first conversation`
+        : `Position now — relationships take 12–18 months to convert`;
     }
 
-    // ── Render — prose layout ─────────────────────────────────────
+    // ── Render ────────────────────────────────────────────────────
     const container = DOM.get('marketSignals');
     if (container) {
-      const actionHtml = action
-        ? `<div class="market-action"><span class="market-action-arrow">→</span><span>${Html.escapeHtml(action)}</span></div>`
-        : '';
       container.innerHTML =
         `<div class="market-verdict ${faceClass}">${Html.escapeHtml(verdictSentence)}</div>` +
         proseLines.map(l => `<div class="market-prose">${Html.escapeHtml(l)}</div>`).join('') +
-        actionHtml;
+        (action ? `<div class="market-action"><span class="market-action-arrow">→</span><span>${Html.escapeHtml(action)}</span></div>` : '');
       container.classList.remove('hidden');
     }
 
@@ -4896,14 +4879,13 @@ const App = {
     inlineChips.forEach(chip => chip.classList.remove('chip-hot'));
     if (inlineChips.length > 0) {
       let hotIdx = 1;
-      if (exp90Val > total * 0.05) hotIdx = 0;
-      else if (concentrationScore >= 70) hotIdx = 1;
-      else if (composite >= 60) hotIdx = 2;
+      if (exp90Val > total * 0.05)         hotIdx = 0; // What's expiring
+      else if (faceLabel === 'Partner Play') hotIdx = 4; // Who to team with
+      else if (faceLabel === 'Easy')         hotIdx = 2; // Best opening
       if (inlineChips[hotIdx]) inlineChips[hotIdx].classList.add('chip-hot');
     }
   },
 
-  // ── Seller Lens ────────────────────────────────────────────────
   saveSellerLens() {
     const input = DOM.get('sellerLensInput');
     const val = (input?.value || '').trim();
