@@ -745,7 +745,7 @@ a, button, input, select { touch-action: manipulation; }
   display: flex; align-items: stretch;
   background: var(--bg-app); border: 1px solid var(--border);
   border-radius: var(--radius); box-shadow: var(--shadow);
-  overflow: visible; position: relative;
+  overflow: hidden;
 }
 .search-territory-btn {
   display: flex; align-items: center; gap: 6px; flex-shrink: 0;
@@ -764,11 +764,12 @@ a, button, input, select { touch-action: manipulation; }
 .search-input::placeholder { color: var(--text-quaternary); font-size: 0.95em; }
 
 /* Territory dropdown */
+.territory-selector { position: relative; flex-shrink: 0; display: flex; align-items: stretch; }
 .territory-dropdown {
-  position: absolute; top: calc(100% + 6px); left: 0;
+  position: absolute; top: calc(100% + 4px); left: 0;
   background: var(--bg-app); border: 1px solid var(--border);
   border-radius: var(--radius); box-shadow: 0 8px 30px rgba(0,0,0,0.18);
-  min-width: 240px; z-index: 500; display: none; overflow: hidden;
+  min-width: 240px; z-index: 2000; display: none; overflow: hidden;
 }
 .territory-dropdown.open { display: block; animation: fadeIn 0.12s; }
 .territory-opt {
@@ -1103,45 +1104,48 @@ a, button, input, select { touch-action: manipulation; }
     <!-- Desktop: search sits here inline -->
     <div class="header-search-wrap header-search-desktop">
       <div class="search-bar-inner" id="searchBarInner">
-        <button class="search-territory-btn" id="territoryBtn" onclick="App.toggleTerritoryMenu()">
-          <span class="territory-dot-sm" id="territoryDot"></span>
-          <span id="territoryLabel">All</span>
-          <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M5 6L0 0h10z" fill="currentColor"/></svg>
-        </button>
+        <div class="territory-selector">
+          <button class="search-territory-btn" id="territoryBtn" onclick="App.toggleTerritoryMenu('desktop')">
+            <span class="territory-dot-sm" id="territoryDot"></span>
+            <span id="territoryLabel">All</span>
+            <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M5 6L0 0h10z" fill="currentColor"/></svg>
+          </button>
+          <div class="territory-dropdown" id="territoryDropdown">
+            <button class="territory-opt active" data-key="" onclick="App.setTerritory(null)">
+              <span class="territory-opt-dot" style="background:var(--border)"></span>
+              <span><div class="territory-opt-name">All Agencies</div><div class="territory-opt-desc">No filter, full results</div></span>
+              <span class="territory-opt-check">✓</span>
+            </button>
+            <div class="territory-divider"></div>
+            <button class="territory-opt" data-key="dod" onclick="App.setTerritory('dod')">
+              <span class="territory-opt-dot" style="background:#7CA8C4"></span>
+              <span><div class="territory-opt-name" style="color:#7CA8C4">DoD</div><div class="territory-opt-desc">Army, Navy, Air Force, DISA, DARPA…</div></span>
+              <span class="territory-opt-check">✓</span>
+            </button>
+            <button class="territory-opt" data-key="fedciv" onclick="App.setTerritory('fedciv')">
+              <span class="territory-opt-dot" style="background:#E8934A"></span>
+              <span><div class="territory-opt-name" style="color:#E8934A">FedCiv</div><div class="territory-opt-desc">GSA, DHS, DOJ, State, Commerce…</div></span>
+              <span class="territory-opt-check">✓</span>
+            </button>
+            <button class="territory-opt" data-key="fedhealth" onclick="App.setTerritory('fedhealth')">
+              <span class="territory-opt-dot" style="background:#D4A0B0"></span>
+              <span><div class="territory-opt-name" style="color:#D4A0B0">FedHealth</div><div class="territory-opt-desc">VA, HHS, CMS, CDC, FDA, NIH…</div></span>
+              <span class="territory-opt-check">✓</span>
+            </button>
+            <button class="territory-opt" data-key="fedfin" onclick="App.setTerritory('fedfin')">
+              <span class="territory-opt-dot" style="background:#5DBFB0"></span>
+              <span><div class="territory-opt-name" style="color:#5DBFB0">FedFin</div><div class="territory-opt-desc">Treasury, IRS, SEC, FDIC, Fed…</div></span>
+              <span class="territory-opt-check">✓</span>
+            </button>
+          </div>
+        </div>
         <input type="search" id="searchInput" class="search-input"
           placeholder="Company, keyword, or NAICS code…"
           autocomplete="off" autocorrect="off" autocapitalize="none"
           enterkeyhint="search">
       </div>
       <div class="autocomplete-dropdown hidden" id="searchSuggestions"></div>
-      <div class="territory-dropdown" id="territoryDropdown">
-        <button class="territory-opt active" data-key="" onclick="App.setTerritory(null)">
-          <span class="territory-opt-dot" style="background:var(--border)"></span>
-          <span><div class="territory-opt-name">All Agencies</div><div class="territory-opt-desc">No filter, full results</div></span>
-          <span class="territory-opt-check">✓</span>
-        </button>
-        <div class="territory-divider"></div>
-        <button class="territory-opt" data-key="dod" onclick="App.setTerritory('dod')">
-          <span class="territory-opt-dot" style="background:#7CA8C4"></span>
-          <span><div class="territory-opt-name" style="color:#7CA8C4">DoD</div><div class="territory-opt-desc">Army, Navy, Air Force, DISA, DARPA…</div></span>
-          <span class="territory-opt-check">✓</span>
-        </button>
-        <button class="territory-opt" data-key="fedciv" onclick="App.setTerritory('fedciv')">
-          <span class="territory-opt-dot" style="background:#E8934A"></span>
-          <span><div class="territory-opt-name" style="color:#E8934A">FedCiv</div><div class="territory-opt-desc">GSA, DHS, DOJ, State, Commerce…</div></span>
-          <span class="territory-opt-check">✓</span>
-        </button>
-        <button class="territory-opt" data-key="fedhealth" onclick="App.setTerritory('fedhealth')">
-          <span class="territory-opt-dot" style="background:#D4A0B0"></span>
-          <span><div class="territory-opt-name" style="color:#D4A0B0">FedHealth</div><div class="territory-opt-desc">VA, HHS, CMS, CDC, FDA, NIH…</div></span>
-          <span class="territory-opt-check">✓</span>
-        </button>
-        <button class="territory-opt" data-key="fedfin" onclick="App.setTerritory('fedfin')">
-          <span class="territory-opt-dot" style="background:#5DBFB0"></span>
-          <span><div class="territory-opt-name" style="color:#5DBFB0">FedFin</div><div class="territory-opt-desc">Treasury, IRS, SEC, FDIC, Fed…</div></span>
-          <span class="territory-opt-check">✓</span>
-        </button>
-      </div>
+
     </div>
     <div class="header-actions">
       <button class="hdr-icon-circle hidden" id="shareBtn" onclick="App.shareSearch(this)" title="Copy link" aria-label="Share search">
@@ -1159,11 +1163,41 @@ a, button, input, select { touch-action: manipulation; }
   <!-- Mobile: search on its own row -->
   <div class="header-search-mobile">
     <div class="search-bar-inner" id="searchBarInnerMobile">
-      <button class="search-territory-btn" id="territoryBtnMobile" onclick="App.toggleTerritoryMenu()">
-        <span class="territory-dot-sm" id="territoryDotMobile"></span>
-        <span id="territoryLabelMobile">All</span>
-        <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M5 6L0 0h10z" fill="currentColor"/></svg>
-      </button>
+      <div class="territory-selector">
+        <button class="search-territory-btn" id="territoryBtnMobile" onclick="App.toggleTerritoryMenu('mobile')">
+          <span class="territory-dot-sm" id="territoryDotMobile"></span>
+          <span id="territoryLabelMobile">All</span>
+          <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M5 6L0 0h10z" fill="currentColor"/></svg>
+        </button>
+        <div class="territory-dropdown" id="territoryDropdownMobile">
+          <button class="territory-opt active" data-key="" onclick="App.setTerritory(null)">
+            <span class="territory-opt-dot" style="background:var(--border)"></span>
+            <span><div class="territory-opt-name">All Agencies</div><div class="territory-opt-desc">No filter, full results</div></span>
+            <span class="territory-opt-check">✓</span>
+          </button>
+          <div class="territory-divider"></div>
+          <button class="territory-opt" data-key="dod" onclick="App.setTerritory('dod')">
+            <span class="territory-opt-dot" style="background:#7CA8C4"></span>
+            <span><div class="territory-opt-name" style="color:#7CA8C4">DoD</div><div class="territory-opt-desc">Army, Navy, Air Force, DISA, DARPA…</div></span>
+            <span class="territory-opt-check">✓</span>
+          </button>
+          <button class="territory-opt" data-key="fedciv" onclick="App.setTerritory('fedciv')">
+            <span class="territory-opt-dot" style="background:#E8934A"></span>
+            <span><div class="territory-opt-name" style="color:#E8934A">FedCiv</div><div class="territory-opt-desc">GSA, DHS, DOJ, State, Commerce…</div></span>
+            <span class="territory-opt-check">✓</span>
+          </button>
+          <button class="territory-opt" data-key="fedhealth" onclick="App.setTerritory('fedhealth')">
+            <span class="territory-opt-dot" style="background:#D4A0B0"></span>
+            <span><div class="territory-opt-name" style="color:#D4A0B0">FedHealth</div><div class="territory-opt-desc">VA, HHS, CMS, CDC, FDA, NIH…</div></span>
+            <span class="territory-opt-check">✓</span>
+          </button>
+          <button class="territory-opt" data-key="fedfin" onclick="App.setTerritory('fedfin')">
+            <span class="territory-opt-dot" style="background:#5DBFB0"></span>
+            <span><div class="territory-opt-name" style="color:#5DBFB0">FedFin</div><div class="territory-opt-desc">Treasury, IRS, SEC, FDIC, Fed…</div></span>
+            <span class="territory-opt-check">✓</span>
+          </button>
+        </div>
+      </div>
       <input type="search" id="searchInputMobile" class="search-input"
         placeholder="Company, keyword, or NAICS code…"
         autocomplete="off" autocorrect="off" autocapitalize="none"
@@ -2867,7 +2901,7 @@ const App = {
     const hideSug = id => { const el = DOM.get(id); if (el) { el.innerHTML = ''; el.classList.add('hidden'); } };
     hideSug('searchSuggestions');
     hideSug('searchSuggestionsMobile');
-    DOM.get('territoryDropdown')?.classList.remove('open');
+    document.querySelectorAll('.territory-dropdown').forEach(d => d.classList.remove('open'));
 
     const rawQuery = query.trim();
     const displayQuery = rawQuery; // always show what the user typed
@@ -3086,36 +3120,32 @@ const App = {
       </div>`;
   },
 
-  toggleTerritoryMenu() {
-    const dd = DOM.get('territoryDropdown');
-    const isMobile = window.innerWidth < 640;
-    const btn = DOM.get(isMobile ? 'territoryBtnMobile' : 'territoryBtn');
-
-    // Re-parent dropdown to whichever search bar is active so position:absolute works
-    const targetParent = btn ? btn.closest('.search-bar-inner') || btn.parentElement : null;
-    if (targetParent && dd.parentElement !== targetParent) {
-      targetParent.appendChild(dd);
-    }
-
-    dd.classList.toggle('open');
-    if (dd.classList.contains('open')) {
-      const close = (e) => {
-        if (!dd.contains(e.target) && e.target.id !== 'territoryBtn' && e.target.id !== 'territoryBtnMobile') {
-          dd.classList.remove('open');
-          document.removeEventListener('click', close);
-          document.removeEventListener('touchstart', close);
-        }
-      };
+  toggleTerritoryMenu(ctx) {
+    const ddId = ctx === 'mobile' ? 'territoryDropdownMobile' : 'territoryDropdown';
+    const dd = DOM.get(ddId);
+    if (!dd) return;
+    const isOpen = dd.classList.contains('open');
+    // Close all territory dropdowns first
+    document.querySelectorAll('.territory-dropdown').forEach(d => d.classList.remove('open'));
+    if (!isOpen) {
+      dd.classList.add('open');
       setTimeout(() => {
+        const close = (e) => {
+          if (!e.target.closest('.territory-selector')) {
+            document.querySelectorAll('.territory-dropdown').forEach(d => d.classList.remove('open'));
+            document.removeEventListener('click', close);
+            document.removeEventListener('touchstart', close);
+          }
+        };
         document.addEventListener('click', close);
         document.addEventListener('touchstart', close);
-      }, 0);
+      }, 10);
     }
   },
 
   setTerritory(key) {
     this.territory = key || null;
-    DOM.get('territoryDropdown').classList.remove('open');
+    document.querySelectorAll('.territory-dropdown').forEach(d => d.classList.remove('open'));
 
     // Update dot and label
     const dot = DOM.get('territoryDot');
@@ -4912,7 +4942,7 @@ const App = {
       input.addEventListener('keydown', e => {
         if (e.key === 'Escape') {
           hideBox();
-          DOM.get('territoryDropdown')?.classList.remove('open');
+          document.querySelectorAll('.territory-dropdown').forEach(d => d.classList.remove('open'));
         }
       });
       input.addEventListener('input', e => {
@@ -5150,7 +5180,7 @@ const App = {
         if (e.key === 'Escape') {
           mobileInput.blur();
           DOM.get('searchSuggestionsMobile')?.classList.add('hidden');
-          DOM.get('territoryDropdown')?.classList.remove('open');
+          document.querySelectorAll('.territory-dropdown').forEach(d => d.classList.remove('open'));
         }
       });
       mobileInput.addEventListener('focus', () => {
@@ -5187,5 +5217,6 @@ const App = {
 App.init();
 
 </script>
+
 </body>
 </html>
