@@ -3864,7 +3864,13 @@ const App = {
     const territoryScope = this.territory && this.SECTORS[this.territory]
       ? `Market scoped to ${this.SECTORS[this.territory].label} agencies. ` : '';
     const sellerLens = this._sellerLens ? `I sell ${this._sellerLens}. ` : '';
-    const objective = (sellerLens + territoryScope).trim() || null;
+
+    // Ground Arti's brief in the formula's verdict — no contradictions
+    const formulaContext = this._formulaAction
+      ? `The scoring model has already told this seller: "${this._formulaAction}". Your job is to give them the single most specific reason why — name one contract, one vendor, one dollar amount from the data that makes that move concrete. Do not contradict or rephrase the recommended action. Add depth, not direction. `
+      : '';
+
+    const objective = (sellerLens + territoryScope + formulaContext).trim() || null;
 
     try {
       const artiAbort = new AbortController();
@@ -4928,6 +4934,10 @@ const App = {
     }
 
     // ── Render ───────────────────────────────────────────────────────
+    // Cache formula verdict + action so _autoFireArtiBrief can ground Arti's brief
+    this._formulaVerdict = faceLabel;
+    this._formulaAction  = action;
+    this._formulaTopAgencies = top2Agencies;
     const container = DOM.get('marketSignals');
     if (container) {
       container.innerHTML =
