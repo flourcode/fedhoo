@@ -992,5 +992,333 @@
       "Cloud",
       "541512"
     ]
+  },
+  "jadc2": {
+    "label": "JADC2",
+    "keywords": "Joint All-Domain Command Control, JADC2, Command Control"
+  },
+  "cjadc2": {
+    "label": "CJADC2",
+    "keywords": "Combined Joint All-Domain Command Control, JADC2, Command Control"
+  },
+  "c2": {
+    "label": "Command & Control",
+    "keywords": "Command Control, C2, Battle Management"
+  },
+  "c4isr": {
+    "label": "C4ISR",
+    "keywords": "C4ISR, Command Control Communications, Intelligence Surveillance Reconnaissance"
+  },
+  "abms": {
+    "label": "ABMS",
+    "keywords": "Advanced Battle Management, ABMS, Air Force Battle Management"
+  },
+  "bmc2": {
+    "label": "Battle Management C2",
+    "keywords": "Battle Management, Command Control, C2"
+  },
+  "rmf": {
+    "label": "Risk Management Framework",
+    "keywords": "Risk Management Framework, RMF, ATO, Authorization"
+  },
+  "ato": {
+    "label": "Authority to Operate",
+    "keywords": "Authority to Operate, ATO, Risk Management Framework, Authorization"
+  },
+  "stig": {
+    "label": "STIG",
+    "keywords": "Security Technical Implementation, STIG, Hardening"
+  },
+  "stigs": {
+    "label": "STIGs",
+    "keywords": "Security Technical Implementation, STIG, Hardening"
+  },
+  "dod il4": {
+    "label": "DoD IL4",
+    "keywords": "Impact Level 4, IL4, DoD Cloud"
+  },
+  "dod il5": {
+    "label": "DoD IL5",
+    "keywords": "Impact Level 5, IL5, DoD Cloud"
+  },
+  "il4": {
+    "label": "IL4",
+    "keywords": "Impact Level 4, IL4, DoD Cloud, GovCloud"
+  },
+  "il5": {
+    "label": "IL5",
+    "keywords": "Impact Level 5, IL5, DoD Cloud, Secret Cloud"
+  },
+  "il6": {
+    "label": "IL6",
+    "keywords": "Impact Level 6, IL6, DoD Cloud, Secret Cloud"
+  },
+  "jwcc": {
+    "label": "JWCC",
+    "keywords": "Joint Warfighter Cloud, JWCC, DoD Cloud"
+  },
+  "deos": {
+    "label": "DEOS",
+    "keywords": "Defense Enterprise Office Solutions, DEOS, Microsoft 365"
+  },
+  "sigint": {
+    "label": "SIGINT",
+    "keywords": "Signals Intelligence, SIGINT, Intelligence Collection"
+  },
+  "imint": {
+    "label": "IMINT",
+    "keywords": "Imagery Intelligence, IMINT, Geospatial Intelligence"
+  },
+  "geoint": {
+    "label": "GEOINT",
+    "keywords": "Geospatial Intelligence, GEOINT, Imagery Intelligence"
+  },
+  "osint": {
+    "label": "OSINT",
+    "keywords": "Open Source Intelligence, OSINT, Intelligence Analysis"
+  },
+  "humint": {
+    "label": "HUMINT",
+    "keywords": "Human Intelligence, HUMINT, Intelligence Collection"
+  },
+  "isr": {
+    "label": "ISR",
+    "keywords": "Intelligence Surveillance Reconnaissance, ISR"
+  },
+  "lidar": {
+    "label": "LiDAR",
+    "keywords": "LiDAR, Remote Sensing, Geospatial"
+  },
+  "gis": {
+    "label": "GIS",
+    "keywords": "Geographic Information System, GIS, Geospatial"
+  },
+  "geospatial": {
+    "label": "Geospatial",
+    "keywords": "Geospatial, GIS, Mapping, Remote Sensing"
+  },
+  "ew": {
+    "label": "Electronic Warfare",
+    "keywords": "Electronic Warfare, EW, Spectrum Operations"
+  },
+  "electronic warfare": {
+    "label": "Electronic Warfare",
+    "keywords": "Electronic Warfare, EW, Spectrum Operations"
+  },
+  "spectrum": {
+    "label": "Spectrum Operations",
+    "keywords": "Spectrum Operations, Electronic Warfare, Radio Frequency"
+  },
+  "counter uas": {
+    "label": "Counter-UAS",
+    "keywords": "Counter UAS, Counter Unmanned, C-UAS, Drone Defense"
+  },
+  "c-uas": {
+    "label": "C-UAS",
+    "keywords": "Counter UAS, C-UAS, Counter Unmanned Aircraft"
+  },
+  "uas": {
+    "label": "UAS / Drones",
+    "keywords": "Unmanned Aircraft, UAS, UAV, Drone"
+  },
+  "uav": {
+    "label": "UAV",
+    "keywords": "Unmanned Aerial Vehicle, UAV, UAS, Drone"
+  },
+  "space systems": {
+    "label": "Space Systems",
+    "keywords": "Space Systems, Satellite, Space Operations"
+  },
+  "satellite": {
+    "label": "Satellite",
+    "keywords": "Satellite, Space Systems, Communications Satellite"
+  },
+  "missile defense": {
+    "label": "Missile Defense",
+    "keywords": "Missile Defense, Ballistic Missile, Interceptor"
+  },
+  "m&s": {
+    "label": "Modeling & Simulation",
+    "keywords": "Modeling Simulation, M&S, Simulation Training"
+  },
+  "modeling simulation": {
+    "label": "Modeling & Simulation",
+    "keywords": "Modeling Simulation, M&S, Training Simulation"
+  },
+  "lvc": {
+    "label": "Live Virtual Constructive",
+    "keywords": "Live Virtual Constructive, LVC, Training Simulation"
+  },
+  "synthetic training": {
+    "label": "Synthetic Training",
+    "keywords": "Synthetic Training Environment, STE, Training Simulation"
+  },
+  "ste": {
+    "label": "Synthetic Training Environment",
+    "keywords": "Synthetic Training Environment, STE, Training Simulation"
+  },
+  "sustainment": {
+    "label": "Sustainment",
+    "keywords": "Sustainment, Logistics, Maintenance Repair Overhaul"
+  },
+  "mro": {
+    "label": "Maintenance Repair Overhaul",
+    "keywords": "Maintenance Repair Overhaul, MRO, Sustainment"
+  },
+  "alss": {
+    "label": "Aviation Life Support",
+    "keywords": "Aviation Life Support, ALSS, Sustainment"
+  },
+  "pbsa": {
+    "label": "Performance Based Services",
+    "keywords": "Performance Based, PBSA, Services Acquisition"
+  },
+  "logistics": {
+    "label": "Logistics",
+    "keywords": "Logistics, Supply Chain, Distribution, Transportation"
+  },
+  "supply chain": {
+    "label": "Supply Chain",
+    "keywords": "Supply Chain, Logistics, Distribution"
+  },
+  "biometrics": {
+    "label": "Biometrics",
+    "keywords": "Biometrics, Biometric Identification, Fingerprint"
+  },
+  "identity management": {
+    "label": "Identity Management",
+    "keywords": "Identity Management, Identity Proofing, Credential"
+  },
+  "financial management": {
+    "label": "Financial Management",
+    "keywords": "Financial Management, Accounting, Financial System"
+  },
+  "finance erp": {
+    "label": "Financial ERP",
+    "keywords": "Financial Management, Enterprise Resource Planning, ERP, Accounting"
+  },
+  "hr it": {
+    "label": "HR IT Systems",
+    "keywords": "Human Resources, HR System, Personnel Management"
+  },
+  "hrit": {
+    "label": "HRIT",
+    "keywords": "Human Resources IT, HR System, Personnel Management"
+  },
+  "oasis+": {
+    "label": "OASIS+",
+    "keywords": "OASIS, Professional Services, Management Consulting"
+  },
+  "alliant": {
+    "label": "Alliant",
+    "keywords": "Alliant, IT Services, GSA Alliant"
+  },
+  "stars iii": {
+    "label": "STARS III",
+    "keywords": "STARS III, Small Business IT, 8(a) STARS"
+  },
+  "netcents": {
+    "label": "NETCENTS",
+    "keywords": "NETCENTS, Air Force IT, Network Enterprise"
+  },
+  "seaport": {
+    "label": "SeaPort",
+    "keywords": "SeaPort, Navy Engineering, Professional Services"
+  },
+  "ites": {
+    "label": "ITES",
+    "keywords": "ITES, Army IT, Enterprise Technology Services"
+  },
+  "cio-sp4": {
+    "label": "CIO-SP4",
+    "keywords": "CIO-SP4, NIH IT, Health IT Services"
+  },
+  "t4ng": {
+    "label": "T4NG",
+    "keywords": "T4NG, VA IT, Veterans Affairs Transformation"
+  },
+  "vets 2": {
+    "label": "VETS 2",
+    "keywords": "VETS 2, SDVOSB IT, Veterans Technology"
+  },
+  "telehealth": {
+    "label": "Telehealth",
+    "keywords": "Telehealth, Telemedicine, Virtual Care"
+  },
+  "health it": {
+    "label": "Health IT",
+    "keywords": "Health Information Technology, EHR, Clinical Systems"
+  },
+  "interoperability": {
+    "label": "Interoperability",
+    "keywords": "Interoperability, Health Data Exchange, FHIR"
+  },
+  "emr": {
+    "label": "EMR",
+    "keywords": "Electronic Medical Record, EMR, EHR, Clinical Information"
+  },
+  "network modernization": {
+    "label": "Network Modernization",
+    "keywords": "Network Modernization, Network Upgrade, LAN WAN"
+  },
+  "unified communications": {
+    "label": "Unified Communications",
+    "keywords": "Unified Communications, UC, Video Conferencing, Collaboration"
+  },
+  "ucaas": {
+    "label": "UCaaS",
+    "keywords": "Unified Communications as a Service, UCaaS, Collaboration"
+  },
+  "satcom": {
+    "label": "SATCOM",
+    "keywords": "Satellite Communications, SATCOM, Space Communications"
+  },
+  "data analytics": {
+    "label": "Data Analytics",
+    "keywords": "Data Analytics, Business Intelligence, Data Science"
+  },
+  "big data": {
+    "label": "Big Data",
+    "keywords": "Big Data, Data Analytics, Data Management"
+  },
+  "data management": {
+    "label": "Data Management",
+    "keywords": "Data Management, Data Governance, Data Quality"
+  },
+  "business intelligence": {
+    "label": "Business Intelligence",
+    "keywords": "Business Intelligence, Analytics, Reporting, Dashboard"
+  },
+  "bi": {
+    "label": "Business Intelligence",
+    "keywords": "Business Intelligence, Analytics, Data Visualization"
+  },
+  "it modernization": {
+    "label": "IT Modernization",
+    "keywords": "IT Modernization, Legacy Modernization, Digital Transformation"
+  },
+  "legacy modernization": {
+    "label": "Legacy Modernization",
+    "keywords": "Legacy Modernization, Application Modernization, Digital Transformation"
+  },
+  "digital transformation": {
+    "label": "Digital Transformation",
+    "keywords": "Digital Transformation, IT Modernization, Modernization"
+  },
+  "helpdesk": {
+    "label": "Help Desk",
+    "keywords": "Help Desk, Service Desk, IT Support, End User Support"
+  },
+  "end user services": {
+    "label": "End User Services",
+    "keywords": "End User Services, Help Desk, Desktop Support"
+  },
+  "zero trust architecture": {
+    "label": "Zero Trust Architecture",
+    "keywords": "Zero Trust, Zero Trust Architecture, ZTNA"
+  },
+  "ztna": {
+    "label": "ZTNA",
+    "keywords": "Zero Trust Network Access, ZTNA, Zero Trust"
   }
 }
