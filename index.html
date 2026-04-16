@@ -639,13 +639,13 @@ a, button, input, select { touch-action: manipulation; }
   display: flex; width: 300%;
   transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
   will-change: transform;
+  align-items: flex-start; /* track height = tallest visible panel, not all panels */
 }
 .chart-panel {
   width: 33.333%; flex-shrink: 0;
+  /* inactive panels must not stretch track height */
+  overflow: hidden;
 }
-/* The inactive panel must not add height to the track row.
-   We achieve this by making the viewport only as tall as the active panel
-   via JS, but we also set the SVG container to not have a min-height */
 .chart-dots { display: none; justify-content: center; gap: 6px; margin-top: 10px; }
 .chart-dot {
   width: 6px; height: 6px; border-radius: 9999px;
@@ -3556,12 +3556,6 @@ const App = {
       cells.selectAll('text').attr('opacity', 0).transition().duration(400).delay((d, i) => 200 + i * 12).attr('opacity', 1);
 
     this._treemapDirty = false; // SVG is now current
-    // Snap viewport to treemap's actual rendered height
-    setTimeout(() => {
-      const vp = this.UI.chartViewport;
-      const tp = DOM.get('panelTreemap');
-      if (vp && tp && this._chartView === 'treemap') vp.style.height = tp.scrollHeight + 'px';
-    }, 520); // after transition completes
     if (this._pendingDrillScroll) {
       const targetPanel = typeof this._pendingDrillScroll === 'string' ? this._pendingDrillScroll : 'marketCard';
       this._pendingDrillScroll = false;
@@ -4204,22 +4198,12 @@ const App = {
         }, 370);
       }
     } else {
-      // Snap viewport back to treemap's natural height
-      if (viewport) {
-        const treemapPanel = DOM.get('panelTreemap');
-        viewport.style.height = treemapPanel ? treemapPanel.scrollHeight + 'px' : '';
-      }
-      // Only redraw treemap if data changed since last render — avoids flash on tab switch
+      // Treemap — clear any inline height so it sizes naturally to SVG content
+      if (viewport) viewport.style.height = '';
       if (this._treemapDirty) {
         setTimeout(() => {
           if (this.searchData.loaded) this.renderBubbleChart();
         }, 360);
-      } else {
-        // Even if not dirty, re-measure after slide animation completes
-        setTimeout(() => {
-          const treemapPanel = DOM.get('panelTreemap');
-          if (viewport && treemapPanel) viewport.style.height = treemapPanel.scrollHeight + 'px';
-        }, 380);
       }
     }
   },
