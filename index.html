@@ -3423,11 +3423,9 @@ const App = {
 
     const svg = d3.select(container).append('svg').attr('width', w).attr('height', h).attr('viewBox', `0 0 ${w} ${h}`);
 
-    // Sync viewport height using h (known exactly) so inactive Sankey panel never bloats the container
-    if (this._chartView !== 'sankey') {
-      const vp = this.UI.chartViewport;
-      if (vp) vp.style.height = (container.offsetTop + h + 2) + 'px';
-    }
+    // Set viewport height to exactly the SVG height — prevents sankey bleed
+    const vp = this.UI.chartViewport;
+    if (vp) vp.style.height = h + 'px';
 
       const hierarchy = d3.hierarchy({ children: entities }).sum(d => d.spend).sort((a, b) => b.value - a.value);
 
