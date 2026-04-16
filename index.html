@@ -2980,8 +2980,7 @@ const App = {
 
       // Card title = title-cased search query, no "Market" suffix
       const rawForTitle = (this.displayQuery || this.UI.searchInput?.value || query).trim();
-      const titleLabel = rawForTitle.length <= 3 ? rawForTitle.toUpperCase() : Utils.titleCase(rawForTitle);
-      if (this.UI.marketCardTitle) this.UI.marketCardTitle.textContent = titleLabel;
+      if (this.UI.marketCardTitle) this.UI.marketCardTitle.textContent = rawForTitle.toUpperCase();
       if (this.UI.marketCardDesc) this.UI.marketCardDesc.textContent = 'Where the money is concentrated. Click any segment to drill in.';
 
       // Show results grid
@@ -4146,7 +4145,7 @@ const App = {
       const mainTotal = (this.searchData.active || []).reduce((s, c) => s + (parseFloat(c['Award Amount']) || 0), 0);
       if (heroEl) Utils.countUp(heroEl, mainTotal, Utils.money);
       const rawForTitle = (this.UI.searchInput?.value || this.currentQuery || '').trim();
-      if (titleEl) titleEl.textContent = rawForTitle.split(/,\s*/).map(t => t.trim()).map(t => t.length <= 3 ? t.toUpperCase() : Utils.titleCase(t)).join(', ');
+      if (titleEl) titleEl.textContent = rawForTitle.toUpperCase();
     }
 
     if (view === 'sankey') {
@@ -4653,7 +4652,7 @@ const App = {
       insight = `<strong>${Utils.money(total)}</strong> market, top buyer is <strong>${topAgency}</strong>${topAgencyPct > 0 ? ` at ${topAgencyPct}%` : ''}.`;
     }
 
-    const queryLabel = Utils.titleCase((this.currentQuery || 'this market').trim());
+    const queryLabel = (this.currentQuery || 'this market').trim().toUpperCase();
     bridgeText.innerHTML = `Ask about incumbents, expiring contracts, partners, or where you have a shot in <strong>${Html.escapeHtml(queryLabel)}</strong>.`;
 
     // Pre-build payload cache so send is instant
