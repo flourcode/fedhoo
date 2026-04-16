@@ -650,11 +650,11 @@ a, button, input, select { touch-action: manipulation; }
 :root.dark .market-verdict.locked{ color: #C48A96; }
 /* Supporting prose — faded, secondary, provides evidence */
 .market-prose { color: var(--text-tertiary); font-size: var(--text-sm); opacity: 0.8; line-height: 1.5; }
-/* Action line — the money line, large + dark, stands out from prose */
+/* Action line — dominant text, commands attention */
 .market-action {
-  font-size: var(--text-sm); font-weight: 800;
-  color: var(--text-primary); margin-top: 8px; line-height: 1.45;
-  letter-spacing: -0.01em;
+  font-size: clamp(1rem, 2.5vw, 1.2rem); font-weight: 900;
+  color: var(--text-primary); margin-top: 10px; line-height: 1.25;
+  letter-spacing: -0.025em;
 }
 /* Intel card dividers */
 .intel-divider { height: 1px; background: var(--border-inner); margin: 14px 0; }
@@ -1308,7 +1308,7 @@ a, button, input, select { touch-action: manipulation; }
         </div>
         <div class="arti-query-input-row">
           <input type="text" class="arti-query-input" id="artiInlineChatInput"
-            placeholder="Ask Arti a follow-up…"
+            placeholder="Ask about incumbents, partners, or next steps…"
             autocomplete="off"
             onfocus="document.getElementById('artiInlineChips').classList.remove('hidden')"
             onblur="setTimeout(()=>document.getElementById('artiInlineChips').classList.add('hidden'),200)">
@@ -1318,8 +1318,6 @@ a, button, input, select { touch-action: manipulation; }
           </button>
         </div>
         <div class="chat-history hidden" id="artiInlineChatHistory" style="margin-top:12px;"></div>
-        <div class="chat-counter hidden" id="artiInlineChatCounter" style="margin-top:4px;font-size:var(--text-xs);color:var(--text-quaternary);"></div>
-        <div class="hidden" id="artiInlineDisclaimer" style="font-size:var(--text-xs);color:var(--text-tertiary);margin-top:6px;">Always use your own judgment before making strategic decisions.</div>
       </div>
 
       <!-- Seller lens (inline, shown once) -->
@@ -3081,8 +3079,6 @@ const App = {
     const inlineChatHistory = DOM.get('artiInlineChatHistory'); if (inlineChatHistory) { inlineChatHistory.innerHTML = ''; inlineChatHistory.classList.add('hidden'); }
     // input always in query bar
     const inlineChatInput = DOM.get('artiInlineChatInput'); if (inlineChatInput) inlineChatInput.value = '';
-    DOM.hide('artiInlineChatCounter');
-    DOM.hide('artiInlineDisclaimer');
     const ais = DOM.get('artiInlineStatus'); if (ais) { ais.style.display = ''; }
     const aist = DOM.get('artiInlineStatusText'); if (aist) aist.textContent = 'Reading the data…';
     DOM.get('aiContentContainer').innerHTML = '';
@@ -3909,9 +3905,7 @@ const App = {
           if (statusEl) statusEl.style.display = 'none';
           DOM.show('artiInlineCopyBtn');
           DOM.show('artiQueryBar');
-          DOM.show('artiInlineDisclaimer');
-          const counter = DOM.get('artiInlineChatCounter');
-          if (counter) { counter.textContent = `${this.aiState.max} follow-up questions remaining.`; counter.classList.remove('hidden'); }
+
         },
         (msg) => {
           if (contentEl) contentEl.innerHTML = `<span style="color:var(--text-quaternary);">Brief unavailable. Ask a question below.</span>`;
@@ -4894,57 +4888,46 @@ const App = {
       verdictSentence = `This is a long game market.`;
     }
 
-    // ── Supporting prose ──────────────────────────────────────────
+    // ── ONE prose line (timing only) — concentration lives in the treemap ──
     const proseLines = [];
     if (exp90Val > 0) {
-      proseLines.push(`About ${Utils.money(exp90Val)} is expiring in 90 days — active recompete window.`);
+      proseLines.push(`${Utils.money(exp90Val)} turning over in 90 days.`);
     } else if (recentCount >= 3) {
       proseLines.push(`${recentCount} contracts awarded recently — buying season is active.`);
     } else if (exp12Val > 0) {
-      proseLines.push(`About ${Utils.money(exp12Val)} expiring in 12 months — time to position, not close.`);
+      proseLines.push(`${Utils.money(exp12Val)} expiring in 12 months — time to position.`);
     } else {
-      proseLines.push(`No significant expirations in 12 months — incumbents are dug in.`);
-    }
-    if (top1Pct >= 50) {
-      proseLines.push(`${topVendor} holds ${top1Pct}% — one vendor owns the paper.`);
-    } else if (top3Pct >= 60 && hasSubActivity) {
-      proseLines.push(`Top 3 primes hold ${top3Pct}% but sub-award activity suggests they're buying tech.`);
-    } else if (top3Pct >= 60) {
-      proseLines.push(`Top 3 primes hold ${top3Pct}% across ${vendorCount} vendors.`);
-    } else if (smallPct >= 0.5) {
-      proseLines.push(`${Math.round(smallPct*100)}% of contracts are under $5M — task-order sized, more entry points.`);
-    } else {
-      proseLines.push(`No clear owner — ${vendorCount} vendors active across ${agencyCount} agencies.`);
+      proseLines.push(`No significant expirations in 12 months.`);
     }
 
-    // ── Action line ───────────────────────────────────────────────
+    // ── Action line — the dominant text, owns the "what to do" ───────
     let action = '';
     if (faceLabel === 'Easy') {
       if (exp90Val > 0 && top2Agencies.length >= 2) {
-        action = `Start with ${top2Agencies.join(' + ')} — recompetes visible, field is open`;
+        action = `Start with ${top2Agencies.join(' + ')}`;
       } else if (top2Agencies.length > 0) {
-        action = `Lead with ${top2Agencies[0]} — most active buyer, fragmented field`;
+        action = `Lead with ${top2Agencies[0]}`;
       } else {
         action = `Move now — conditions favor a new entrant`;
       }
     } else if (faceLabel === 'Partner Play') {
       if (top1Pct >= 40 && exp90Val > 0) {
-        action = `Target ${topVendor}'s expiring task orders — that's your opening`;
+        action = `Target ${topVendor}'s expiring task orders`;
       } else if (top1Pct >= 40) {
-        action = `Get on ${topVendor}'s team — subcontract before you compete direct`;
+        action = `Get on ${topVendor}'s team first`;
       } else if (hasRichSubData) {
-        action = `Find which primes are subbing tech — get on their approved vendor list`;
+        action = `Find which primes are subbing tech — get on their list`;
       } else {
-        action = `Smaller task orders are the entry point, not prime contracts`;
+        action = `Target smaller task orders, not prime contracts`;
       }
     } else {
       const secondAgency = agencySorted[1] ? Utils.cleanAgency(agencySorted[1][0]) : '';
       action = secondAgency && secondAgency !== topAgency
-        ? `Start at ${secondAgency} — less entrenched than ${topAgency}, better first conversation`
-        : `Position now — relationships take 12–18 months to convert`;
+        ? `Start at ${secondAgency} — less entrenched than ${topAgency}`
+        : `Position now — relationships take 12–18 months`;
     }
 
-    // ── Render ────────────────────────────────────────────────────
+    // ── Render ───────────────────────────────────────────────────────
     const container = DOM.get('marketSignals');
     if (container) {
       container.innerHTML =
