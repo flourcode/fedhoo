@@ -322,9 +322,9 @@ a, button, input, select { touch-action: manipulation; }
   width: 28px; height: 28px; border-radius: 50%;
   display: block; overflow: hidden; flex-shrink: 0;
 }
-.arti-sheet-name {
-  font-size: var(--text-sm); font-weight: 700;
-  color: var(--text-primary); letter-spacing: -0.01em;
+.arti-sheet-sub {
+  font-size: var(--text-sm); color: var(--text-secondary);
+  line-height: 1.4; font-weight: 400;
 }
 .arti-sheet-drag {
   position: absolute; left: 50%; top: 10px; transform: translateX(-50%);
@@ -1337,7 +1337,7 @@ a, button, input, select { touch-action: manipulation; }
     <div class="arti-sheet-drag"></div>
     <div class="arti-sheet-title">
       <svg class="arti-sheet-face" id="artiSheetFace" aria-label="Arti"><use href="#icon-arti"/></svg>
-      <span class="arti-sheet-name">Arti</span>
+      <div class="arti-sheet-sub" id="artiSheetSub">Hi, I'm Arti. I've read the data — ask me anything.</div>
     </div>
     <button class="arti-sheet-close" onclick="App.closeArtiSheet()" aria-label="Close">✕</button>
   </div>
@@ -4438,8 +4438,14 @@ const App = {
       this.UI.artiSheet?.classList.remove('hidden');
       requestAnimationFrame(() => this.UI.artiSheet?.classList.add('open'));
     });
+    // Update sheet subtitle with current market
+    const sub = DOM.get('artiSheetSub');
+    if (sub) {
+      sub.textContent = this.displayQuery
+        ? `Hi, I'm Arti. I've read the ${this.displayQuery} data — ask me anything.`
+        : `Hi, I'm Arti. I've read the data — ask me anything.`;
+    }
     if (this._sellerLens) {
-      DOM.hide('sheetLensPrompt');
       const label = DOM.get('sheetLensLabel');
       if (label) label.textContent = this._sellerLens;
       DOM.show('artiActions');
