@@ -284,7 +284,11 @@ a, button, input, select { touch-action: manipulation; }
 .sheet-lens-label { font-size: var(--text-base); font-weight: 700; color: var(--text-primary); margin-bottom: 4px; letter-spacing: -0.01em; }
 .sheet-lens-sub { font-size: var(--text-xs); color: var(--text-tertiary); margin-bottom: 12px; line-height: 1.5; }
 .sheet-lens-row { display: flex; gap: 6px; }
-.sheet-ask-more { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border-inner); }
+.sheet-ask-more { margin-top: 12px; }
+.sheet-ask-prompt {
+  font-size: var(--text-xs); color: var(--text-tertiary);
+  margin-bottom: 8px; line-height: 1.5;
+}
 .arti-backdrop {
   position: fixed; inset: 0; background: rgba(0,0,0,0.4);
   z-index: 500; backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
@@ -1363,6 +1367,7 @@ a, button, input, select { touch-action: manipulation; }
 
     <!-- Input — shown after lens is set -->
     <div class="sheet-ask-more hidden" id="artiActions">
+      <div class="sheet-ask-prompt" id="sheetAskPrompt">Ask me about opportunities, channel partners, or how to break in.</div>
       <div class="sheet-input-row">
         <input type="text" class="sheet-input" id="chatInput"
           placeholder="Ask about this market…"
@@ -4444,6 +4449,10 @@ const App = {
     // Update sheet subtitle with current market
     const sub = DOM.get('artiSheetSub');
     if (sub) sub.textContent = `Hi, I'm Arti. Ask me anything.`;
+    const prompt = DOM.get('sheetAskPrompt');
+    if (prompt && this.displayQuery) {
+      prompt.textContent = `Ask me about ${this.displayQuery} opportunities, channel partners, or how to break in.`;
+    }
     if (this._sellerLens) {
       const label = DOM.get('sheetLensLabel');
       if (label) label.textContent = this._sellerLens;
