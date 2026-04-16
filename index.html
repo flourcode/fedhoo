@@ -4196,13 +4196,15 @@ const App = {
         }, 370);
       }
     } else {
-      // Treemap — clear any inline height so it sizes naturally to SVG content
+      // Clear inline height first
       if (viewport) viewport.style.height = '';
-      if (this._treemapDirty) {
-        setTimeout(() => {
-          if (this.searchData.loaded) this.renderBubbleChart();
-        }, 360);
-      }
+      // Always re-measure and reset viewport to treemap SVG height after slide
+      setTimeout(() => {
+        if (this.searchData.loaded) {
+          this._treemapDirty = true; // force redraw so height gets set
+          this.renderBubbleChart();
+        }
+      }, 360);
     }
   },
 
