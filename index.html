@@ -560,12 +560,6 @@ a, button, input, select { touch-action: manipulation; }
   font-family: var(--font); transition: var(--transition); flex-shrink: 0;
 }
 .arti-query-send:hover { background: var(--btn-hover); }
-.arti-query-copy {
-  width: 32px; height: 32px; background: none; border: 1px solid var(--border);
-  border-radius: 50%; display: flex; align-items: center; justify-content: center;
-  cursor: pointer; color: var(--text-tertiary); transition: var(--transition); flex-shrink: 0;
-}
-.arti-query-copy:hover { background: var(--bg-hover); color: var(--text-primary); }
 .arti-inline-avatar { width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; display:block; overflow:hidden; }
 .arti-inline-status { display: flex; align-items: center; gap: 5px; font-size: var(--text-xs); color: var(--text-quaternary); }
 .arti-inline-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--go-text); animation: pulse-dot 2s ease-in-out infinite; flex-shrink: 0; }
@@ -1209,9 +1203,6 @@ a, button, input, select { touch-action: manipulation; }
             onfocus="document.getElementById('artiInlineChips').classList.remove('hidden')"
             onblur="setTimeout(()=>document.getElementById('artiInlineChips').classList.add('hidden'),200)">
           <button class="arti-query-send" id="artiInlineChatSendBtn">Ask</button>
-          <button class="arti-query-copy hidden" id="artiInlineCopyBtn" onclick="App.copyArtiShortBrief()" title="Copy briefing">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-          </button>
         </div>
         <div class="chat-history hidden" id="artiInlineChatHistory" style="margin-top:12px;"></div>
       </div>
@@ -2955,7 +2946,6 @@ const App = {
     const aic = DOM.get('artiInlineContent'); if (aic) { aic.innerHTML = ''; aic.className = 'arti-brief-text arti-inline-loading'; delete aic.dataset.rawPlan; }
     DOM.hide('artiBriefBlock');
     DOM.hide('artiQueryBar');
-    DOM.hide('artiInlineCopyBtn');
     const inlineChatHistory = DOM.get('artiInlineChatHistory'); if (inlineChatHistory) { inlineChatHistory.innerHTML = ''; inlineChatHistory.classList.add('hidden'); }
     // input always in query bar
     const inlineChatInput = DOM.get('artiInlineChatInput'); if (inlineChatInput) inlineChatInput.value = '';
@@ -3784,7 +3774,7 @@ const App = {
           this._artiInlineDone = true;
           this._currentBriefText = fullText;
 
-          // Append the lens question as a subtle inline prompt on first session search
+          // Append lens question after brief completes on first session search
           if (askLensQuestion && contentEl) {
             this._hasAskedLens = true;
             const q = document.createElement('div');
@@ -3800,7 +3790,6 @@ const App = {
           ];
           this.aiState.count = 0;
           if (statusEl) statusEl.style.display = 'none';
-          DOM.show('artiInlineCopyBtn');
           DOM.show('artiQueryBar');
         },
         (msg) => {
