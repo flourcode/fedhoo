@@ -239,9 +239,10 @@ a, button, input, select { touch-action: manipulation; }
   cursor: pointer; z-index: 400;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
-.arti-fab:not(.hidden) { display: flex; }
-.arti-fab:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(70,68,110,0.28); }
-.arti-fab:active { transform: scale(0.94); }
+@keyframes fab-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+.arti-fab:not(.hidden) { display: flex; animation: fab-breathe 3.5s ease-in-out infinite; }
+.arti-fab:hover { animation: none; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(70,68,110,0.28); }
+.arti-fab:active { animation: none; transform: scale(0.94); }
 .arti-fab-face { width: 52px; height: 52px; border-radius: 50%; display: block; overflow: hidden; }
 
 /* Sheet lens prompt */
