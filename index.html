@@ -278,13 +278,7 @@ a, button, input, select { touch-action: manipulation; }
 .arti-fab:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(70,68,110,0.28); }
 .arti-fab:active { transform: scale(0.94); }
 .arti-fab-face { width: 36px; height: 36px; border-radius: 50%; display: block; overflow: hidden; }
-/* Verdict-colored FAB states */
-.arti-fab.verdict-open  { background: #3D5C3D; }
-.arti-fab.verdict-watch { background: #7A5520; }
-.arti-fab.verdict-locked{ background: #6B3040; }
-:root.dark .arti-fab.verdict-open  { background: #4a7a4a; }
-:root.dark .arti-fab.verdict-watch { background: #8a6030; }
-:root.dark .arti-fab.verdict-locked{ background: #8a4050; }
+
 /* Sheet lens prompt */
 .sheet-lens-prompt { padding: 8px 0 16px; border-bottom: 1px solid var(--border-inner); margin-bottom: 16px; }
 .sheet-lens-label { font-size: var(--text-base); font-weight: 700; color: var(--text-primary); margin-bottom: 4px; letter-spacing: -0.01em; }
@@ -317,8 +311,20 @@ a, button, input, select { touch-action: manipulation; }
   .arti-sheet.open { transform: translate(-50%, -50%); opacity: 1; }
 }
 .arti-sheet-header {
-  display: flex; align-items: center; justify-content: flex-end;
-  padding: 12px 16px 4px; flex-shrink: 0; position: relative;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px 10px; flex-shrink: 0; position: relative;
+  border-bottom: 1px solid var(--border-inner);
+}
+.arti-sheet-title {
+  display: flex; align-items: center; gap: 8px;
+}
+.arti-sheet-face {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: block; overflow: hidden; flex-shrink: 0;
+}
+.arti-sheet-name {
+  font-size: var(--text-sm); font-weight: 700;
+  color: var(--text-primary); letter-spacing: -0.01em;
 }
 .arti-sheet-drag {
   position: absolute; left: 50%; top: 10px; transform: translateX(-50%);
@@ -1213,6 +1219,8 @@ a, button, input, select { touch-action: manipulation; }
           </div>
         </div>
       </div>
+      <!-- Single verdict line — colored by score -->
+      <div class="market-verdict hidden" id="marketVerdict"></div>
 
       <!-- Breadcrumb — shown when drilled in -->
       <div class="hidden" id="bubbleBreadcrumb">
@@ -1327,6 +1335,10 @@ a, button, input, select { touch-action: manipulation; }
 <div class="arti-sheet hidden" id="artiSheet">
   <div class="arti-sheet-header">
     <div class="arti-sheet-drag"></div>
+    <div class="arti-sheet-title">
+      <svg class="arti-sheet-face" id="artiSheetFace" aria-label="Arti"><use href="#icon-arti"/></svg>
+      <span class="arti-sheet-name">Arti</span>
+    </div>
     <button class="arti-sheet-close" onclick="App.closeArtiSheet()" aria-label="Close">✕</button>
   </div>
   <div class="arti-sheet-body" id="artiSheetBody">
@@ -2930,6 +2942,7 @@ const App = {
     DOM.hide('primesCard');
     DOM.hide('bioCard');
     DOM.get('faceScale')?.classList.add('hidden');
+    const verdictEl = DOM.get('marketVerdict'); if (verdictEl) verdictEl.classList.add('hidden');
     const fl = DOM.get('faceLabel'); if (fl) fl.classList.add('hidden');
     const inlineChatHistory = DOM.get('artiInlineChatHistory'); if (inlineChatHistory) { inlineChatHistory.innerHTML = ''; inlineChatHistory.classList.add('hidden'); }
     // input always in query bar
@@ -4810,19 +4823,24 @@ const App = {
     this._formulaAction  = action;
     this._formulaTopAgencies = top2Agencies;
 
+    // Verdict line under the number
+    const verdictEl = DOM.get('marketVerdict');
+    if (verdictEl) {
+      verdictEl.textContent = verdictSentence;
+      verdictEl.className = `market-verdict ${faceClass}`;
+      verdictEl.classList.remove('hidden');
+    }
+
     // Color the FAB smiley to match the verdict
     const fab = DOM.get('artiFab');
-    if (fab) {
-      fab.classList.remove('verdict-open', 'verdict-watch', 'verdict-locked');
-      fab.classList.add(`verdict-${faceClass}`);
-      fab.classList.remove('hidden');
-    }
+    if (fab) fab.classList.remove('hidden');
     // Color the face icon inside FAB to match verdict
+    const faceIconMap = { open: 'icon-face-open', watch: 'icon-face-watch', locked: 'icon-face-locked' };
     const fabFace = DOM.get('artiFabFace');
-    if (fabFace) {
-      const faceIconMap = { open: 'icon-face-open', watch: 'icon-face-watch', locked: 'icon-face-locked' };
-      fabFace.innerHTML = `<use href="#${faceIconMap[faceClass]}"/>`;
-    }
+    if (fabFace) fabFace.innerHTML = `<use href="#${faceIconMap[faceClass]}"/>`;
+    // Same face in sheet header
+    const sheetFace = DOM.get('artiSheetFace');
+    if (sheetFace) sheetFace.innerHTML = `<use href="#${faceIconMap[faceClass]}"/>`;
   },
 
   resetToSearch() {
