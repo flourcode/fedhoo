@@ -685,46 +685,11 @@ a, button, input, select { touch-action: manipulation; }
 .arti-copy-brief-btn:hover { background: var(--accent-dim); color: var(--btn-bg); border-color: var(--accent-dim); }
 
 /* Seller lens prompt card */
-.seller-lens-card {
-  background: var(--bg-app); border-radius: var(--radius);
-  border: 1px solid var(--border); padding: 16px 20px;
-  box-shadow: var(--shadow);
+/* Arti lens question — subtle invitation after the brief */
+.arti-lens-question {
+  margin-top: 8px; font-size: var(--text-xs);
+  color: var(--text-quaternary); font-style: italic;
 }
-.seller-lens-title {
-  font-size: var(--text-sm); font-weight: 700; color: var(--text-primary);
-  letter-spacing: -0.01em; margin-bottom: 4px;
-}
-.seller-lens-sub {
-  font-size: var(--text-xs); color: var(--text-tertiary); margin-bottom: 12px; line-height: 1.45;
-}
-.seller-lens-row {
-  display: flex; align-items: center; gap: 8px;
-}
-.seller-lens-prefix {
-  font-size: var(--text-sm); font-weight: 500; color: var(--text-secondary); white-space: nowrap; flex-shrink: 0;
-}
-.seller-lens-input {
-  flex: 1; background: var(--bg-hover); border: 1.5px solid transparent;
-  border-radius: var(--radius-xs); padding: 8px 12px;
-  font-size: var(--text-sm); color: var(--text-primary); font-family: var(--font);
-  outline: none; transition: var(--transition); min-width: 0;
-}
-.seller-lens-input:focus { border-color: var(--accent); background: var(--bg-app); box-shadow: 0 0 0 3px var(--accent-dim); }
-.seller-lens-input::placeholder { color: var(--text-quaternary); font-weight: 400; }
-.seller-lens-save {
-  background: var(--btn-bg); color: var(--btn-text); border: none;
-  border-radius: var(--radius-xs); padding: 0 14px; height: 36px;
-  font-size: var(--text-sm); font-weight: 600; cursor: pointer;
-  font-family: var(--font); transition: var(--transition); flex-shrink: 0;
-}
-.seller-lens-save:hover { background: var(--btn-hover); }
-.seller-lens-saved {
-  font-size: var(--text-xs); color: var(--text-tertiary); margin-top: 8px;
-  display: flex; align-items: center; gap: 6px;
-}
-.seller-lens-saved-text { flex: 1; font-style: italic; }
-.seller-lens-clear { background: none; border: none; color: var(--text-quaternary); font-size: var(--text-xs); cursor: pointer; font-family: var(--font); padding: 0; text-decoration: underline; }
-.seller-lens-clear:hover { color: var(--text-tertiary); }
 .search-hero { padding: 12px 0 8px; }
 
 .hero-headline {
@@ -1321,21 +1286,6 @@ a, button, input, select { touch-action: manipulation; }
       </div>
 
       <!-- Seller lens (inline, shown once) -->
-      <div class="hidden" id="sellerLensCard" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border-inner);">
-        <div class="seller-lens-title">Make every search smarter</div>
-        <div class="seller-lens-sub">Tell Fedhoo what you sell and every search gets scored for your situation.</div>
-        <div class="seller-lens-row">
-          <span class="seller-lens-prefix">I sell</span>
-          <input type="text" id="sellerLensInput" class="seller-lens-input"
-            placeholder="e.g. cloud infrastructure to civilian agencies"
-            autocomplete="off" maxlength="120">
-          <button class="seller-lens-save" onclick="App.saveSellerLens()">Save</button>
-        </div>
-        <div class="seller-lens-saved hidden" id="sellerLensSaved">
-          <span class="seller-lens-saved-text" id="sellerLensSavedText"></span>
-          <button class="seller-lens-clear" onclick="App.clearSellerLens()">Clear</button>
-        </div>
-      </div>
 
       <!-- Treemap -->
       <div class="intel-divider"></div>
@@ -3068,7 +3018,6 @@ const App = {
     DOM.hide('recentCard');
     DOM.hide('primesCard');
     DOM.hide('bioCard');
-    DOM.hide('sellerLensCard');
     DOM.get('marketSignals')?.classList.add('hidden');
     DOM.get('faceScale')?.classList.add('hidden');
     const fl = DOM.get('faceLabel'); if (fl) fl.classList.add('hidden');
@@ -3160,8 +3109,6 @@ const App = {
         this._autoFireArtiBrief(query);
         SearchPills.generate(App.displayQuery || query);
         // Show seller lens prompt if not yet set
-        if (!this._sellerLens) DOM.show('sellerLensCard');
-        else DOM.hide('sellerLensCard');
       }, 0);
 
       // Clear sub-sankey stale state before async fetch
@@ -3858,17 +3805,22 @@ const App = {
     if (!this.searchData.loaded || this.searchData.active.length === 0) return;
     if (this._artiInlineDone) return;
 
-    // Show the inline card immediately in loading state
-
     const summaryPayload = this._artiPayloadCache || this._buildArtiPayload();
     const territoryScope = this.territory && this.SECTORS[this.territory]
       ? `Market scoped to ${this.SECTORS[this.territory].label} agencies. ` : '';
-    const sellerLens = this._sellerLens ? `I sell ${this._sellerLens}. ` : '';
+
+    // Use saved lens, or fall back to a useful default for federal sellers
+    const DEFAULT_LENS = 'cloud, software, or cybersecurity solutions to federal agencies';
+    const activeLens = this._sellerLens || DEFAULT_LENS;
+    const sellerLens = `I sell ${activeLens}. `;
 
     // Ground Arti's brief in the formula's verdict — no contradictions
     const formulaContext = this._formulaAction
       ? `The scoring model has already told this seller: "${this._formulaAction}". Your job is to give them the single most specific reason why — name one contract, one vendor, one dollar amount from the data that makes that move concrete. Do not contradict or rephrase the recommended action. Add depth, not direction. `
       : '';
+
+    // On the first search of the session (no lens set), ask what they sell at the end
+    const askLensQuestion = !this._sellerLens && !this._hasAskedLens;
 
     const objective = (sellerLens + territoryScope + formulaContext).trim() || null;
 
@@ -3891,7 +3843,6 @@ const App = {
       const contentEl = DOM.get('artiInlineContent');
       const statusEl  = DOM.get('artiInlineStatus');
       const statusTxt = DOM.get('artiInlineStatusText');
-      // Show the brief block in loading state
       DOM.show('artiBriefBlock');
       if (contentEl) { contentEl.innerHTML = ''; contentEl.className = 'arti-brief-text'; }
       if (statusTxt) statusTxt.textContent = 'Briefing…';
@@ -3902,6 +3853,16 @@ const App = {
         (fullText) => {
           this._artiInlineDone = true;
           this._currentBriefText = fullText;
+
+          // Append the lens question as a subtle inline prompt on first session search
+          if (askLensQuestion && contentEl) {
+            this._hasAskedLens = true;
+            const q = document.createElement('div');
+            q.className = 'arti-lens-question';
+            q.textContent = 'What do you sell? I\'ll tailor the next search.';
+            contentEl.appendChild(q);
+          }
+
           if (contentEl) { contentEl.dataset.rawPlan = fullText; }
           this.aiState.history = [
             { role: 'user', content: `Give me an actionable plan in the "${query}" market.` },
@@ -3911,7 +3872,6 @@ const App = {
           if (statusEl) statusEl.style.display = 'none';
           DOM.show('artiInlineCopyBtn');
           DOM.show('artiQueryBar');
-
         },
         (msg) => {
           if (contentEl) contentEl.innerHTML = `<span style="color:var(--text-quaternary);">Brief unavailable. Ask a question below.</span>`;
@@ -4084,6 +4044,25 @@ const App = {
     const msg = (input?.value || '').trim();
     if (!msg) return;
     input.value = '';
+
+    // Detect if the user is answering the "what do you sell?" question
+    // Heuristic: short (under 100 chars), no question mark, no keywords suggesting a real question
+    const isLensAnswer = msg.length < 100 &&
+      !msg.includes('?') &&
+      !msg.match(/^(who|what|where|when|why|how|tell|show|give|find|list|explain|can you|which)/i);
+
+    if (isLensAnswer && (!this._sellerLens || this._hasAskedLens)) {
+      // Strip "I sell" prefix if they typed it
+      const cleaned = msg.replace(/^i sell\s+/i, '').trim();
+      this._sellerLens = cleaned;
+      this._hasAskedLens = false; // reset so question won't show again this session
+      // Acknowledge and let them know it's set
+      this.toast(`Got it — briefing for: ${cleaned}`, 'ok', 3000);
+      // Re-fire the brief with the new lens context silently in background
+      // so their next search uses it. Don't re-fire current one — let them search again.
+      return;
+    }
+
     this.sendArtiChat(msg, true);
   },
 
@@ -4959,38 +4938,6 @@ const App = {
     }
   },
 
-  saveSellerLens() {
-    const input = DOM.get('sellerLensInput');
-    const val = (input?.value || '').trim();
-    if (!val) { input?.focus(); return; }
-    try { localStorage.setItem('fedhoo_seller_lens', val); } catch(e) {}
-    this._sellerLens = val;
-    this._updateSellerLensUI(val);
-    this.toast('Saved — every search is now scored for your situation', 'ok', 2500);
-  },
-
-  clearSellerLens() {
-    try { localStorage.removeItem('fedhoo_seller_lens'); } catch(e) {}
-    this._sellerLens = null;
-    const input = DOM.get('sellerLensInput');
-    if (input) input.value = '';
-    this._updateSellerLensUI(null);
-  },
-
-  _updateSellerLensUI(val) {
-    const saved  = DOM.get('sellerLensSaved');
-    const savedT = DOM.get('sellerLensSavedText');
-    const row    = DOM.get('sellerLensInput')?.closest('.seller-lens-row');
-    if (val) {
-      if (saved)  { saved.classList.remove('hidden'); }
-      if (savedT) { savedT.textContent = `"${val}"`; }
-      if (row)    { row.style.display = 'none'; }
-    } else {
-      if (saved)  { saved.classList.add('hidden'); }
-      if (row)    { row.style.display = ''; }
-    }
-  },
-
   resetToSearch() {
     DOM.hide('shareBtn');
     DOM.show('searchHero');
@@ -5165,21 +5112,6 @@ const App = {
       const icon = DOM.get('darkToggleIcon');
       if (icon) icon.innerHTML = '<use href="#icon-sun"></use>';
     }
-
-    // Load seller lens from localStorage
-    try {
-      const savedLens = localStorage.getItem('fedhoo_seller_lens');
-      if (savedLens) {
-        this._sellerLens = savedLens;
-        const input = DOM.get('sellerLensInput');
-        if (input) input.value = savedLens;
-        this._updateSellerLensUI(savedLens);
-      }
-    } catch(e) {}
-
-    // Wire seller lens Enter key
-    const lensInput = DOM.get('sellerLensInput');
-    if (lensInput) lensInput.addEventListener('keypress', e => { if (e.key === 'Enter') App.saveSellerLens(); });
 
     // Restore from URL params → last saved query → show hero for cold visitors
     try {
