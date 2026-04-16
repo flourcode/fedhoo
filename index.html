@@ -4198,6 +4198,8 @@ const App = {
         }, 370);
       }
     } else {
+      // Reset viewport height so treemap isn't constrained by taller sankey panels
+      if (viewport) viewport.style.height = '';
       // Only redraw treemap if data changed since last render — avoids flash on tab switch
       if (this._treemapDirty) {
         setTimeout(() => {
