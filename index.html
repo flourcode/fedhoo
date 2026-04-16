@@ -138,7 +138,7 @@ a, button, input, select { touch-action: manipulation; }
   transition: var(--transition); cursor: pointer;
 }
 .logo-link:hover { background: var(--btn-hover); }
-.header-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.header-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; margin-left: auto; }
 .hdr-icon-circle {
   width: 36px; height: 36px; min-width: 36px; border-radius: 50%;
   background: var(--bg-app); border: 1px solid var(--border);
@@ -1133,7 +1133,10 @@ a, button, input, select { touch-action: manipulation; }
     </div>
     <div class="header-actions">
       <button class="hdr-icon-circle hidden" id="shareBtn" onclick="App.shareSearch(this)" title="Copy link" aria-label="Share search">
-        <svg width="16" height="16" aria-hidden="true"><use href="#icon-share"/></svg>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+        </svg>
       </button>
       <button class="hdr-icon-circle" id="darkToggleBtn" onclick="App.toggleDarkMode()" title="Toggle dark mode" aria-label="Toggle dark mode">
         <svg id="darkToggleIcon" width="16" height="16" aria-hidden="true"><use href="#icon-moon"></use></svg>
