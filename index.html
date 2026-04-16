@@ -10,11 +10,11 @@
 <meta name="format-detection" content="telephone=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Fedhoo">
+<meta name="apple-mobile-web-app-title" content="Fedmo">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='96 96 448 448'%3E%3Cstyle%3Epath%7Bfill:%232C2B28%7D .arrow%7Bfill:%23FFFFFF%7D%3C/style%3E%3Cpath d='M480 96C515.3 96 544 124.7 544 160L544 480C544 515.3 515.3 544 480 544L160 544C124.7 544 96 515.3 96 480L96 160C96 124.7 124.7 96 160 96L480 96z'/%3E%3Cpath class='arrow' d='M368 360C368 373.3 378.7 384 392 384C405.3 384 416 373.3 416 360L416 248C416 234.7 405.3 224 392 224L280 224C266.7 224 256 234.7 256 248C256 261.3 266.7 272 280 272L334.1 272L231.1 375C221.7 384.4 221.7 399.6 231.1 408.9C240.5 418.2 255.7 418.3 265 408.9L368 305.9L368 360z'/%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<title>Fedhoo, Federal Market Intelligence</title>
+<title>Fedmo — Federal Market Intelligence</title>
 <meta name="description" content="Know any federal market before the meeting starts. Who's buying, who's winning, what's expiring, in one search.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -129,14 +129,13 @@ a, button, input, select { touch-action: manipulation; }
 }
 .header-search-wrap .territory-dropdown { top: calc(100% + 6px); left: 0; min-width: 260px; }
 .logo-link {
-  font-size: 0.9rem; font-weight: 800; letter-spacing: -0.02em;
-  color: #FFFFFF; text-decoration: none;
-  background: var(--btn-bg); border: 1px solid transparent;
-  border-radius: 10px; padding: 0 12px; height: 36px; flex-shrink: 0;
-  display: inline-flex; align-items: center;
-  transition: var(--transition); cursor: pointer;
+  font-size: 1.1rem; font-weight: 800; letter-spacing: -0.03em;
+  color: var(--text-primary); text-decoration: none;
+  display: inline-flex; align-items: center; gap: 6px;
+  flex-shrink: 0; cursor: pointer;
 }
-.logo-link:hover { background: var(--btn-hover); }
+.logo-link:hover { opacity: 0.8; }
+.logo-face { display: block; border-radius: 50%; overflow: hidden; flex-shrink: 0; }
 .header-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; margin-left: auto; }
 .hdr-icon-circle {
   width: 36px; height: 36px; min-width: 36px; border-radius: 50%;
@@ -1086,7 +1085,10 @@ a, button, input, select { touch-action: manipulation; }
 <header class="site-header">
   <!-- Logo + actions row (always visible) -->
   <div class="header-row">
-    <a class="logo-link" href="/" onclick="window.location.href='/'; return false;">Fedhoo.</a>
+    <a class="logo-link" href="/" onclick="window.location.href='/'; return false;">
+      <svg class="logo-face" width="26" height="26" viewBox="0 0 40 40" aria-hidden="true"><use href="#icon-face-open"/></svg>
+      Fedmo.
+    </a>
     <!-- Desktop: search sits here inline -->
     <div class="header-search-wrap header-search-desktop">
       <div class="search-bar-inner" id="searchBarInner">
@@ -1300,7 +1302,7 @@ a, button, input, select { touch-action: manipulation; }
         <img src="/images/oldmark.jpg" alt="Mark Flournoy" style="width:52px;height:52px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid var(--border);">
         <div style="min-width:0;">
           <div style="font-size:var(--text-sm);font-weight:700;color:var(--text-primary);letter-spacing:-0.01em;margin-bottom:3px;">Hi, I'm Mark Flournoy</div>
-          <div style="font-size:var(--text-xs);color:var(--text-secondary);line-height:1.55;">Retired federal sales — AWS, F5, Red Hat, DISA COTR, 20 years Marines. I built Fedhoo because I spent too many years pulling this data by hand before pipeline reviews. No pitch — if you want to look at your territory together, grab 20 minutes.</div>
+          <div style="font-size:var(--text-xs);color:var(--text-secondary);line-height:1.55;">Retired federal sales — AWS, F5, Red Hat, DISA COTR, 20 years Marines. I built Fedmo because I spent too many years pulling this data by hand before pipeline reviews. No pitch — if you want to look at your territory together, grab 20 minutes.</div>
           <a href="https://calendly.com/markflournoy/chat-with-mark" target="_blank" rel="noopener" class="footer-chat-btn" style="margin-top:12px;height:34px;font-size:var(--text-xs);padding:0 14px;">Book a chat →</a>
         </div>
       </div>
@@ -1370,7 +1372,7 @@ a, button, input, select { touch-action: manipulation; }
       <svg width="36" height="36" viewBox="0 0 40 40" aria-hidden="true"><use href="#icon-face-watch"/></svg>
       <svg width="36" height="36" viewBox="0 0 40 40" aria-hidden="true"><use href="#icon-face-locked"/></svg>
     </div>
-    <div class="footer-brand-name">Fedhoo.</div>
+    <div class="footer-brand-name">Fedmo.</div>
     <div class="footer-brand-tagline">Federal markets. Simplified.</div>
   </div>
 
@@ -2862,7 +2864,7 @@ const App = {
     if (inp) inp.value = displayQuery;
     const mobileInp = DOM.get('searchInputMobile');
     if (mobileInp) mobileInp.value = displayQuery;
-    document.title = `Fedhoo | ${displayQuery}`;
+    document.title = `Fedmo | ${displayQuery}`;
 
     // Recent searches stores display term too
     try {
@@ -4447,7 +4449,7 @@ const App = {
       esc(c['pop_state_code']),
       esc(c['generated_internal_id'] ? `https://www.usaspending.gov/award/${c['generated_internal_id']}` : ''),
     ].join(','));
-    Utils.downloadCSV(`fedhoo_expiring_${(this.currentQuery||'export').replace(/\s+/g,'_')}`, headers, rows);
+    Utils.downloadCSV(`fedmo_expiring_${(this.currentQuery||'export').replace(/\s+/g,'_')}`, headers, rows);
     this.toast('Expiring contracts exported.', 'ok');
   },
 
@@ -4467,7 +4469,7 @@ const App = {
       esc(s['pop_state_code']),
       esc(s['prime_award_generated_internal_id'] ? `https://www.usaspending.gov/award/${s['prime_award_generated_internal_id']}` : ''),
     ].join(','));
-    Utils.downloadCSV(`fedhoo_subawards_${(this.currentQuery||'export').replace(/\s+/g,'_')}`, headers, rows);
+    Utils.downloadCSV(`fedmo_subawards_${(this.currentQuery||'export').replace(/\s+/g,'_')}`, headers, rows);
     this.toast('Subawards exported.', 'ok');
   },
 
@@ -4487,7 +4489,7 @@ const App = {
         return esc(v);
       }), esc(url)].join(',');
     });
-    Utils.downloadCSV(`fedhoo_${(this.currentQuery||'export').replace(/\s+/g,'_')}`, headers, rows);
+    Utils.downloadCSV(`fedmo_${(this.currentQuery||'export').replace(/\s+/g,'_')}`, headers, rows);
     this.toast('CSV exported.', 'ok');
   },
 
@@ -4989,7 +4991,7 @@ const App = {
         this.runSearch('Cloud', false, true);
       }
     } catch(e) {
-      console.warn('Fedhoo init error:', e);
+      console.warn('Fedmo init error:', e);
     }
 
 
