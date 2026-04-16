@@ -4835,11 +4835,9 @@ const App = {
     // Color the FAB smiley to match the verdict
     const fab = DOM.get('artiFab');
     if (fab) fab.classList.remove('hidden');
-    // Color the face icon inside FAB to match verdict
+    // FAB stays green always — it's Arti, not the verdict
+    // Sheet face matches verdict so it feels connected to the market score
     const faceIconMap = { open: 'icon-face-open', watch: 'icon-face-watch', locked: 'icon-face-locked' };
-    const fabFace = DOM.get('artiFabFace');
-    if (fabFace) fabFace.innerHTML = `<use href="#${faceIconMap[faceClass]}"/>`;
-    // Same face in sheet header
     const sheetFace = DOM.get('artiSheetFace');
     if (sheetFace) sheetFace.innerHTML = `<use href="#${faceIconMap[faceClass]}"/>`;
   },
