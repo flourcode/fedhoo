@@ -1125,7 +1125,7 @@ a, button, input, select { touch-action: manipulation; }
     <div class="header-search-wrap header-search-desktop">
       <div class="header-search-inner" id="territorySelectorDesktop">
         <div class="territory-selector">
-          <button class="search-territory-btn" id="territoryBtn" onclick="App.toggleTerritoryMenu()">
+          <button class="search-territory-btn" id="territoryBtn" onclick="App.toggleTerritoryMenu('territoryDropdown')">
             <span id="territoryLabel">All</span>
             <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M5 6L0 0h10z" fill="currentColor"/></svg>
           </button>
@@ -1180,7 +1180,7 @@ a, button, input, select { touch-action: manipulation; }
   <div class="header-search-mobile">
     <div class="header-search-inner" id="territorySelectorMobile">
       <div class="territory-selector">
-        <button class="search-territory-btn" id="territoryBtnMobile" onclick="App.toggleTerritoryMenu()">
+        <button class="search-territory-btn" id="territoryBtnMobile" onclick="App.toggleTerritoryMenu('territoryDropdownMobile')">
           <span id="territoryLabelMobile">All</span>
           <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M5 6L0 0h10z" fill="currentColor"/></svg>
         </button>
@@ -3132,9 +3132,7 @@ const App = {
       </div>`;
   },
 
-  toggleTerritoryMenu() {
-    const isMobile = window.innerWidth < 640;
-    const ddId = isMobile ? 'territoryDropdownMobile' : 'territoryDropdown';
+  toggleTerritoryMenu(ddId) {
     const dd = DOM.get(ddId);
     if (!dd) return;
     const isOpen = dd.classList.contains('open');
@@ -3143,7 +3141,7 @@ const App = {
       dd.classList.add('open');
       setTimeout(() => {
         const close = (e) => {
-          if (!e.target.closest('.header-search-inner')) {
+          if (!e.target.closest('.territory-dropdown') && !e.target.closest('.search-territory-btn')) {
             document.querySelectorAll('.territory-dropdown').forEach(d => d.classList.remove('open'));
             document.removeEventListener('click', close);
             document.removeEventListener('touchstart', close);
