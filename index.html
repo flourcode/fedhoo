@@ -547,6 +547,13 @@ a, button, input, select { touch-action: manipulation; }
   font-size: var(--text-sm); font-weight: 600; color: var(--text-primary);
   margin: 0 0 2px; display: inline;
 }
+/* Question label shown in sheet above the answer */
+.sheet-question-label {
+  font-size: var(--text-xs); font-weight: 600; color: var(--text-tertiary);
+  text-transform: uppercase; letter-spacing: .06em;
+  padding-bottom: 8px; border-bottom: 1px solid var(--border-inner);
+  margin-bottom: 10px;
+}
 .arti-brief-block { margin: 10px 0 0; }
 .arti-brief-body { display: flex; align-items: flex-start; gap: 10px; }
 .arti-brief-face { width: 28px; height: 28px; border-radius: 50%; display: block; overflow: hidden; flex-shrink: 0; margin-top: 2px; }
@@ -1217,7 +1224,7 @@ a, button, input, select { touch-action: manipulation; }
             onblur="setTimeout(()=>document.getElementById('artiInlineChips').classList.add('hidden'),200)">
           <button class="arti-query-send" id="artiInlineChatSendBtn">Ask</button>
         </div>
-        <div class="chat-history hidden" id="artiInlineChatHistory" style="margin-top:12px;"></div>
+        <div class="chat-history hidden" id="artiInlineChatHistory"></div>
       </div>
 
       <!-- Seller lens (inline, shown once) -->
@@ -2949,6 +2956,8 @@ const App = {
     this._artiPayloadCache = null;
     this._artiInlineDone = false;
     this.closeArtiSheet();
+    const sheetAic = DOM.get('aiContentContainer'); if (sheetAic) sheetAic.innerHTML = '';
+    const artiTrigger = DOM.get('artiTrigger'); if (artiTrigger) artiTrigger.classList.remove('hidden');
     DOM.hide('expiringCard');
     DOM.hide('recentCard');
     DOM.hide('primesCard');
@@ -3884,20 +3893,20 @@ const App = {
     if (chatInput) chatInput.disabled = true;
     if (chatSend)  chatSend.disabled  = true;
 
-    // For inline: replace the response area entirely — no accumulation
-    const responseAreaId = useInline ? 'artiInlineChatHistory' : 'chatHistory';
-    const responseEl = DOM.get(responseAreaId);
-    if (responseEl && useInline) {
-      responseEl.classList.remove('hidden');
-      responseEl.innerHTML = `<div class="arti-response-text arti-thinking">Thinking…</div>`;
-    } else if (responseEl) {
-      responseEl.classList.remove('hidden');
-      responseEl.insertAdjacentHTML('beforeend',
-        `<div class="chat-msg-user">${Html.escapeHtml(message)}</div>
-         <div class="chat-msg-arti" id="chat-resp">
-           <div id="chat-resp-text" class="strategic-read arti-thinking">Arti is thinking…</div>
-         </div>`);
+    // Always route to the bottom sheet — keeps card stable, answer in dedicated space
+    this.openArtiSheet();
+
+    // Show the question label and a loading state in the sheet
+    const sheetBody = DOM.get('artiSheetBody');
+    const aiContainer = DOM.get('aiContentContainer');
+    const artiTrigger = DOM.get('artiTrigger');
+    if (artiTrigger) artiTrigger.classList.add('hidden');
+    if (aiContainer) {
+      aiContainer.innerHTML = `
+        <div class="sheet-question-label">${Html.escapeHtml(message)}</div>
+        <div class="arti-response-text arti-thinking" id="sheetResponseText">Thinking…</div>`;
     }
+    DOM.hide('artiActions');
 
     const chatAbort = new AbortController();
     const chatTimeout = setTimeout(() => chatAbort.abort(), 30000);
@@ -3927,12 +3936,8 @@ const App = {
       clearTimeout(chatTimeout);
       if (!res.ok) throw new Error(`Error ${res.status}`);
 
-      // Stream into a single response div — replaces previous answer
-      const textTarget = useInline
-        ? responseEl?.querySelector('.arti-response-text')
-        : DOM.get('chat-resp-text');
-
-      if (textTarget) textTarget.className = 'arti-response-text strategic-read';
+      const textTarget = DOM.get('sheetResponseText');
+      if (textTarget) textTarget.className = 'arti-response-text';
 
       await Html.streamInto(
         textTarget,
@@ -3941,6 +3946,8 @@ const App = {
           this.aiState.history.push({ role: 'model', content: fullText });
           if (chatInput) { chatInput.disabled = false; chatInput.focus(); }
           if (chatSend)  chatSend.disabled = false;
+          // Show follow-up chips in sheet after first answer
+          DOM.show('artiActions');
         },
         (msg) => {
           if (textTarget) textTarget.innerHTML = `<span style="color:var(--crit-text)">${Html.escapeHtml(msg)}</span>`;
@@ -3950,9 +3957,7 @@ const App = {
       );
     } catch(e) {
       clearTimeout(chatTimeout);
-      const textTarget = useInline
-        ? responseEl?.querySelector('.arti-response-text')
-        : DOM.get('chat-resp-text');
+      const textTarget = DOM.get('sheetResponseText');
       const msg = (e.name === 'AbortError') ? 'Arti took too long. Try a shorter question.' : 'Connection lost. Try again.';
       if (textTarget) textTarget.innerHTML = `<span style="color:var(--crit-text)">${Html.escapeHtml(msg)}</span>`;
       if (chatInput) chatInput.disabled = false;
