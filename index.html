@@ -993,10 +993,21 @@ a, button, input, select { touch-action: manipulation; }
 
 /* Footer brand mark */
 .footer-brand {
-  display: flex; align-items: center; justify-content: center;
-  gap: 6px; padding: 24px 0 8px;
+  display: flex; flex-direction: column; align-items: center;
+  gap: 4px; padding: 24px 0 8px;
 }
-.footer-brand svg { border-radius: 50%; display: block; }
+.footer-brand-row {
+  display: flex; align-items: center; gap: 6px;
+}
+.footer-brand-row svg { border-radius: 50%; display: block; }
+.footer-brand-wordmark {
+  font-size: 1rem; font-weight: 800; letter-spacing: -0.03em;
+  color: var(--text-primary); line-height: 1;
+}
+.footer-brand-sub {
+  font-size: 0.65rem; font-weight: 500; color: var(--text-tertiary);
+  letter-spacing: 0.02em; text-align: center;
+}
 .footer-chat-btn {
   display: inline-flex; align-items: center;
   background: var(--btn-bg); color: var(--btn-text);
@@ -1364,11 +1375,11 @@ a, button, input, select { touch-action: manipulation; }
 
 <footer class="site-footer">
   <div class="footer-brand">
-    <svg width="28" height="28" viewBox="0 0 40 40" aria-hidden="true"><use href="#icon-face-open"/></svg>
-    <div class="logo-text">
-      <span class="logo-wordmark">Fedmo</span>
-      <span class="logo-sub">Federal Markets. Simplified.</span>
+    <div class="footer-brand-row">
+      <svg width="24" height="24" viewBox="0 0 40 40" aria-hidden="true"><use href="#icon-face-open"/></svg>
+      <span class="footer-brand-wordmark">Fedmo</span>
     </div>
+    <div class="footer-brand-sub">Federal Markets. Simplified.</div>
   </div>
 
   <div class="footer-copy">© 2026 Fedmo · Data via USASpending.gov · Not affiliated with the U.S. government</div>
