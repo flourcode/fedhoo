@@ -280,7 +280,8 @@ a, button, input, select { touch-action: manipulation; }
 .arti-fab-face { width: 36px; height: 36px; border-radius: 50%; display: block; overflow: hidden; }
 
 /* Sheet lens prompt */
-.sheet-lens-prompt { padding: 8px 0 16px; border-bottom: 1px solid var(--border-inner); margin-bottom: 16px; }
+.sheet-lens-prompt { padding: 8px 0 12px; }
+.sheet-lens-prompt.hidden { display: none !important; margin: 0; padding: 0; }
 .sheet-lens-label { font-size: var(--text-base); font-weight: 700; color: var(--text-primary); margin-bottom: 4px; letter-spacing: -0.01em; }
 .sheet-lens-sub { font-size: var(--text-xs); color: var(--text-tertiary); margin-bottom: 12px; line-height: 1.5; }
 .sheet-lens-row { display: flex; gap: 6px; }
@@ -349,12 +350,7 @@ a, button, input, select { touch-action: manipulation; }
   letter-spacing: .07em; padding-bottom: 12px;
   border-bottom: 1px solid var(--border-inner); margin-bottom: 14px;
 }
-/* Ask more section */
-.sheet-ask-more {
-  margin-top: 20px; padding-top: 14px;
-  border-top: 1px solid var(--border-inner);
-}
-.sheet-ask-more-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+/* .sheet-ask-more-chips removed with chips */
 .sheet-input-row { display: flex; gap: 6px; align-items: center; }
 .sheet-input {
   flex: 1; background: var(--bg-hover); border: 1.5px solid var(--border);
