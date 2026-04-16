@@ -745,7 +745,7 @@ a, button, input, select { touch-action: manipulation; }
   display: flex; align-items: stretch;
   background: var(--bg-app); border: 1px solid var(--border);
   border-radius: var(--radius); box-shadow: var(--shadow);
-  overflow: hidden;
+  overflow: visible; position: relative;
 }
 .search-territory-btn {
   display: flex; align-items: center; gap: 6px; flex-shrink: 0;
@@ -767,8 +767,8 @@ a, button, input, select { touch-action: manipulation; }
 .territory-dropdown {
   position: absolute; top: calc(100% + 6px); left: 0;
   background: var(--bg-app); border: 1px solid var(--border);
-  border-radius: var(--radius); box-shadow: 0 8px 30px rgba(0,0,0,0.10);
-  min-width: 240px; z-index: 100; display: none; overflow: hidden;
+  border-radius: var(--radius); box-shadow: 0 8px 30px rgba(0,0,0,0.18);
+  min-width: 240px; z-index: 500; display: none; overflow: hidden;
 }
 .territory-dropdown.open { display: block; animation: fadeIn 0.12s; }
 .territory-opt {
@@ -3088,16 +3088,28 @@ const App = {
 
   toggleTerritoryMenu() {
     const dd = DOM.get('territoryDropdown');
+    const isMobile = window.innerWidth < 640;
+    const btn = DOM.get(isMobile ? 'territoryBtnMobile' : 'territoryBtn');
+
+    // Re-parent dropdown to whichever search bar is active so position:absolute works
+    const targetParent = btn ? btn.closest('.search-bar-inner') || btn.parentElement : null;
+    if (targetParent && dd.parentElement !== targetParent) {
+      targetParent.appendChild(dd);
+    }
+
     dd.classList.toggle('open');
-    // Close on outside click
     if (dd.classList.contains('open')) {
       const close = (e) => {
-        if (!dd.contains(e.target) && e.target.id !== 'territoryBtn') {
+        if (!dd.contains(e.target) && e.target.id !== 'territoryBtn' && e.target.id !== 'territoryBtnMobile') {
           dd.classList.remove('open');
           document.removeEventListener('click', close);
+          document.removeEventListener('touchstart', close);
         }
       };
-      setTimeout(() => document.addEventListener('click', close), 0);
+      setTimeout(() => {
+        document.addEventListener('click', close);
+        document.addEventListener('touchstart', close);
+      }, 0);
     }
   },
 
