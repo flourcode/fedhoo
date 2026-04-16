@@ -1336,7 +1336,7 @@ a, button, input, select { touch-action: manipulation; }
     <div class="arti-sheet-drag"></div>
     <div class="arti-sheet-title">
       <svg class="arti-sheet-face" id="artiSheetFace" aria-label="Arti"><use href="#icon-arti"/></svg>
-      <div class="arti-sheet-sub" id="artiSheetSub">Hi, I'm Arti. I've read the data — ask me anything.</div>
+      <div class="arti-sheet-sub" id="artiSheetSub">Hi, I'm Arti. Ask me anything.</div>
     </div>
     <button class="arti-sheet-close" onclick="App.closeArtiSheet()" aria-label="Close">✕</button>
   </div>
@@ -4441,8 +4441,7 @@ const App = {
     const sub = DOM.get('artiSheetSub');
     if (sub) {
       sub.textContent = this.displayQuery
-        ? `Hi, I'm Arti. I've read the ${this.displayQuery} data — ask me anything.`
-        : `Hi, I'm Arti. I've read the data — ask me anything.`;
+        `Hi, I'm Arti. Ask me anything.`;
     }
     if (this._sellerLens) {
       const label = DOM.get('sheetLensLabel');
