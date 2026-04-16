@@ -1210,24 +1210,11 @@ a, button, input, select { touch-action: manipulation; }
         <div class="breadcrumb-row" id="bubbleBreadcrumbInner"></div>
       </div>
 
-      <!-- Arti brief: 2-3 lines, no chrome, streams inline -->
-      <div class="arti-brief-block hidden" id="artiBriefBlock">
-        <div class="arti-brief-body">
-          <svg class="arti-brief-face" id="artiBriefFace" aria-label="Arti"><use href="#icon-arti"/></svg>
-          <div id="artiInlineContent" class="arti-brief-text arti-inline-loading">Analyzing market…</div>
-        </div>
-        <div class="arti-brief-status" id="artiInlineStatus">
-          <span class="arti-inline-dot"></span>
-          <span id="artiInlineStatusText">Reading the data…</span>
-        </div>
-      </div>
-
-      <!-- AI query bar: always present after load, chips appear on focus -->
-      <!-- Query area: lens prompt on first visit, chip bar after -->
-      <div class="hidden" id="artiQueryBar">
-        <!-- Mode A: Lens prompt — shown until user answers what they sell -->
+      <!-- Arti: lens prompt then open expert input — no auto-brief, no chips -->
+      <div class="arti-entry hidden" id="artiQueryBar">
+        <!-- Mode A: What do you sell — shown first session -->
         <div class="arti-lens-prompt" id="artiLensPrompt">
-          <div class="arti-lens-prompt-label">What do you sell? I'll tailor every search.</div>
+          <div class="arti-lens-prompt-label">What do you sell? Arti will use this for every search this session.</div>
           <div class="arti-lens-prompt-row">
             <input type="text" class="arti-query-input" id="artiInlineChatInput"
               placeholder="e.g. cloud security to DoD agencies"
@@ -1236,21 +1223,20 @@ a, button, input, select { touch-action: manipulation; }
             <button class="arti-query-send" onclick="App.saveLensFromPrompt()">Save</button>
           </div>
         </div>
-        <!-- Mode B: Follow-up chips — shown after lens is set -->
+        <!-- Mode B: Expert open input — shown after lens set -->
         <div class="arti-followup-bar hidden" id="artiFollowupBar">
-          <div class="prompt-chips" id="artiInlineChips">
-            <button class="prompt-chip" onclick="App.sendArtiChat('Who is the dominant incumbent in this market and how entrenched are they? Name the top vendor, their biggest contracts, and where their grip is weakest.', true)">Who owns this?</button>
-            <button class="prompt-chip" onclick="App.sendArtiChat('Given my situation, what is the single best near-term opportunity in this data for me specifically? Name the contract, the agency, the incumbent, and exactly why it\'s the right one to chase.', true)">Best opening</button>
-            <button class="prompt-chip" onclick="App.sendArtiChat('Write a short cold outreach email to the procurement lead at the agency spending the most in this market. Use the actual agency name, reference their real spending from the data, and connect it to what I sell. 4 sentences, no fluff.', true)">Draft outreach</button>
-            <button class="prompt-chip" onclick="App.sendArtiChat('Give me 3 things I need to know walking into a meeting with the top buyer in this market. Be specific — name the agency, the programs they\'re funding, the incumbent, and the budget cycle pressure.', true)">Meeting prep</button>
-            <button class="prompt-chip" onclick="App.sendArtiChat('Who should I team with to be competitive here? Pick 2 specific companies already winning in this data and explain exactly what they bring and how I should approach them.', true)">Who to team with</button>
+          <div class="arti-open-input-row">
+            <input type="text" class="arti-query-input" id="artiFollowupInput"
+              placeholder="Ask Arti about this market…"
+              autocomplete="off"
+              onkeypress="if(event.key==='Enter') App.sendArtiFromCard()">
+            <button class="arti-query-send" onclick="App.sendArtiFromCard()">Ask</button>
           </div>
           <div class="arti-lens-set">
-            Briefing for: <span id="artiLensLabel"></span>
+            Briefing for: <span id="artiLensLabel"></span> ·
             <button class="arti-lens-change" onclick="App.resetLens()">Change</button>
           </div>
         </div>
-        <div class="chat-history hidden" id="artiInlineChatHistory"></div>
       </div>
 
       <!-- Seller lens (inline, shown once) -->
@@ -1375,15 +1361,8 @@ a, button, input, select { touch-action: manipulation; }
     <!-- Answer area -->
     <div id="aiContentContainer"></div>
 
-    <!-- Ask another — chips + input, shown after first answer -->
+    <!-- Ask another — input only, shown after first answer -->
     <div class="sheet-ask-more hidden" id="artiActions">
-      <div class="sheet-ask-more-chips" id="artiPromptChips">
-        <button class="prompt-chip" onclick="App.sendArtiChat('Who is the dominant incumbent in this market and how entrenched are they? Name the top vendor, their biggest contracts, and where their grip is weakest.')">Who owns this?</button>
-        <button class="prompt-chip" onclick="App.sendArtiChat('Given my situation, what is the single best near-term opportunity in this data for me specifically? Name the contract, the agency, the incumbent, and exactly why it\'s the right one to chase.')">Best opening</button>
-        <button class="prompt-chip" onclick="App.sendArtiChat('Write a short cold outreach email to the procurement lead at the agency spending the most in this market. Use the actual agency name, reference their real spending from the data, and connect it to what I sell. 4 sentences, no fluff.')">Draft outreach</button>
-        <button class="prompt-chip" onclick="App.sendArtiChat('Give me 3 things I need to know walking into a meeting with the top buyer in this market. Be specific — name the agency, the programs they\'re funding, the incumbent, and the budget cycle pressure.')">Meeting prep</button>
-        <button class="prompt-chip" onclick="App.sendArtiChat('Who should I team with to be competitive here? Pick 2 specific companies already winning in this data and explain exactly what they bring and how I should approach them.')">Who to team with</button>
-      </div>
       <div class="sheet-input-row">
         <input type="text" class="sheet-input" id="chatInput"
           placeholder="Ask another question…"
@@ -2950,7 +2929,6 @@ const App = {
     DOM.hide('artiFab');
     SearchPills.clear(); DOM.get('artiBridge') && DOM.hide('artiBridge');
     this._artiPayloadCache = null;
-    this._artiInlineDone = false;
     this.closeArtiSheet();
     const sheetAic = DOM.get('aiContentContainer'); if (sheetAic) sheetAic.innerHTML = '';
     const ql = DOM.get('sheetQuestionLabel'); if (ql) { ql.textContent = ''; ql.classList.add('hidden'); }
@@ -2961,8 +2939,6 @@ const App = {
     DOM.get('marketSignals')?.classList.add('hidden');
     DOM.get('faceScale')?.classList.add('hidden');
     const fl = DOM.get('faceLabel'); if (fl) fl.classList.add('hidden');
-    const aic = DOM.get('artiInlineContent'); if (aic) { aic.innerHTML = ''; aic.className = 'arti-brief-text arti-inline-loading'; delete aic.dataset.rawPlan; }
-    DOM.hide('artiBriefBlock');
     DOM.hide('artiQueryBar');
     const inlineChatHistory = DOM.get('artiInlineChatHistory'); if (inlineChatHistory) { inlineChatHistory.innerHTML = ''; inlineChatHistory.classList.add('hidden'); }
     // input always in query bar
@@ -3050,7 +3026,6 @@ const App = {
       setTimeout(() => {
         this.renderBridge();
         this.renderMarketSignals();
-        this._autoFireArtiBrief(query);
         SearchPills.generate(App.displayQuery || query);
         // Show seller lens prompt if not yet set
       }, 0);
@@ -3804,7 +3779,7 @@ const App = {
           ];
           this.aiState.count = 0;
           if (statusEl) statusEl.style.display = 'none';
-          this._showArtiQueryBar();
+          // query bar shown by _showArtiQueryBar after signals render
         },
         (msg) => {
           if (contentEl) contentEl.innerHTML = `<span style="color:var(--text-quaternary);">Brief unavailable. Ask a question below.</span>`;
@@ -3905,16 +3880,18 @@ const App = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           request_type: 'govhoo_chat',
-          market_data: this._artiPayloadCache || {
+          market_data: {
             query: this.currentQuery,
-            total_value: this.searchData.active.reduce((s,c)=>s+(parseFloat(c['Award Amount'])||0),0),
-            contract_count: this.searchData.active.length,
-            sample_contracts: this.searchData.active.slice(0,10).map(c=>({
-              'Recipient Name':c['Recipient Name'],'Awarding Agency':c['Awarding Agency'],
-              'Award Amount':c['Award Amount'],'End Date':c['End Date']
+            contracts: this.searchData.active.slice(0, 50).map(c => ({
+              vendor: c['Recipient Name'],
+              agency: c['Awarding Agency'],
+              office: c['Awarding Sub Agency'] || c['Funding Agency'],
+              amount: c['Award Amount'],
+              end_date: c['End Date'],
+              description: c['Award Description'] || c['Contract Description'] || ''
             }))
           },
-          objective: (this._sellerLens ? `I sell ${this._sellerLens}. ` : '') + ((this.artiContext || '').trim()) || null,
+          objective: this._sellerLens ? `I sell ${this._sellerLens}.` : null,
           history: this.aiState.history.slice(-6),
           question: message
         }),
@@ -3951,6 +3928,14 @@ const App = {
       if (chatInput) chatInput.disabled = false;
       if (chatSend)  chatSend.disabled  = false;
     }
+  },
+
+  sendArtiFromCard() {
+    const input = DOM.get('artiFollowupInput');
+    const msg = (input?.value || '').trim();
+    if (!msg) return;
+    input.value = '';
+    this.sendArtiChat(msg, true);
   },
 
   saveLensFromPrompt() {
@@ -4856,16 +4841,8 @@ const App = {
       container.classList.remove('hidden');
     }
 
-    // ── Smart chip highlight ──────────────────────────────────────
-    const inlineChips = document.querySelectorAll('#artiInlineChips .prompt-chip');
-    inlineChips.forEach(chip => chip.classList.remove('chip-hot'));
-    if (inlineChips.length > 0) {
-      let hotIdx = 1;
-      if (exp90Val > total * 0.05)         hotIdx = 0; // What's expiring
-      else if (faceLabel === 'Partner Play') hotIdx = 4; // Who to team with
-      else if (faceLabel === 'Easy')         hotIdx = 2; // Best opening
-      if (inlineChips[hotIdx]) inlineChips[hotIdx].classList.add('chip-hot');
-    }
+    // Show Arti query bar now that data is loaded
+    this._showArtiQueryBar();
   },
 
   resetToSearch() {
