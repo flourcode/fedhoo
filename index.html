@@ -765,6 +765,8 @@ a, button, input, select { touch-action: manipulation; }
 
 /* Territory dropdown */
 .territory-selector { position: relative; flex-shrink: 0; display: flex; align-items: stretch; }
+.search-with-territory { display: flex; align-items: stretch; background: var(--bg-app); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); overflow: visible; }
+.search-with-territory .search-bar-inner { flex: 1; border: none; box-shadow: none; background: transparent; border-radius: 0 var(--radius) var(--radius) 0; overflow: hidden; }
 .territory-dropdown {
   position: absolute; top: calc(100% + 4px); left: 0;
   background: var(--bg-app); border: 1px solid var(--border);
@@ -1103,7 +1105,7 @@ a, button, input, select { touch-action: manipulation; }
     </a>
     <!-- Desktop: search sits here inline -->
     <div class="header-search-wrap header-search-desktop">
-      <div class="search-bar-inner" id="searchBarInner">
+      <div class="search-with-territory">
         <div class="territory-selector" id="territorySelectorDesktop">
           <button class="search-territory-btn" id="territoryBtn" onclick="App.toggleTerritoryMenu()">
             <span class="territory-dot-sm" id="territoryDot"></span>
@@ -1139,10 +1141,12 @@ a, button, input, select { touch-action: manipulation; }
             </button>
           </div>
         </div>
+        <div class="search-bar-inner" id="searchBarInner">
         <input type="search" id="searchInput" class="search-input"
           placeholder="Company, keyword, or NAICS code…"
           autocomplete="off" autocorrect="off" autocapitalize="none"
           enterkeyhint="search">
+        </div>
       </div>
       <div class="autocomplete-dropdown hidden" id="searchSuggestions"></div>
 
@@ -1162,7 +1166,7 @@ a, button, input, select { touch-action: manipulation; }
 
   <!-- Mobile: search on its own row -->
   <div class="header-search-mobile">
-    <div class="search-bar-inner" id="searchBarInnerMobile">
+    <div class="search-with-territory">
       <div class="territory-selector" id="territorySelectorMobile">
         <button class="search-territory-btn" id="territoryBtnMobile" onclick="App.toggleTerritoryMenu()">
           <span class="territory-dot-sm" id="territoryDotMobile"></span>
@@ -1170,10 +1174,12 @@ a, button, input, select { touch-action: manipulation; }
           <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M5 6L0 0h10z" fill="currentColor"/></svg>
         </button>
       </div>
+      <div class="search-bar-inner" id="searchBarInnerMobile">
       <input type="search" id="searchInputMobile" class="search-input"
         placeholder="Company, keyword, or NAICS code…"
         autocomplete="off" autocorrect="off" autocapitalize="none"
         enterkeyhint="search">
+      </div>
     </div>
     <div class="autocomplete-dropdown hidden" id="searchSuggestionsMobile"></div>
   </div>
