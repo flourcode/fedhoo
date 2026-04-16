@@ -264,23 +264,33 @@ a, button, input, select { touch-action: manipulation; }
 
 
 /* ── ARTI FLOATING BUTTON ── */
+/* FAB — round smiley, verdict-colored */
 .arti-fab {
-  position: fixed; bottom: calc(28px + var(--safe-bottom)); right: 20px;
-  display: none; align-items: center; gap: 10px;
-  background: var(--btn-bg); color: #fff;
-  border: none; border-radius: 9999px;
-  padding: 0 20px 0 6px; height: 52px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.18), 0 1px 4px rgba(0,0,0,0.12);
-  cursor: pointer; font-family: var(--font);
-  font-size: var(--text-sm); font-weight: 700;
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
-  z-index: 400;
+  position: fixed; bottom: calc(24px + var(--safe-bottom)); right: 20px;
+  display: none; align-items: center; justify-content: center;
+  width: 52px; height: 52px; border-radius: 50%;
+  background: var(--btn-bg); border: none;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  cursor: pointer; z-index: 400;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 .arti-fab:not(.hidden) { display: flex; }
-.arti-fab:hover { background: var(--btn-hover); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(70,68,110,0.30); }
-.arti-fab:active { transform: scale(0.96); }
-.arti-fab-avatar { width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0; display:block; overflow:hidden; }
-.arti-fab-label { letter-spacing: -0.01em; }
+.arti-fab:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(70,68,110,0.28); }
+.arti-fab:active { transform: scale(0.94); }
+.arti-fab-face { width: 36px; height: 36px; border-radius: 50%; display: block; overflow: hidden; }
+/* Verdict-colored FAB states */
+.arti-fab.verdict-open  { background: #3D5C3D; }
+.arti-fab.verdict-watch { background: #7A5520; }
+.arti-fab.verdict-locked{ background: #6B3040; }
+:root.dark .arti-fab.verdict-open  { background: #4a7a4a; }
+:root.dark .arti-fab.verdict-watch { background: #8a6030; }
+:root.dark .arti-fab.verdict-locked{ background: #8a4050; }
+/* Sheet lens prompt */
+.sheet-lens-prompt { padding: 8px 0 16px; border-bottom: 1px solid var(--border-inner); margin-bottom: 16px; }
+.sheet-lens-label { font-size: var(--text-base); font-weight: 700; color: var(--text-primary); margin-bottom: 4px; letter-spacing: -0.01em; }
+.sheet-lens-sub { font-size: var(--text-xs); color: var(--text-tertiary); margin-bottom: 12px; line-height: 1.5; }
+.sheet-lens-row { display: flex; gap: 6px; }
+.sheet-ask-more { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border-inner); }
 .arti-backdrop {
   position: fixed; inset: 0; background: rgba(0,0,0,0.4);
   z-index: 500; backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
@@ -1187,8 +1197,8 @@ a, button, input, select { touch-action: manipulation; }
     <!-- UNIFIED INTELLIGENCE CARD -->
     <div class="app-card wide" id="marketCard">
 
-      <!-- Hero row: number + face scale side by side -->
-      <h2 class="card-title" id="marketCardTitle">Market Signals</h2>
+      <!-- Hero: market name + dollar amount + face score -->
+      <h2 class="card-title" id="marketCardTitle"></h2>
       <div class="hero-row">
         <div class="market-hero-number" id="marketHeroNumber"></div>
         <div class="face-scale hidden" id="faceScale">
@@ -1204,46 +1214,13 @@ a, button, input, select { touch-action: manipulation; }
         </div>
       </div>
 
-      <!-- Signals: verdict + 2 prose lines + action. Max 4 lines total. -->
-      <div class="market-signals hidden" id="marketSignals"></div>
+      <!-- Breadcrumb — shown when drilled in -->
       <div class="hidden" id="bubbleBreadcrumb">
         <div class="breadcrumb-row" id="bubbleBreadcrumbInner"></div>
       </div>
 
-      <!-- Arti: lens prompt then open expert input — no auto-brief, no chips -->
-      <div class="arti-entry hidden" id="artiQueryBar">
-        <!-- Mode A: What do you sell — shown first session -->
-        <div class="arti-lens-prompt" id="artiLensPrompt">
-          <div class="arti-lens-prompt-label">What do you sell? Arti will use this for every search this session.</div>
-          <div class="arti-lens-prompt-row">
-            <input type="text" class="arti-query-input" id="artiInlineChatInput"
-              placeholder="e.g. cloud security to DoD agencies"
-              autocomplete="off"
-              onkeypress="if(event.key==='Enter') App.saveLensFromPrompt()">
-            <button class="arti-query-send" onclick="App.saveLensFromPrompt()">Save</button>
-          </div>
-        </div>
-        <!-- Mode B: Expert open input — shown after lens set -->
-        <div class="arti-followup-bar hidden" id="artiFollowupBar">
-          <div class="arti-open-input-row">
-            <input type="text" class="arti-query-input" id="artiFollowupInput"
-              placeholder="Ask Arti about this market…"
-              autocomplete="off"
-              onkeypress="if(event.key==='Enter') App.sendArtiFromCard()">
-            <button class="arti-query-send" onclick="App.sendArtiFromCard()">Ask</button>
-          </div>
-          <div class="arti-lens-set">
-            Briefing for: <span id="artiLensLabel"></span> ·
-            <button class="arti-lens-change" onclick="App.resetLens()">Change</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Seller lens (inline, shown once) -->
-
       <!-- Treemap -->
-      <div class="intel-divider"></div>
-      <div class="treemap-context-label">Where to focus inside this market</div>
+      <div class="treemap-context-label" style="margin-top:14px;">Where to focus inside this market</div>
       <div class="chart-tabs" id="chartTabs">
         <button class="chart-tab active" id="tabTreemap" onclick="App.switchChartView('treemap')">Treemap</button>
         <button class="chart-tab" id="tabSankey" onclick="App.switchChartView('sankey')">Agency → Vendor Flow</button>
@@ -1340,10 +1317,9 @@ a, button, input, select { touch-action: manipulation; }
 
   </div><!-- /tools-grid -->
 
-<!-- ARTI FLOATING BUTTON, shown after search loads -->
+<!-- ARTI FAB — floating smiley, verdict-colored, always visible after search -->
 <button class="arti-fab hidden" id="artiFab" onclick="App.openArtiSheet()" aria-label="Ask Arti">
-  <svg class="arti-fab-avatar" aria-label="Arti"><use href="#icon-arti"/></svg>
-  <span class="arti-fab-label" id="artiFabLabel">Ask Arti</span>
+  <svg class="arti-fab-face" id="artiFabFace" aria-hidden="true"><use href="#icon-arti"/></svg>
 </button>
 
 <!-- ARTI BOTTOM SHEET MODAL -->
@@ -1355,19 +1331,36 @@ a, button, input, select { touch-action: manipulation; }
   </div>
   <div class="arti-sheet-body" id="artiSheetBody">
 
-    <!-- Question label — shown when an answer is active -->
+    <!-- Lens prompt — shown on first session open before lens is set -->
+    <div class="sheet-lens-prompt" id="sheetLensPrompt">
+      <div class="sheet-lens-label">What do you sell?</div>
+      <div class="sheet-lens-sub">Arti uses this to filter every answer for your situation. Takes 5 seconds.</div>
+      <div class="sheet-lens-row">
+        <input type="text" class="sheet-input" id="sheetLensInput"
+          placeholder="e.g. AWS cloud to DoD agencies"
+          autocomplete="off"
+          onkeypress="if(event.key==='Enter') App.saveLensFromSheet()">
+        <button class="arti-query-send" onclick="App.saveLensFromSheet()">Save</button>
+      </div>
+    </div>
+
+    <!-- Question label — shown when answer is active -->
     <div class="sheet-q-label hidden" id="sheetQuestionLabel"></div>
 
-    <!-- Answer area -->
+    <!-- Answer streams here -->
     <div id="aiContentContainer"></div>
 
-    <!-- Ask another — input only, shown after first answer -->
+    <!-- Input — shown after lens is set -->
     <div class="sheet-ask-more hidden" id="artiActions">
       <div class="sheet-input-row">
         <input type="text" class="sheet-input" id="chatInput"
-          placeholder="Ask another question…"
+          placeholder="Ask about this market…"
           autocomplete="off">
         <button class="arti-query-send" id="chatSendBtn">Ask</button>
+      </div>
+      <div class="arti-lens-set" id="sheetLensSet">
+        Briefing for: <span id="sheetLensLabel"></span> ·
+        <button class="arti-lens-change" onclick="App.resetLens()">Change</button>
       </div>
     </div>
 
@@ -2936,10 +2929,8 @@ const App = {
     DOM.hide('recentCard');
     DOM.hide('primesCard');
     DOM.hide('bioCard');
-    DOM.get('marketSignals')?.classList.add('hidden');
     DOM.get('faceScale')?.classList.add('hidden');
     const fl = DOM.get('faceLabel'); if (fl) fl.classList.add('hidden');
-    DOM.hide('artiQueryBar');
     const inlineChatHistory = DOM.get('artiInlineChatHistory'); if (inlineChatHistory) { inlineChatHistory.innerHTML = ''; inlineChatHistory.classList.add('hidden'); }
     // input always in query bar
     const inlineChatInput = DOM.get('artiInlineChatInput');
@@ -3837,7 +3828,7 @@ const App = {
   },
 
   async sendArtiChat(message, useInline = false) {
-    const chatInputElId = useInline ? 'artiInlineChatInput' : 'chatInput';
+    const chatInputElId = 'chatInput';
     const chatSendElId  = 'chatSendBtn'; // all answers go to sheet
 
     if (this.aiState.count >= this.aiState.max) {
@@ -3930,31 +3921,11 @@ const App = {
     }
   },
 
-  sendArtiFromCard() {
-    const input = DOM.get('artiFollowupInput');
-    const msg = (input?.value || '').trim();
-    if (!msg) return;
-    input.value = '';
-    this.sendArtiChat(msg, true);
-  },
-
-  saveLensFromPrompt() {
-    const input = DOM.get('artiInlineChatInput');
-    const val = (input?.value || '').trim();
-    const cleaned = val.replace(/^i sell\s+/i, '').trim();
-    if (!cleaned) { input?.focus(); return; }
-    this._sellerLens = cleaned;
-    this._showFollowupBar();
-    this.toast(`Briefing for: ${cleaned}`, 'ok', 2000);
-  },
-
   resetLens() {
     this._sellerLens = null;
-    const label = DOM.get('artiLensLabel');
-    if (label) label.textContent = '';
-    DOM.hide('artiFollowupBar');
-    DOM.show('artiLensPrompt');
-    const input = DOM.get('artiInlineChatInput');
+    DOM.show('sheetLensPrompt');
+    DOM.hide('artiActions');
+    const input = DOM.get('sheetLensInput');
     if (input) { input.value = ''; input.focus(); }
   },
 
@@ -3963,17 +3934,6 @@ const App = {
     const label = DOM.get('artiLensLabel');
     if (label) label.textContent = this._sellerLens || '';
     DOM.show('artiFollowupBar');
-  },
-
-  _showArtiQueryBar() {
-    // Show the right mode based on whether lens is set
-    DOM.show('artiQueryBar');
-    if (this._sellerLens) {
-      this._showFollowupBar();
-    } else {
-      DOM.show('artiLensPrompt');
-      DOM.hide('artiFollowupBar');
-    }
   },
 
   _sendArtiInlineChatFromInput() {
@@ -4444,6 +4404,20 @@ const App = {
     }).join('');
   },
 
+  saveLensFromSheet() {
+    const input = DOM.get('sheetLensInput');
+    const val = (input?.value || '').trim();
+    const cleaned = val.replace(/^i sell\s+/i, '').trim();
+    if (!cleaned) { input?.focus(); return; }
+    this._sellerLens = cleaned;
+    DOM.hide('sheetLensPrompt');
+    const label = DOM.get('sheetLensLabel');
+    if (label) label.textContent = cleaned;
+    DOM.show('artiActions');
+    DOM.get('chatInput')?.focus();
+    this.toast(`Briefing for: ${cleaned}`, 'ok', 2000);
+  },
+
   openArtiSheet() {
     this.UI.artiBackdrop?.classList.remove('hidden');
     requestAnimationFrame(() => {
@@ -4451,8 +4425,17 @@ const App = {
       this.UI.artiSheet?.classList.remove('hidden');
       requestAnimationFrame(() => this.UI.artiSheet?.classList.add('open'));
     });
-    // Focus context input if trigger is showing
-    setTimeout(() => this.UI.artiContextInput?.focus(), 350);
+    if (this._sellerLens) {
+      DOM.hide('sheetLensPrompt');
+      const label = DOM.get('sheetLensLabel');
+      if (label) label.textContent = this._sellerLens;
+      DOM.show('artiActions');
+      setTimeout(() => DOM.get('chatInput')?.focus(), 350);
+    } else {
+      DOM.show('sheetLensPrompt');
+      DOM.hide('artiActions');
+      setTimeout(() => DOM.get('sheetLensInput')?.focus(), 350);
+    }
   },
 
   closeArtiSheet() {
@@ -4768,11 +4751,6 @@ const App = {
     if (lbl) { lbl.textContent = faceLabel; lbl.className = `face-label ${faceClass}`; lbl.classList.remove('hidden'); }
 
     // Color Arti's face to match the verdict — green=Easy, amber=Partner Play, rose=Long Game
-    const artiBriefFace = DOM.get('artiBriefFace');
-    if (artiBriefFace) {
-      const faceIconMap = { open: 'icon-face-open', watch: 'icon-face-watch', locked: 'icon-face-locked' };
-      artiBriefFace.innerHTML = `<use href="#${faceIconMap[faceClass]}"/>`;
-    }
 
     // ── Verdict sentence ──────────────────────────────────────────
     let verdictSentence;
@@ -4827,22 +4805,24 @@ const App = {
         : `Position now — relationships take 12–18 months`;
     }
 
-    // ── Render ───────────────────────────────────────────────────────
-    // Cache formula verdict + action so _autoFireArtiBrief can ground Arti's brief
+    // ── Show FAB colored by verdict ───────────────────────────────────
     this._formulaVerdict = faceLabel;
     this._formulaAction  = action;
     this._formulaTopAgencies = top2Agencies;
-    const container = DOM.get('marketSignals');
-    if (container) {
-      container.innerHTML =
-        `<div class="market-verdict ${faceClass}">${Html.escapeHtml(verdictSentence)}</div>` +
-        proseLines.map(l => `<div class="market-prose">${Html.escapeHtml(l)}</div>`).join('') +
-        (action ? `<div class="market-action">${Html.escapeHtml(action)}</div>` : '');
-      container.classList.remove('hidden');
-    }
 
-    // Show Arti query bar now that data is loaded
-    this._showArtiQueryBar();
+    // Color the FAB smiley to match the verdict
+    const fab = DOM.get('artiFab');
+    if (fab) {
+      fab.classList.remove('verdict-open', 'verdict-watch', 'verdict-locked');
+      fab.classList.add(`verdict-${faceClass}`);
+      fab.classList.remove('hidden');
+    }
+    // Color the face icon inside FAB to match verdict
+    const fabFace = DOM.get('artiFabFace');
+    if (fabFace) {
+      const faceIconMap = { open: 'icon-face-open', watch: 'icon-face-watch', locked: 'icon-face-locked' };
+      fabFace.innerHTML = `<use href="#${faceIconMap[faceClass]}"/>`;
+    }
   },
 
   resetToSearch() {
