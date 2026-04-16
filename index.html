@@ -690,56 +690,8 @@ a, button, input, select { touch-action: manipulation; }
   margin-top: 8px; font-size: var(--text-xs);
   color: var(--text-quaternary); font-style: italic;
 }
-.search-hero { padding: 12px 0 8px; }
 
-.hero-headline {
-  font-size: clamp(1.6rem, 3.5vw, 2.2rem); font-weight: 800;
-  color: var(--text-primary); letter-spacing: -0.03em;
-  line-height: 1.2; margin-bottom: 10px;
-}
-.hero-sub {
-  font-size: var(--text-sm); color: var(--text-secondary);
-  line-height: 1.6; max-width: 520px; margin-bottom: 24px;
-}
-.hero-examples {
-  display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;
-}
-.hero-example-chip {
-  background: var(--bg-app); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 6px 14px;
-  font-size: var(--text-sm); font-weight: 500; color: var(--text-secondary);
-  cursor: pointer; font-family: var(--font); transition: var(--transition);
-}
-.hero-bio {
-  display: flex; align-items: center; gap: 14px;
-  margin-top: 28px; padding: 16px 18px;
-  background: var(--bg-app); border: 1px solid var(--border);
-  border-radius: var(--radius); max-width: 480px;
-}
-.hero-bio-avatar {
-  width: 48px; height: 48px; border-radius: 50%;
-  object-fit: cover; flex-shrink: 0; border: 2px solid var(--border);
-}
-.hero-bio-body { min-width: 0; }
-.hero-bio-name {
-  font-size: var(--text-sm); font-weight: 700;
-  color: var(--text-primary); letter-spacing: -0.01em; margin-bottom: 3px;
-}
-.hero-bio-text {
-  font-size: var(--text-xs); color: var(--text-secondary); line-height: 1.5;
-}
-.hero-bio-btn {
-  display: inline-flex; align-items: center;
-  margin-top: 8px; background: var(--btn-bg); color: var(--btn-text);
-  border-radius: var(--radius-xs); padding: 0 12px; height: 30px;
-  font-size: var(--text-xs); font-weight: 600; text-decoration: none;
-  font-family: var(--font); transition: var(--transition);
-}
-.hero-bio-btn:hover { background: var(--btn-hover); }
-.hero-example-chip:hover { background: var(--accent-dim); color: var(--btn-bg); border-color: var(--accent-dim); }
-.hero-example-label {
-  font-size: var(--text-xs); color: var(--text-quaternary); margin-bottom: 8px;
-}
+
 
 .search-bar-inner {
   display: flex; align-items: stretch;
@@ -1104,7 +1056,7 @@ a, button, input, select { touch-action: manipulation; }
 <header class="site-header">
   <!-- Logo + actions row (always visible) -->
   <div class="header-row">
-    <a class="logo-link" href="/" onclick="App.resetToSearch(); return false;">Fedhoo.</a>
+    <a class="logo-link" href="/" onclick="window.location.href='/'; return false;">Fedhoo.</a>
     <!-- Desktop: search sits here inline -->
     <div class="header-search-wrap header-search-desktop">
       <div class="search-bar-inner" id="searchBarInner">
@@ -1200,27 +1152,6 @@ a, button, input, select { touch-action: manipulation; }
 <div class="page-wrap">
 
   <!-- LANDING PROMPT, shown only before first search -->
-  <div class="search-hero hidden" id="searchHero">
-    <h1 class="hero-headline">Know any federal market<br>before the meeting starts.</h1>
-    <p class="hero-sub">Search any agency, company, keyword, or NAICS code. See who's buying, who's winning, what's expiring, and where you have a shot — in seconds.</p>
-    <p class="hero-example-label">Try a search</p>
-    <div class="hero-examples">
-      <button class="hero-example-chip" onclick="App.runSearch('Cloud')">Cloud</button>
-      <button class="hero-example-chip" onclick="App.runSearch('Zero Trust')">Zero Trust</button>
-      <button class="hero-example-chip" onclick="App.runSearch('Cybersecurity')">Cybersecurity</button>
-      <button class="hero-example-chip" onclick="App.runSearch('541512')">NAICS 541512</button>
-      <button class="hero-example-chip" onclick="App.runSearch('DHS AND Splunk')">DHS AND Splunk</button>
-    </div>
-    <div class="hero-bio">
-      <img src="/images/oldmark.jpg" alt="Mark Flournoy" class="hero-bio-avatar">
-      <div class="hero-bio-body">
-        <div class="hero-bio-name">Built by Mark Flournoy</div>
-        <div class="hero-bio-text">Retired federal sales — AWS, F5, Red Hat, DISA COTR, 20 years Marines. I built the tool I always wished I had.</div>
-        <a href="https://calendly.com/markflournoy/chat-with-mark" target="_blank" rel="noopener" class="hero-bio-btn">Book a chat →</a>
-      </div>
-    </div>
-  </div><!-- /search-hero -->
-
   <!-- RESULTS GRID -->
   <div class="tools-grid hidden" id="resultsGrid">
 
@@ -3090,8 +3021,7 @@ const App = {
 
       // Show results grid
       DOM.show('resultsGrid');
-      DOM.hide('searchHero');
-      DOM.show('shareBtn');
+        DOM.show('shareBtn');
       DOM.show('bioCard');
 
       // Render chart and panels immediately
@@ -4940,7 +4870,6 @@ const App = {
 
   resetToSearch() {
     DOM.hide('shareBtn');
-    DOM.show('searchHero');
     const input = this.UI.searchInput;
     if (input) { input.value = ''; input.focus(); }
     const mobileInp = DOM.get('searchInputMobile');
@@ -5130,14 +5059,12 @@ const App = {
         this.UI.searchInput.value = lastQuery;
         this.runSearch(lastQuery, false, true);
       } else {
-        // Cold visitor — show hero, fire default search silently
-        if (!this.searchData.loaded) DOM.show('searchHero');
+        // Cold visitor — run default search immediately
         this.UI.searchInput.value = 'Cloud';
         this.runSearch('Cloud', false, true);
       }
     } catch(e) {
       console.warn('Fedhoo init error:', e);
-      if (!this.searchData.loaded) DOM.show('searchHero');
     }
 
 
@@ -5187,8 +5114,7 @@ const App = {
     // Safari iOS: when page resumes from background, prevent hero flash if data is loaded
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible' && App.searchData.loaded) {
-        DOM.hide('searchHero');
-        DOM.show('resultsGrid');
+            DOM.show('resultsGrid');
       }
     });
 
