@@ -1384,6 +1384,18 @@ a, button, input, select { touch-action: manipulation; }
       <div class="primes-list" id="primesList"></div>
     </div>
 
+    <!-- SUBAWARDS CARD -->
+    <div class="app-card wide result-panel hidden" id="subawardsCard">
+      <div class="card-header-row">
+        <div>
+          <h2 class="card-title card-title--flush">Prime to Sub Relationships</h2>
+          <p class="card-desc card-desc--sub">Who the primes are subbing to — teaming intelligence for this market.</p>
+        </div>
+        <button class="export-btn" onclick="App.exportSubawardsCSV()" title="Export subawards to CSV">Export CSV</button>
+      </div>
+      <div class="contract-list" id="subawardsList"></div>
+    </div>
+
     <!-- RECENT AWARDS CARD -->
     <div class="app-card wide result-panel hidden" id="recentCard">
       <div class="card-header-row">
@@ -1408,18 +1420,6 @@ a, button, input, select { touch-action: manipulation; }
         <button class="export-btn" onclick="App.exportCSV()" title="Export all contracts as CSV">Export CSV</button>
       </div>
       <div class="contract-list" id="contractsList"></div>
-    </div>
-
-    <!-- SUBAWARDS CARD -->
-    <div class="app-card wide result-panel hidden" id="subawardsCard">
-      <div class="card-header-row">
-        <div>
-          <h2 class="card-title card-title--flush">Prime to Sub Relationships</h2>
-          <p class="card-desc card-desc--sub">Who the primes are subbing to — teaming intelligence for this market.</p>
-        </div>
-        <button class="export-btn" onclick="App.exportSubawardsCSV()" title="Export subawards to CSV">Export CSV</button>
-      </div>
-      <div class="contract-list" id="subawardsList"></div>
     </div>
 
     <!-- BIO CARD — always shown at the bottom of results -->
@@ -5282,7 +5282,11 @@ const App = {
         if (recentRow && recentRow.children.length > 1) recentRow.classList.add('visible');
       });
       this.UI.searchInput.addEventListener('blur', () => {
-        setTimeout(() => App._hideRecentSearches(), 200);
+        setTimeout(() => {
+          App._hideRecentSearches();
+          const sug = DOM.get('searchSuggestions');
+          if (sug) { sug.innerHTML = ''; sug.classList.add('hidden'); }
+        }, 200);
       });
     }
 
