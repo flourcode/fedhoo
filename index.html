@@ -129,16 +129,16 @@ a, button, input, select { touch-action: manipulation; }
 }
 .header-search-wrap .territory-dropdown { top: calc(100% + 6px); left: 0; min-width: 260px; }
 .logo-link {
-  font-size: 1.1rem; font-weight: 800; letter-spacing: -0.03em;
   color: var(--text-primary); text-decoration: none;
-  display: inline-flex; align-items: center; gap: 6px;
-  flex-shrink: 0; cursor: pointer;
+  display: inline-flex; align-items: flex-start; flex-direction: column;
+  flex-shrink: 0; cursor: pointer; gap: 2px;
 }
 .logo-link:hover { opacity: 0.8; }
+.logo-stack { display: flex; flex-direction: column; gap: 2px; }
+.logo-row { display: flex; align-items: center; gap: 7px; }
 .logo-face { display: block; border-radius: 50%; overflow: hidden; flex-shrink: 0; }
-.logo-text { display: flex; flex-direction: column; line-height: 1; }
-.logo-wordmark { font-size: 1rem; font-weight: 800; letter-spacing: -0.03em; color: var(--text-primary); }
-.logo-sub { font-size: 0.6rem; font-weight: 500; color: var(--text-tertiary); letter-spacing: 0.02em; margin-top: 2px; white-space: nowrap; }
+.logo-wordmark { font-size: 1.55rem; font-weight: 800; letter-spacing: -0.03em; color: var(--text-primary); line-height: 1; }
+.logo-sub { font-size: 0.65rem; font-weight: 500; color: var(--text-tertiary); letter-spacing: 0.01em; white-space: nowrap; padding-left: 0; }
 .header-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; margin-left: auto; }
 .hdr-icon-circle {
   width: 36px; height: 36px; min-width: 36px; border-radius: 50%;
@@ -1001,12 +1001,12 @@ a, button, input, select { touch-action: manipulation; }
 }
 .footer-brand-row svg { border-radius: 50%; display: block; }
 .footer-brand-wordmark {
-  font-size: 1rem; font-weight: 800; letter-spacing: -0.03em;
+  font-size: 1.55rem; font-weight: 800; letter-spacing: -0.03em;
   color: var(--text-primary); line-height: 1;
 }
 .footer-brand-sub {
   font-size: 0.65rem; font-weight: 500; color: var(--text-tertiary);
-  letter-spacing: 0.02em; text-align: center;
+  letter-spacing: 0.01em; text-align: center;
 }
 .footer-chat-btn {
   display: inline-flex; align-items: center;
@@ -1092,9 +1092,11 @@ a, button, input, select { touch-action: manipulation; }
   <!-- Logo + actions row (always visible) -->
   <div class="header-row">
     <a class="logo-link" href="/" onclick="window.location.href='/'; return false;">
-      <svg class="logo-face" width="26" height="26" viewBox="0 0 40 40" aria-hidden="true"><use href="#icon-face-open"/></svg>
-      <div class="logo-text">
-        <span class="logo-wordmark">Fedmo</span>
+      <div class="logo-stack">
+        <div class="logo-row">
+          <svg class="logo-face" width="28" height="28" viewBox="0 0 40 40" aria-hidden="true"><use href="#icon-face-open"/></svg>
+          <span class="logo-wordmark">Fedmo</span>
+        </div>
         <span class="logo-sub">Federal Markets. Simplified.</span>
       </div>
     </a>
@@ -1376,7 +1378,7 @@ a, button, input, select { touch-action: manipulation; }
 <footer class="site-footer">
   <div class="footer-brand">
     <div class="footer-brand-row">
-      <svg width="24" height="24" viewBox="0 0 40 40" aria-hidden="true"><use href="#icon-face-open"/></svg>
+      <svg width="28" height="28" viewBox="0 0 40 40" aria-hidden="true"><use href="#icon-face-open"/></svg>
       <span class="footer-brand-wordmark">Fedmo</span>
     </div>
     <div class="footer-brand-sub">Federal Markets. Simplified.</div>
