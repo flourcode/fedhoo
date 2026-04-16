@@ -533,7 +533,12 @@ a, button, input, select { touch-action: manipulation; }
 .hero-row .market-hero-number { margin: 0; }
 .hero-row .face-scale { margin: 0; }
 
-/* Arti brief block — no chrome, just face + text */
+.arti-response-text {
+  font-size: var(--text-sm); color: var(--text-secondary);
+  line-height: 1.7; margin-top: 10px;
+}
+.arti-response-text p { margin: 0 0 0.75rem; }
+.arti-response-text strong { color: var(--text-primary); font-weight: 600; }
 .arti-brief-block { margin: 10px 0 0; }
 .arti-brief-body { display: flex; align-items: flex-start; gap: 10px; }
 .arti-brief-face { width: 28px; height: 28px; border-radius: 50%; display: block; overflow: hidden; flex-shrink: 0; margin-top: 2px; }
@@ -3854,12 +3859,8 @@ const App = {
   },
 
   async sendArtiChat(message, useInline = false) {
-    // useInline=true → stream into the inline brief card (after auto-brief)
-    // useInline=false → stream into the Arti sheet modal (legacy path)
-    const historyElId    = useInline ? 'artiInlineChatHistory'    : 'chatHistory';
-    const counterElId    = useInline ? 'artiInlineChatCounter'     : 'chatCounter';
-    const chatInputElId  = useInline ? 'artiInlineChatInput'       : 'chatInput';
-    const chatSendElId   = useInline ? 'artiInlineChatSendBtn'     : 'chatSendBtn';
+    const chatInputElId = useInline ? 'artiInlineChatInput' : 'chatInput';
+    const chatSendElId  = useInline ? 'artiInlineChatSendBtn' : 'chatSendBtn';
 
     if (this.aiState.count >= this.aiState.max) {
       this.toast('Question limit reached for this search.', 'warning');
@@ -3868,38 +3869,27 @@ const App = {
     if (!message) return;
 
     this.aiState.count++;
-    const remaining = this.aiState.max - this.aiState.count;
-    DOM.text(counterElId, remaining > 0
-      ? `${remaining} follow-up question${remaining === 1 ? '' : 's'} remaining.`
-      : 'Question limit reached.');
-
-    const historyEl = DOM.get(historyElId);
-    if (historyEl) {
-      historyEl.classList.remove('hidden');
-      historyEl.insertAdjacentHTML('beforeend',
-        `<div class="chat-msg-user">${Html.escapeHtml(message)}</div>`
-      );
-    }
-
-    const loaderId = 'chat-' + Date.now();
-    if (historyEl) {
-      historyEl.insertAdjacentHTML('beforeend', `
-        <div class="chat-msg-arti" id="${loaderId}">
-          <div id="${loaderId}-text" class="strategic-read arti-thinking">Arti is thinking…</div>
-        </div>`);
-      historyEl.scrollTop = historyEl.scrollHeight;
-    }
-
-    // Show inline chat input wrap if using inline
-    // input lives in the persistent query bar — no extra show needed
-    if (useInline) { /* query bar always visible */ }
+    this.aiState.history.push({ role: 'user', content: message });
 
     const chatInput = DOM.get(chatInputElId);
     const chatSend  = DOM.get(chatSendElId);
     if (chatInput) chatInput.disabled = true;
     if (chatSend)  chatSend.disabled  = true;
 
-    this.aiState.history.push({ role: 'user', content: message });
+    // For inline: replace the response area entirely — no accumulation
+    const responseAreaId = useInline ? 'artiInlineChatHistory' : 'chatHistory';
+    const responseEl = DOM.get(responseAreaId);
+    if (responseEl && useInline) {
+      responseEl.classList.remove('hidden');
+      responseEl.innerHTML = `<div class="arti-response-text arti-thinking">Thinking…</div>`;
+    } else if (responseEl) {
+      responseEl.classList.remove('hidden');
+      responseEl.insertAdjacentHTML('beforeend',
+        `<div class="chat-msg-user">${Html.escapeHtml(message)}</div>
+         <div class="chat-msg-arti" id="chat-resp">
+           <div id="chat-resp-text" class="strategic-read arti-thinking">Arti is thinking…</div>
+         </div>`);
+    }
 
     const chatAbort = new AbortController();
     const chatTimeout = setTimeout(() => chatAbort.abort(), 30000);
@@ -3929,24 +3919,20 @@ const App = {
       clearTimeout(chatTimeout);
       if (!res.ok) throw new Error(`Error ${res.status}`);
 
-      const textTarget = DOM.get(`${loaderId}-text`);
+      // Stream into a single response div — replaces previous answer
+      const textTarget = useInline
+        ? responseEl?.querySelector('.arti-response-text')
+        : DOM.get('chat-resp-text');
+
+      if (textTarget) textTarget.className = 'arti-response-text strategic-read';
+
       await Html.streamInto(
         textTarget,
         res,
         (fullText) => {
           this.aiState.history.push({ role: 'model', content: fullText });
-          const msgEl = DOM.get(loaderId);
-          if (msgEl) {
-            const copyId = `${loaderId}-copy`;
-            msgEl.insertAdjacentHTML('beforeend',
-              `<button id="${copyId}" class="copy-btn" style="margin-top:8px;"
-                onclick="Utils.copyAndAnimate(document.getElementById('${loaderId}-text').innerText, this, 'Copied!')">
-                Copy
-              </button>`);
-          }
-          if (chatInput) chatInput.disabled = false;
-          if (chatSend)  chatSend.disabled  = false;
-          if (chatInput) chatInput.focus();
+          if (chatInput) { chatInput.disabled = false; chatInput.focus(); }
+          if (chatSend)  chatSend.disabled = false;
         },
         (msg) => {
           if (textTarget) textTarget.innerHTML = `<span style="color:var(--crit-text)">${Html.escapeHtml(msg)}</span>`;
@@ -3956,7 +3942,9 @@ const App = {
       );
     } catch(e) {
       clearTimeout(chatTimeout);
-      const textTarget = DOM.get(`${loaderId}-text`);
+      const textTarget = useInline
+        ? responseEl?.querySelector('.arti-response-text')
+        : DOM.get('chat-resp-text');
       const msg = (e.name === 'AbortError') ? 'Arti took too long. Try a shorter question.' : 'Connection lost. Try again.';
       if (textTarget) textTarget.innerHTML = `<span style="color:var(--crit-text)">${Html.escapeHtml(msg)}</span>`;
       if (chatInput) chatInput.disabled = false;
