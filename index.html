@@ -1499,33 +1499,7 @@ const Utils = {
 
   countUp: (element, targetValue, formatter = val => Math.round(val).toLocaleString()) => {
     if (!element) return;
-    const numericTarget = Number(targetValue) || 0;
-    
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      element.innerText = formatter(numericTarget);
-      return;
-    }
-    
-    const duration = 400; 
-    const easeOutExpo = t => t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
-    let startTime = null;
-
-    if (element.countRef) cancelAnimationFrame(element.countRef);
-
-    const step = (timestamp) => {
-      if (!startTime) startTime = timestamp;
-      const rawProgress = Math.min((timestamp - startTime) / duration, 1);
-      const easedProgress = easeOutExpo(rawProgress);
-      
-      element.innerText = formatter(numericTarget * easedProgress);
-      
-      if (rawProgress < 1) {
-        element.countRef = requestAnimationFrame(step);
-      } else {
-        element.innerText = formatter(numericTarget); 
-      }
-    };
-    element.countRef = requestAnimationFrame(step);
+    element.textContent = formatter(targetValue);
   },
 
   money: n => {
@@ -4763,16 +4737,7 @@ const App = {
     const scale = DOM.get('faceScale');
     if (scale) {
       scale.classList.remove('hidden');
-      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        faceOrder.forEach(v => { const el = DOM.get(faceIds[v]); if (el) el.classList.toggle('active', v === faceClass); });
-      } else {
-        const setActive = (v) => faceOrder.forEach(id => { const el = DOM.get(faceIds[id]); if (el) el.classList.toggle('active', id === v); });
-        const cycleMs = 80; const spinCount = 9; let tick = 0;
-        const spin = setInterval(() => {
-          setActive(faceOrder[tick % 3]); tick++;
-          if (tick >= spinCount) { clearInterval(spin); setTimeout(() => setActive(faceClass), cycleMs); }
-        }, cycleMs);
-      }
+      faceOrder.forEach(v => { const el = DOM.get(faceIds[v]); if (el) el.classList.toggle('active', v === faceClass); });
     }
     const lbl = DOM.get('faceLabel');
     if (lbl) { lbl.textContent = faceLabel; lbl.className = `face-label ${faceClass}`; lbl.classList.remove('hidden'); }
