@@ -1724,6 +1724,12 @@ buyingOffices: {},
     "navsea": { tier:'subtier', name:'Naval Sea Systems Command',             toptier_name:'Department of Defense' },
     "navair":  { tier:'subtier', name:'Naval Air Systems Command',            toptier_name:'Department of Defense' },
     "spawar":  { tier:'subtier', name:'Space and Naval Warfare Systems Command', toptier_name:'Department of Defense' },
+    // NIWC — SPAWAR was renamed Naval Information Warfare Center in 2019
+    "niwc":         { tier:'subtier', name:'Naval Information Warfare Center',          toptier_name:'Department of Defense' },
+    "niwcpac":      { tier:'subtier', name:'Naval Information Warfare Center Pacific',  toptier_name:'Department of Defense' },
+    "niwclant":     { tier:'subtier', name:'Naval Information Warfare Center Atlantic', toptier_name:'Department of Defense' },
+    "niwcatlantic": { tier:'subtier', name:'Naval Information Warfare Center Atlantic', toptier_name:'Department of Defense' },
+    "niwcpacific":  { tier:'subtier', name:'Naval Information Warfare Center Pacific',  toptier_name:'Department of Defense' },
     "amc":     { tier:'subtier', name:'Army Materiel Command',                toptier_name:'Department of Defense' },
     "afmc":    { tier:'subtier', name:'Air Force Materiel Command',           toptier_name:'Department of Defense' },
     "disa":    { tier:'subtier', name:'Defense Information Systems Agency',   toptier_name:'Department of Defense' },
@@ -2564,7 +2570,18 @@ async searchAwards(keywords) {
     // ── TERRITORY INJECTION ──
     App._applySectorFilter(filters);
     App._lastSearchFilters = filters;
-    const rawData = (await this._post('/search/spending_by_award/', { filters, fields: this.AWARD_FIELDS, limit: 100, sort: 'Award Amount', order: 'desc' })).results || [];
+    let rawData = (await this._post('/search/spending_by_award/', { filters, fields: this.AWARD_FIELDS, limit: 100, sort: 'Award Amount', order: 'desc' })).results || [];
+
+    // Keyword fallback — if agency filter returned 0 results, the subtier name may not
+    // match USASpending exactly (e.g. NIWCPAC, NIWCLANT use slightly different official names).
+    // Retry using the agency name as a keyword so partial matches still surface contracts.
+    if (rawData.length === 0 && agencyFilters.length > 0 && plainKeywords.length === 0 && !hasPsc && !hasNaics) {
+      const fallbackKws = agencyFilters.map(a => a.name);
+      const fallbackFilters = { time_period: [period], award_type_codes: this.CONTRACT_TYPES, keywords: fallbackKws };
+      App._applySectorFilter(fallbackFilters);
+      rawData = (await this._post('/search/spending_by_award/', { filters: fallbackFilters, fields: this.AWARD_FIELDS, limit: 100, sort: 'Award Amount', order: 'desc' })).results || [];
+    }
+
     return cleanAndSort(rawData);
   },
 
@@ -4900,6 +4917,8 @@ const App = {
         clearTimeout(App._acTimer);
         const val = e.target.value.trim();
         if (val.length < 2) { hideBox(); return; }
+        // Don't show agency/vendor autocomplete if term is a known keyword expansion
+        if (Utils.lookupIntel(val.toLowerCase()) || Utils.queryAliases[val.toLowerCase()]) { hideBox(); return; }
         App._acTimer = setTimeout(async () => {
           const suggestions = await API.fetchAgencySuggestions(val);
           if (App._acSuppressed) return; // search already fired, don't reopen
@@ -5093,6 +5112,8 @@ const App = {
         clearTimeout(acTimer);
         const val = e.target.value.trim();
         if (val.length < 2) { DOM.get('searchSuggestionsMobile')?.classList.add('hidden'); return; }
+        // Don't show agency/vendor autocomplete if term is a known keyword expansion
+        if (Utils.lookupIntel(val.toLowerCase()) || Utils.queryAliases[val.toLowerCase()]) { DOM.get('searchSuggestionsMobile')?.classList.add('hidden'); return; }
         this._mobileAcTimer = setTimeout(async () => {
           const suggestions = await API.fetchAgencySuggestions(val);
           if (App._acSuppressed) return; // search already fired, don't reopen
