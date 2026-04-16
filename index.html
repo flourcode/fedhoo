@@ -136,6 +136,9 @@ a, button, input, select { touch-action: manipulation; }
 }
 .logo-link:hover { opacity: 0.8; }
 .logo-face { display: block; border-radius: 50%; overflow: hidden; flex-shrink: 0; }
+.logo-text { display: flex; flex-direction: column; line-height: 1; }
+.logo-wordmark { font-size: 1rem; font-weight: 800; letter-spacing: -0.03em; color: var(--text-primary); }
+.logo-sub { font-size: 0.6rem; font-weight: 500; color: var(--text-tertiary); letter-spacing: 0.02em; margin-top: 2px; white-space: nowrap; }
 .header-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; margin-left: auto; }
 .hdr-icon-circle {
   width: 36px; height: 36px; min-width: 36px; border-radius: 50%;
@@ -1087,7 +1090,10 @@ a, button, input, select { touch-action: manipulation; }
   <div class="header-row">
     <a class="logo-link" href="/" onclick="window.location.href='/'; return false;">
       <svg class="logo-face" width="26" height="26" viewBox="0 0 40 40" aria-hidden="true"><use href="#icon-face-open"/></svg>
-      Fedmo.
+      <div class="logo-text">
+        <span class="logo-wordmark">Fedmo</span>
+        <span class="logo-sub">Federal Markets. Simplified.</span>
+      </div>
     </a>
     <!-- Desktop: search sits here inline -->
     <div class="header-search-wrap header-search-desktop">
@@ -1311,7 +1317,7 @@ a, button, input, select { touch-action: manipulation; }
   </div><!-- /tools-grid -->
 
 <!-- ARTI FAB — floating smiley, verdict-colored, always visible after search -->
-<button class="arti-fab hidden" id="artiFab" onclick="App.openArtiSheet()" aria-label="Ask Arti">
+<button class="arti-fab hidden" id="artiFab" onclick="App.openArtiSheet()" aria-label="Ask Mo">
   <svg class="arti-fab-face" id="artiFabFace" aria-hidden="true"><use href="#icon-arti"/></svg>
 </button>
 
@@ -1321,8 +1327,8 @@ a, button, input, select { touch-action: manipulation; }
   <div class="arti-sheet-header">
     <div class="arti-sheet-drag"></div>
     <div class="arti-sheet-title">
-      <svg class="arti-sheet-face" id="artiSheetFace" aria-label="Arti"><use href="#icon-arti"/></svg>
-      <div class="arti-sheet-sub" id="artiSheetSub">Hi, I'm Arti. Ask me about opportunities, channel partners, or how to break in.</div>
+      <svg class="arti-sheet-face" id="artiSheetFace" aria-label="Mo"><use href="#icon-arti"/></svg>
+      <div class="arti-sheet-sub" id="artiSheetSub">Hi, I'm Mo. Ask me about opportunities, channel partners, or how to break in.</div>
     </div>
     <button class="arti-sheet-close" onclick="App.closeArtiSheet()" aria-label="Close">✕</button>
   </div>
@@ -1331,7 +1337,7 @@ a, button, input, select { touch-action: manipulation; }
     <!-- Lens prompt — shown on first session open before lens is set -->
     <div class="sheet-lens-prompt" id="sheetLensPrompt">
       <div class="sheet-lens-label">What do you sell?</div>
-      <div class="sheet-lens-sub">Arti uses this to filter every answer for your situation. Takes 5 seconds.</div>
+      <div class="sheet-lens-sub">Mo uses this to filter every answer for your situation. Takes 5 seconds.</div>
       <div class="sheet-lens-row">
         <input type="text" class="sheet-input" id="sheetLensInput"
           placeholder="e.g. AWS cloud to DoD agencies"
@@ -2329,7 +2335,7 @@ const Html = {
               onDone(accumulated);
               return;
             } else if (msg.t === 'error') {
-              onError(msg.msg || 'Arti encountered an error.');
+              onError(msg.msg || 'Mo encountered an error.');
               return;
             }
           } catch {
@@ -2342,7 +2348,7 @@ const Html = {
         if (targetEl) targetEl.innerHTML = Html.parseAiMarkdown(accumulated);
         onDone(accumulated);
       } else {
-        onError('Arti returned an empty response. Try again.');
+        onError('Mo returned an empty response. Try again.');
       }
     } catch (err) {
       const isTimeout = err.name === 'AbortError';
@@ -3058,7 +3064,7 @@ const App = {
     const container = this.UI.bubbleChartContainer;
     if (container) container.innerHTML = `
       <div class="empty-state">
-        <svg class="arti-avatar-lg" aria-label="Arti"><use href="#icon-arti"/></svg>
+        <svg class="arti-avatar-lg" aria-label="Mo"><use href="#icon-arti"/></svg>
         <h3 class="empty-title">Well, this is awkward.</h3>
         <p class="empty-desc">Nothing came back for "<strong>${Html.escapeHtml(query)}</strong>"${territoryNote}. This is a strict government database, brand names and nicknames often don't match how contracts are filed.</p>
         ${nameHintHtml}
@@ -3149,7 +3155,7 @@ const App = {
       (a['Awarding Agency'] || '') === name || (a['Awarding Sub Agency'] || '') === name
     );
 
-    // Inject agency context into Arti input
+    // Inject agency context into Mo input
     const ctx = this.UI.artiContextInput;
     if (ctx && !ctx.value) {
       ctx.placeholder = `e.g. I sell to ${Utils.cleanAgency ? Utils.cleanAgency(name) : name}`;
@@ -3580,7 +3586,7 @@ const App = {
 
   async runAiActionPlan() {
     if (!this.searchData.loaded || this.searchData.active.length === 0) {
-      this.toast('Run a search first, Arti needs market data to work with.', 'warning');
+      this.toast('Run a search first — Mo needs market data to work with.', 'warning');
       return;
     }
 
@@ -3632,7 +3638,7 @@ const App = {
       const contentEl = this.UI.aiContentContainer;
       contentEl.innerHTML = `
         <div class="arti-brief-header">
-          <svg class="arti-brief-avatar" aria-label="Arti"><use href="#icon-arti"/></svg>
+          <svg class="arti-brief-avatar" aria-label="Mo"><use href="#icon-arti"/></svg>
           <div>
             <div class="arti-brief-name">Arti</div>
             <div class="arti-brief-role">Pre-meeting briefing</div>
@@ -3674,7 +3680,7 @@ const App = {
       this.UI.artiProgress?.classList.add('hidden');
       this.UI.artiTrigger?.classList.remove('hidden');
       const msg = (e.name === 'AbortError' || (e.message||'').includes('timed'))
-        ? 'Arti took too long, try a more focused search.'
+        ? 'Mo took too long, try a more focused search.'
         : (e.message || 'Something went wrong. Try again.');
       this.toast(msg, 'error');
       
@@ -3694,7 +3700,7 @@ const App = {
     const activeLens = this._sellerLens || DEFAULT_LENS;
     const sellerLens = `I sell ${activeLens}. `;
 
-    // Ground Arti's brief in the formula's verdict — no contradictions
+    // Ground Mo's brief in the formula's verdict — no contradictions
     const formulaContext = this._formulaAction
       ? `The scoring model has already told this seller: "${this._formulaAction}". Your job is to give them the single most specific reason why — name one contract, one vendor, one dollar amount from the data that makes that move concrete. Do not contradict or rephrase the recommended action. Add depth, not direction. `
       : '';
@@ -3750,7 +3756,7 @@ const App = {
       );
     } catch(e) {
       const contentEl = DOM.get('artiInlineContent');
-      if (contentEl) contentEl.innerHTML = `<p style="color:var(--text-quaternary);font-size:var(--text-sm);">Brief unavailable. Use the Ask Arti button for a manual briefing.</p>`;
+      if (contentEl) contentEl.innerHTML = `<p style="color:var(--text-quaternary);font-size:var(--text-sm);">Brief unavailable. Tap the Mo button to ask a question.</p>`;
       const statusEl = DOM.get('artiInlineStatus');
       if (statusEl) statusEl.style.display = 'none';
     }
@@ -3884,7 +3890,7 @@ const App = {
     } catch(e) {
       clearTimeout(chatTimeout);
       const textTarget = DOM.get('sheetResponseText');
-      const msg = (e.name === 'AbortError') ? 'Arti took too long. Try a shorter question.' : 'Connection lost. Try again.';
+      const msg = (e.name === 'AbortError') ? 'Mo took too long. Try a shorter question.' : 'Connection lost. Try again.';
       if (textTarget) textTarget.innerHTML = `<span style="color:var(--crit-text)">${Html.escapeHtml(msg)}</span>`;
       if (chatInput) chatInput.disabled = false;
       if (chatSend)  chatSend.disabled  = false;
@@ -4403,7 +4409,7 @@ const App = {
     });
     // Update sheet subtitle with current market
     const sub = DOM.get('artiSheetSub');
-    if (sub) sub.textContent = `Hi, I'm Arti. Ask me about opportunities, channel partners, or how to break in.`;
+    if (sub) sub.textContent = `Hi, I'm Mo. Ask me about opportunities, channel partners, or how to break in.`;
 
     if (this._sellerLens) {
       const label = DOM.get('sheetLensLabel');
@@ -4646,7 +4652,7 @@ const App = {
 
     // Pre-build payload cache so send is instant
     this._artiPayloadCache = this._buildArtiPayload();
-    // FAB deliberately not shown — Arti brief auto-streams inline into results
+    // FAB deliberately not shown — Mo brief auto-streams inline into results
   },
 
   renderMarketSignals() {
@@ -4720,7 +4726,7 @@ const App = {
     const lbl = DOM.get('faceLabel');
     if (lbl) { lbl.textContent = faceLabel; lbl.className = `face-label ${faceClass}`; lbl.classList.remove('hidden'); }
 
-    // Color Arti's face to match the verdict — green=Easy, amber=Partner Play, rose=Long Game
+    // Color Mo's face to match the verdict
 
     // ── Verdict sentence ──────────────────────────────────────────
     let verdictSentence;
@@ -4791,7 +4797,7 @@ const App = {
     // Color the FAB smiley to match the verdict
     const fab = DOM.get('artiFab');
     if (fab) fab.classList.remove('hidden');
-    // FAB stays green always — it's Arti, not the verdict
+    // FAB stays green always — it's Mo, not the verdict
     // Sheet face matches verdict so it feels connected to the market score
     const faceIconMap = { open: 'icon-face-open', watch: 'icon-face-watch', locked: 'icon-face-locked' };
     const sheetFace = DOM.get('artiSheetFace');
@@ -4843,7 +4849,7 @@ const App = {
       contractsList:        DOM.get('contractsList'),
       subawardsCard:        DOM.get('subawardsCard'),
       subawardsList:        DOM.get('subawardsList'),
-      // Arti / AI
+      // Mo / AI
       artiFab:              DOM.get('artiFab'),
       artiBridge:           DOM.get('artiBridge'),
       artiBridgeText:       DOM.get('artiBridgeText'),
