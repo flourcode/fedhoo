@@ -334,7 +334,8 @@ a, button, input, select { touch-action: manipulation; }
 }
 @media (min-width: 640px) { .arti-sheet-drag { display: none; } }
 .arti-sheet-close {
-  width: 28px; height: 28px; border-radius: 50%; border: none;
+  width: 28px; height: 28px; min-width: 28px; min-height: 28px;
+  border-radius: 50%; border: none; flex-shrink: 0;
   background: var(--bg); color: var(--text-tertiary); font-size: 14px;
   cursor: pointer; display: flex; align-items: center; justify-content: center;
   transition: var(--transition); font-family: var(--font);
