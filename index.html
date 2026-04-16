@@ -704,6 +704,24 @@ a, button, input, select { touch-action: manipulation; }
   margin-top: 8px; font-size: var(--text-xs);
   color: var(--text-quaternary); font-style: italic;
 }
+/* Lens prompt card */
+.arti-lens-prompt { margin-top: 10px; }
+.arti-lens-prompt-label {
+  font-size: var(--text-xs); font-weight: 600; color: var(--text-tertiary);
+  margin-bottom: 6px;
+}
+.arti-lens-prompt-row { display: flex; gap: 6px; align-items: center; }
+/* Follow-up bar */
+.arti-followup-bar { margin-top: 10px; }
+.arti-lens-set {
+  font-size: var(--text-xs); color: var(--text-quaternary);
+  margin-top: 6px; display: flex; align-items: center; gap: 4px;
+}
+.arti-lens-change {
+  background: none; border: none; color: var(--btn-bg); font-size: var(--text-xs);
+  cursor: pointer; font-family: var(--font); padding: 0; text-decoration: underline;
+  text-underline-offset: 2px;
+}
 
 
 
@@ -1208,21 +1226,32 @@ a, button, input, select { touch-action: manipulation; }
       </div>
 
       <!-- AI query bar: always present after load, chips appear on focus -->
-      <div class="arti-query-bar hidden" id="artiQueryBar">
-        <div class="arti-query-chips hidden" id="artiInlineChips">
-          <button class="prompt-chip" onclick="App.sendArtiChat('Who is the dominant incumbent in this market and how entrenched are they? Name the top vendor, their biggest contracts, and where their grip is weakest.', true)">Who owns this?</button>
-          <button class="prompt-chip" onclick="App.sendArtiChat('Given my situation, what is the single best near-term opportunity in this data for me specifically? Name the contract, the agency, the incumbent, and exactly why it\'s the right one to chase.', true)">Best opening</button>
-          <button class="prompt-chip" onclick="App.sendArtiChat('Write a short cold outreach email to the procurement lead at the agency spending the most in this market. Use the actual agency name, reference their real spending from the data, and connect it to what I sell. 4 sentences, no fluff.', true)">Draft outreach</button>
-          <button class="prompt-chip" onclick="App.sendArtiChat('Give me 3 things I need to know walking into a meeting with the top buyer in this market. Be specific — name the agency, the programs they\'re funding, the incumbent, and the budget cycle pressure.', true)">Meeting prep</button>
-          <button class="prompt-chip" onclick="App.sendArtiChat('Who should I team with to be competitive here? Pick 2 specific companies already winning in this data and explain exactly what they bring and how I should approach them.', true)">Who to team with</button>
+      <!-- Query area: lens prompt on first visit, chip bar after -->
+      <div class="hidden" id="artiQueryBar">
+        <!-- Mode A: Lens prompt — shown until user answers what they sell -->
+        <div class="arti-lens-prompt" id="artiLensPrompt">
+          <div class="arti-lens-prompt-label">What do you sell? I'll tailor every search.</div>
+          <div class="arti-lens-prompt-row">
+            <input type="text" class="arti-query-input" id="artiInlineChatInput"
+              placeholder="e.g. cloud security to DoD agencies"
+              autocomplete="off"
+              onkeypress="if(event.key==='Enter') App.saveLensFromPrompt()">
+            <button class="arti-query-send" onclick="App.saveLensFromPrompt()">Save</button>
+          </div>
         </div>
-        <div class="arti-query-input-row">
-          <input type="text" class="arti-query-input" id="artiInlineChatInput"
-            placeholder="What do you sell?"
-            autocomplete="off"
-            onfocus="if(App._sellerLens) document.getElementById('artiInlineChips').classList.remove('hidden')"
-            onblur="setTimeout(()=>document.getElementById('artiInlineChips').classList.add('hidden'),200)">
-          <button class="arti-query-send" id="artiInlineChatSendBtn">Ask</button>
+        <!-- Mode B: Follow-up chips — shown after lens is set -->
+        <div class="arti-followup-bar hidden" id="artiFollowupBar">
+          <div class="prompt-chips" id="artiInlineChips">
+            <button class="prompt-chip" onclick="App.sendArtiChat('Who is the dominant incumbent in this market and how entrenched are they? Name the top vendor, their biggest contracts, and where their grip is weakest.', true)">Who owns this?</button>
+            <button class="prompt-chip" onclick="App.sendArtiChat('Given my situation, what is the single best near-term opportunity in this data for me specifically? Name the contract, the agency, the incumbent, and exactly why it\'s the right one to chase.', true)">Best opening</button>
+            <button class="prompt-chip" onclick="App.sendArtiChat('Write a short cold outreach email to the procurement lead at the agency spending the most in this market. Use the actual agency name, reference their real spending from the data, and connect it to what I sell. 4 sentences, no fluff.', true)">Draft outreach</button>
+            <button class="prompt-chip" onclick="App.sendArtiChat('Give me 3 things I need to know walking into a meeting with the top buyer in this market. Be specific — name the agency, the programs they\'re funding, the incumbent, and the budget cycle pressure.', true)">Meeting prep</button>
+            <button class="prompt-chip" onclick="App.sendArtiChat('Who should I team with to be competitive here? Pick 2 specific companies already winning in this data and explain exactly what they bring and how I should approach them.', true)">Who to team with</button>
+          </div>
+          <div class="arti-lens-set">
+            Briefing for: <span id="artiLensLabel"></span>
+            <button class="arti-lens-change" onclick="App.resetLens()">Change</button>
+          </div>
         </div>
         <div class="chat-history hidden" id="artiInlineChatHistory"></div>
       </div>
@@ -3767,8 +3796,8 @@ const App = {
       ? `The scoring model has already told this seller: "${this._formulaAction}". Your job is to give them the single most specific reason why — name one contract, one vendor, one dollar amount from the data that makes that move concrete. Do not contradict or rephrase the recommended action. Add depth, not direction. `
       : '';
 
-    // On the first search of the session (no lens set), ask what they sell at the end
-    const askLensQuestion = !this._sellerLens && !this._hasAskedLens;
+    // On the first search of the session (no lens set), show the lens prompt
+    // (handled by _showArtiQueryBar — no special flag needed)
 
     const objective = (sellerLens + territoryScope + formulaContext).trim() || null;
 
@@ -3801,16 +3830,6 @@ const App = {
         (fullText) => {
           this._artiInlineDone = true;
           this._currentBriefText = fullText;
-
-          // Append lens question after brief completes on first session search
-          if (askLensQuestion && contentEl) {
-            this._hasAskedLens = true;
-            const q = document.createElement('div');
-            q.className = 'arti-lens-question';
-            q.textContent = 'What do you sell? I\'ll tailor the next search.';
-            contentEl.appendChild(q);
-          }
-
           if (contentEl) { contentEl.dataset.rawPlan = fullText; }
           this.aiState.history = [
             { role: 'user', content: `Give me an actionable plan in the "${query}" market.` },
@@ -3818,7 +3837,7 @@ const App = {
           ];
           this.aiState.count = 0;
           if (statusEl) statusEl.style.display = 'none';
-          DOM.show('artiQueryBar');
+          this._showArtiQueryBar();
         },
         (msg) => {
           if (contentEl) contentEl.innerHTML = `<span style="color:var(--text-quaternary);">Brief unavailable. Ask a question below.</span>`;
@@ -3877,7 +3896,7 @@ const App = {
 
   async sendArtiChat(message, useInline = false) {
     const chatInputElId = useInline ? 'artiInlineChatInput' : 'chatInput';
-    const chatSendElId  = useInline ? 'artiInlineChatSendBtn' : 'chatSendBtn';
+    const chatSendElId  = 'chatSendBtn'; // all answers go to sheet
 
     if (this.aiState.count >= this.aiState.max) {
       this.toast('Question limit reached for this search.', 'warning');
@@ -3965,30 +3984,47 @@ const App = {
     }
   },
 
-  _sendArtiInlineChatFromInput() {
+  saveLensFromPrompt() {
     const input = DOM.get('artiInlineChatInput');
-    const msg = (input?.value || '').trim();
-    if (!msg) return;
-    input.value = '';
+    const val = (input?.value || '').trim();
+    const cleaned = val.replace(/^i sell\s+/i, '').trim();
+    if (!cleaned) { input?.focus(); return; }
+    this._sellerLens = cleaned;
+    this._showFollowupBar();
+    this.toast(`Briefing for: ${cleaned}`, 'ok', 2000);
+  },
 
-    // Detect if the user is answering the "what do you sell?" question
-    // Heuristic: short (under 100 chars), no question mark, no keywords suggesting a real question
-    const isLensAnswer = msg.length < 100 &&
-      !msg.includes('?') &&
-      !msg.match(/^(who|what|where|when|why|how|tell|show|give|find|list|explain|can you|which)/i);
+  resetLens() {
+    this._sellerLens = null;
+    const label = DOM.get('artiLensLabel');
+    if (label) label.textContent = '';
+    DOM.hide('artiFollowupBar');
+    DOM.show('artiLensPrompt');
+    const input = DOM.get('artiInlineChatInput');
+    if (input) { input.value = ''; input.focus(); }
+  },
 
-    if (isLensAnswer && (!this._sellerLens || this._hasAskedLens)) {
-      const cleaned = msg.replace(/^i sell\s+/i, '').trim();
-      this._sellerLens = cleaned;
-      this._hasAskedLens = false;
-      // Switch input to follow-up mode
-      const inp = DOM.get('artiInlineChatInput');
-      if (inp) inp.placeholder = 'Ask about incumbents, partners, or next steps…';
-      this.toast(`Got it — briefing for: ${cleaned}`, 'ok', 3000);
-      return;
+  _showFollowupBar() {
+    DOM.hide('artiLensPrompt');
+    const label = DOM.get('artiLensLabel');
+    if (label) label.textContent = this._sellerLens || '';
+    DOM.show('artiFollowupBar');
+  },
+
+  _showArtiQueryBar() {
+    // Show the right mode based on whether lens is set
+    DOM.show('artiQueryBar');
+    if (this._sellerLens) {
+      this._showFollowupBar();
+    } else {
+      DOM.show('artiLensPrompt');
+      DOM.hide('artiFollowupBar');
     }
+  },
 
-    this.sendArtiChat(msg, true);
+  _sendArtiInlineChatFromInput() {
+    // No longer used for lens — lens has its own Save button
+    // This now only fires from sheet chat input wired in init
   },
 
   sendArtiChatFromInput() {
@@ -5016,11 +5052,8 @@ const App = {
     const inlineChatInput = DOM.get('artiInlineChatInput');
     if (inlineChatInput) {
       inlineChatInput.addEventListener('keypress', e => {
-        if (e.key === 'Enter') App._sendArtiInlineChatFromInput();
       });
     }
-    const inlineChatSend = DOM.get('artiInlineChatSendBtn');
-    if (inlineChatSend) inlineChatSend.addEventListener('click', () => App._sendArtiInlineChatFromInput());
 
     // Wire bubble mode toggles (Agency / Office / Prime)
     document.querySelectorAll('[data-mode]').forEach(b => {
