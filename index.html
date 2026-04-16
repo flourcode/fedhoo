@@ -4196,15 +4196,18 @@ const App = {
         }, 370);
       }
     } else {
-      // Clear inline height first
-      if (viewport) viewport.style.height = '';
-      // Always re-measure and reset viewport to treemap SVG height after slide
-      setTimeout(() => {
-        if (this.searchData.loaded) {
-          this._treemapDirty = true; // force redraw so height gets set
-          this.renderBubbleChart();
-        }
-      }, 360);
+      // Read the treemap SVG's actual height and apply it — no redraw needed
+      const treemapSvg = DOM.get('panelTreemap')?.querySelector('svg');
+      if (viewport && treemapSvg) {
+        viewport.style.height = treemapSvg.getAttribute('height') + 'px';
+      } else if (viewport) {
+        viewport.style.height = '';
+      }
+      if (this._treemapDirty) {
+        setTimeout(() => {
+          if (this.searchData.loaded) this.renderBubbleChart();
+        }, 360);
+      }
     }
   },
 
