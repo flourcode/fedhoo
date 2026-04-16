@@ -4439,10 +4439,7 @@ const App = {
     });
     // Update sheet subtitle with current market
     const sub = DOM.get('artiSheetSub');
-    if (sub) {
-      sub.textContent = this.displayQuery
-        `Hi, I'm Arti. Ask me anything.`;
-    }
+    if (sub) sub.textContent = `Hi, I'm Arti. Ask me anything.`;
     if (this._sellerLens) {
       const label = DOM.get('sheetLensLabel');
       if (label) label.textContent = this._sellerLens;
