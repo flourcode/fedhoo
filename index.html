@@ -1198,9 +1198,9 @@ a, button, input, select { touch-action: manipulation; }
         </div>
         <div class="arti-query-input-row">
           <input type="text" class="arti-query-input" id="artiInlineChatInput"
-            placeholder="Ask about incumbents, partners, or next steps…"
+            placeholder="What do you sell?"
             autocomplete="off"
-            onfocus="document.getElementById('artiInlineChips').classList.remove('hidden')"
+            onfocus="if(App._sellerLens) document.getElementById('artiInlineChips').classList.remove('hidden')"
             onblur="setTimeout(()=>document.getElementById('artiInlineChips').classList.add('hidden'),200)">
           <button class="arti-query-send" id="artiInlineChatSendBtn">Ask</button>
         </div>
@@ -2948,7 +2948,13 @@ const App = {
     DOM.hide('artiQueryBar');
     const inlineChatHistory = DOM.get('artiInlineChatHistory'); if (inlineChatHistory) { inlineChatHistory.innerHTML = ''; inlineChatHistory.classList.add('hidden'); }
     // input always in query bar
-    const inlineChatInput = DOM.get('artiInlineChatInput'); if (inlineChatInput) inlineChatInput.value = '';
+    const inlineChatInput = DOM.get('artiInlineChatInput');
+    if (inlineChatInput) {
+      inlineChatInput.value = '';
+      inlineChatInput.placeholder = this._sellerLens
+        ? 'Ask about incumbents, partners, or next steps…'
+        : 'What do you sell?';
+    }
     const ais = DOM.get('artiInlineStatus'); if (ais) { ais.style.display = ''; }
     const aist = DOM.get('artiInlineStatusText'); if (aist) aist.textContent = 'Reading the data…';
     DOM.get('aiContentContainer').innerHTML = '';
@@ -3971,14 +3977,13 @@ const App = {
       !msg.match(/^(who|what|where|when|why|how|tell|show|give|find|list|explain|can you|which)/i);
 
     if (isLensAnswer && (!this._sellerLens || this._hasAskedLens)) {
-      // Strip "I sell" prefix if they typed it
       const cleaned = msg.replace(/^i sell\s+/i, '').trim();
       this._sellerLens = cleaned;
-      this._hasAskedLens = false; // reset so question won't show again this session
-      // Acknowledge and let them know it's set
+      this._hasAskedLens = false;
+      // Switch input to follow-up mode
+      const inp = DOM.get('artiInlineChatInput');
+      if (inp) inp.placeholder = 'Ask about incumbents, partners, or next steps…';
       this.toast(`Got it — briefing for: ${cleaned}`, 'ok', 3000);
-      // Re-fire the brief with the new lens context silently in background
-      // so their next search uses it. Don't re-fire current one — let them search again.
       return;
     }
 
