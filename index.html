@@ -535,10 +535,18 @@ a, button, input, select { touch-action: manipulation; }
 
 .arti-response-text {
   font-size: var(--text-sm); color: var(--text-secondary);
-  line-height: 1.7; margin-top: 10px;
+  line-height: 1.6; margin-top: 10px;
 }
-.arti-response-text p { margin: 0 0 0.75rem; }
+.arti-response-text p { margin: 0 0 0.4rem; }
+.arti-response-text p:last-child { margin-bottom: 0; }
 .arti-response-text strong { color: var(--text-primary); font-weight: 600; }
+.arti-response-text ul, .arti-response-text ol { list-style: none; padding: 0; margin: 0; }
+.arti-response-text li { display: inline; }
+.arti-response-text li::after { content: ' '; }
+.arti-response-text h1, .arti-response-text h2, .arti-response-text h3 {
+  font-size: var(--text-sm); font-weight: 600; color: var(--text-primary);
+  margin: 0 0 2px; display: inline;
+}
 .arti-brief-block { margin: 10px 0 0; }
 .arti-brief-body { display: flex; align-items: flex-start; gap: 10px; }
 .arti-brief-face { width: 28px; height: 28px; border-radius: 50%; display: block; overflow: hidden; flex-shrink: 0; margin-top: 2px; }
