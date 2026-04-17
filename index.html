@@ -146,24 +146,77 @@ a, button, input, select { touch-action: manipulation; }
 }
 .hdr-icon-circle:hover { background: var(--bg-hover); color: var(--text-primary); }
 
-/* Search pills — related searches shown after results load */
+/* ── CHIP TRAY — unified Recent + Also Try chips below search bar ── */
 
-.recent-searches {
-  display: none; align-items: center; gap: 6px; overflow-x: auto;
-  scrollbar-width: none; padding: 6px 0 2px;
+/* ── CHIP TRAY — unified Recent / Also Try row below search bar ── */
+/* Mobile-first: tray sits directly under header, scrolls horizontally,
+   touch targets are 44px min, fades right edge so chips don't hard-clip. */
+.chip-tray {
+  display: flex; align-items: center; gap: 8px;
+  overflow-x: auto; scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
   max-width: min(96vw, 1920px); margin: 0 auto;
+  padding: 8px 2px 4px;
+  /* Fade-mask so chips don't hard-clip at the right edge */
+  mask-image: linear-gradient(to right, #000 88%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, #000 88%, transparent 100%);
+  opacity: 0; max-height: 0; overflow-y: hidden;
+  transform: translateY(-2px);
+  transition: opacity 0.22s ease, transform 0.22s ease, max-height 0.25s ease;
+  pointer-events: none;
 }
-.recent-searches::-webkit-scrollbar { display: none; }
-.recent-searches.visible { display: flex; }
-.recent-label { font-size: var(--text-xs); color: var(--text-quaternary); white-space: nowrap; flex-shrink: 0; padding-left: 2px; }
-.recent-chip {
+.chip-tray::-webkit-scrollbar { display: none; }
+.chip-tray.visible {
+  opacity: 1; max-height: 52px; transform: translateY(0); pointer-events: auto;
+}
+.chip-tray-label {
+  font-size: 10px; font-weight: 700; color: var(--text-quaternary);
+  white-space: nowrap; flex-shrink: 0; padding-left: 2px;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  line-height: 1;
+}
+.chip-tray-item {
   background: var(--bg-app); border: 1px solid var(--border);
-  border-radius: 9999px; padding: 3px 11px;
+  border-radius: 9999px; padding: 7px 14px;
   font-size: var(--text-xs); font-weight: 600; color: var(--text-secondary);
   cursor: pointer; font-family: var(--font); transition: var(--transition);
   white-space: nowrap; flex-shrink: 0;
+  min-height: 34px; display: inline-flex; align-items: center;
+  line-height: 1;
 }
-.recent-chip:hover { background: var(--accent-dim); color: var(--btn-bg); border-color: var(--accent-dim); }
+.chip-tray-item:hover {
+  background: var(--accent-dim); color: var(--btn-bg); border-color: var(--accent-dim);
+}
+.chip-tray-item:active { transform: scale(0.96); }
+/* "Recent" chips get a subtle clock icon via ::before */
+.chip-tray-item--recent {
+  color: var(--text-tertiary); border-style: dashed;
+}
+.chip-tray-item--recent:hover {
+  border-style: solid; background: var(--accent-dim); color: var(--btn-bg); border-color: var(--accent-dim);
+}
+/* Code chips (NAICS, PSC) get a subtle monospace feel */
+.chip-tray-item--code {
+  font-variant-numeric: tabular-nums; letter-spacing: 0.02em;
+  background: var(--accent-dim); border-color: var(--border-inner); color: var(--btn-bg);
+}
+.chip-tray-item--code:hover { background: var(--chip-hover); color: var(--bg-app); border-color: transparent; }
+/* Clear history link */
+.chip-tray-clear {
+  font-size: 10px; font-weight: 500; color: var(--text-quaternary);
+  background: none; border: none; cursor: pointer; padding: 4px 6px;
+  white-space: nowrap; flex-shrink: 0; font-family: var(--font);
+  text-decoration: underline; text-underline-offset: 2px;
+  transition: color 0.15s ease;
+}
+.chip-tray-clear:hover { color: var(--text-secondary); }
+@media (max-width: 640px) {
+  .chip-tray { padding: 6px 0 2px; gap: 6px; }
+  .chip-tray-item { padding: 8px 14px; min-height: 44px; font-size: var(--text-sm); }
+  .chip-tray.visible { max-height: 58px; }
+}
+
+/* Recent/pills now unified into chip-tray above */
 
 /* ── PAGE LAYOUT ── */
 .page-wrap { max-width: min(96vw, 1920px); margin: 0 auto; padding: 20px 16px calc(4rem + var(--safe-bottom)); }
@@ -1076,11 +1129,8 @@ a, button, input, select { touch-action: manipulation; }
     <div class="autocomplete-dropdown hidden" id="searchSuggestionsMobile" role="listbox" aria-label="Search suggestions"></div>
   </div>
 
-  <div class="recent-searches" id="recentSearches">
-    <span class="recent-label">Recent</span>
-  </div>
-  <!-- Search pills — dictionary-driven related searches, shown after each result -->
-  <div class="search-pills-row hidden" id="searchPillsRow"></div>
+  <!-- Unified chip tray — shows Recent before search, Also Try after results -->
+  <div class="chip-tray" id="chipTray" role="navigation" aria-label="Search suggestions"></div>
 </header>
 
 <!-- LOADER -->
@@ -2457,41 +2507,85 @@ async searchAwards(keywords) {
 const SearchPills = {
   _cache: {},
   _current: null,
+  _mode: 'idle', // 'idle' | 'recent' | 'alsotry'
 
+  // ── RECENT MODE — shown on input focus before a search ──
+  showRecent() {
+    const tray = DOM.get('chipTray');
+    if (!tray) return;
+    try {
+      const history = JSON.parse(localStorage.getItem('govhoo-recent') || '[]').slice(0, 6);
+      if (!history.length) { this.hide(); return; }
+      tray.innerHTML = '<span class="chip-tray-label">Recent</span>' +
+        history.map(q => {
+          const safe = q.replace(/'/g, "\\'");
+          return `<button class="chip-tray-item chip-tray-item--recent" onclick="SearchPills.hide();App.runSearch('${safe}')">${Html.escapeHtml(q)}</button>`;
+        }).join('') +
+        `<button class="chip-tray-clear" onclick="SearchPills.clearHistory()">Clear</button>`;
+      tray.classList.add('visible');
+      this._mode = 'recent';
+    } catch(e) {}
+  },
+
+  clearHistory() {
+    try { localStorage.removeItem('govhoo-recent'); } catch(e) {}
+    this.hide();
+    App.toast('Search history cleared.', 'ok');
+  },
+
+  hideRecent() {
+    // Only hide if currently showing recent — don't kill "also try" chips
+    if (this._mode === 'recent') this.hide();
+  },
+
+  // ── ALSO TRY MODE — shown after search results load ──
   generate(query) {
     if (!query || query.length < 2) return;
     const key = query.toLowerCase().trim();
-    if (this._current === key) return;
+    if (this._current === key && this._mode === 'alsotry') return;
     this._current = key;
-    // Dictionary only — USASpending autocomplete returns garbage for tech vendors
     const intel = Utils.lookupIntel(query);
     if (intel) { this._cache[key] = intel; this.render(intel, query); }
   },
 
   render(intel, query) {
-    const container = DOM.get('searchPillsRow');
-    if (!container) return;
+    const tray = DOM.get('chipTray');
+    if (!tray) return;
     const pills = intel.pills || [];
-    if (!pills.length) { container.classList.add('hidden'); return; }
+    if (!pills.length) { this._hideAlsoTry(); return; }
     const seen = new Set([query.toUpperCase()]);
     const validPills = pills.filter(p => {
       const k = p.toUpperCase();
       if (seen.has(k)) return false;
       seen.add(k); return true;
     }).slice(0, 10);
-    if (!validPills.length) { container.classList.add('hidden'); return; }
-    container.innerHTML = '<span class="search-pills-label">Also try</span>' +
+    if (!validPills.length) { this._hideAlsoTry(); return; }
+    tray.innerHTML = '<span class="chip-tray-label">Also try</span>' +
       validPills.map(p => {
         const isCode = /^\d{6}$/.test(p) || /^[A-Z]\d{3,}/.test(p);
         const safe = p.replace(/'/g, "\\'");
-        return `<button class="search-pill${isCode ? ' search-pill-code' : ''}" onclick="App.runSearch('${safe}')">${Html.escapeHtml(p)}</button>`;
+        return `<button class="chip-tray-item${isCode ? ' chip-tray-item--code' : ''}" onclick="App.runSearch('${safe}')">${Html.escapeHtml(p)}</button>`;
       }).join('');
-    container.classList.remove('hidden');
+    tray.classList.add('visible');
+    this._mode = 'alsotry';
+  },
+
+  _hideAlsoTry() {
+    if (this._mode === 'alsotry' || this._mode === 'idle') {
+      const tray = DOM.get('chipTray');
+      if (tray) { tray.classList.remove('visible'); }
+      this._mode = 'idle';
+    }
+  },
+
+  hide() {
+    const tray = DOM.get('chipTray');
+    if (tray) { tray.classList.remove('visible'); }
+    this._mode = 'idle';
   },
 
   clear() {
-    const el = DOM.get('searchPillsRow');
-    if (el) { el.innerHTML = ''; el.classList.add('hidden'); }
+    this.hide();
     this._current = null;
   },
 
@@ -2901,9 +2995,9 @@ const App = {
                     <strong>${Html.escapeHtml(agencies[0] || 'another department')}</strong>.
                     We found <strong>${retryData.length} contracts totaling ${Utils.money(retrySpend)}</strong> when searching as a keyword instead.
                   </p>
-                  <div class="empty-chips" style="justify-content:flex-start;margin-bottom:16px;">
-                    <button class="empty-chip" style="border-color:var(--btn-bg);color:var(--btn-bg);font-weight:700;" onclick="App.runSearch('${Html.escapeHtml(rawQuery)}', true)">Search "${Html.escapeHtml(rawQuery)}" as keyword →</button>
-                    ${agencies.map(a => `<button class="empty-chip" onclick="App.runSearch('${Html.escapeHtml(a)}')">${Html.escapeHtml(a)}</button>`).join('')}
+                  <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;">
+                    <button class="chip-tray-item" style="border-color:var(--btn-bg);color:var(--btn-bg);" onclick="App.runSearch('${Html.escapeHtml(rawQuery)}', true)">Search "${Html.escapeHtml(rawQuery)}" as keyword →</button>
+                    ${agencies.map(a => `<button class="chip-tray-item" onclick="App.runSearch('${Html.escapeHtml(a)}')">${Html.escapeHtml(a)}</button>`).join('')}
                   </div>
                   <div style="font-size:var(--text-xs);color:var(--text-quaternary);border-top:1px solid var(--border-inner);padding-top:12px;">
                     Top primes in this space: ${vendors.map(v => `<strong>${Html.escapeHtml(v)}</strong>`).join(', ')}
@@ -3003,18 +3097,18 @@ const App = {
     let nameHintHtml = '';
     if (kw && kw.competitors && kw.competitors.length > 0) {
       const altChips = kw.competitors.slice(0, 6).map(n =>
-        `<button class="empty-chip" style="border-color:var(--btn-bg);color:var(--btn-bg);font-weight:700;" onclick="App.runSearch('${Html.escapeHtml(n)}')">${Html.escapeHtml(n)}</button>`
+        `<button class="chip-tray-item" style="border-color:var(--btn-bg);color:var(--btn-bg);" onclick="App.runSearch('${Html.escapeHtml(n)}')">${Html.escapeHtml(n)}</button>`
       ).join('');
       nameHintHtml = `
         <div class="empty-hint-box">
           <div class="empty-hint-label">USASpending uses these legal names</div>
           <p class="empty-hint-desc">"<strong>${Html.escapeHtml(query)}</strong>" matched these registered entity names in the database. Try one:</p>
-          <div class="empty-chips">${altChips}</div>
+          <div class="empty-chips" style="display:flex;flex-wrap:wrap;gap:8px;">${altChips}</div>
         </div>`;
     }
 
     const chips = this.FALLBACK_CHIPS.map(s =>
-      `<button class="empty-chip" onclick="App.runSearch('${Html.escapeHtml(s.q)}')">${Html.escapeHtml(s.label)}</button>`
+      `<button class="chip-tray-item" onclick="App.runSearch('${Html.escapeHtml(s.q)}')">${Html.escapeHtml(s.label)}</button>`
     ).join('');
 
     const container = this.UI.bubbleChartContainer;
@@ -3031,7 +3125,7 @@ const App = {
           <li><strong>Use a NAICS code</strong>, 6 digits catches contracts regardless of vendor name spelling</li>
           <li><strong>AND searches are strict</strong>, both terms must appear in the same contract description</li>
         </ul>
-        <div class="empty-chips">${chips}</div>
+        <div class="empty-chips" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;">${chips}</div>
       </div>`;
   },
 
@@ -5003,26 +5097,15 @@ const App = {
     LibLoader.preloadWhenIdle();
     Utils.loadMarketIntel(); // preload dictionary — no-op if already loaded
 
-    // Recent searches row — show on input focus, populate from localStorage
-    const recentRow = DOM.get('recentSearches');
-    const renderRecentSearches = () => {
-      if (!recentRow) return;
-      try {
-        const history = JSON.parse(localStorage.getItem('govhoo-recent') || '[]').slice(0, 5);
-        if (!history.length) return;
-        recentRow.innerHTML = '<span class="recent-label">Recent</span>' +
-          history.map(q => `<button class="recent-chip" onclick="App.runSearch('${q.replace(/'/g,"\\'")}');App._hideRecentSearches();">${Html.escapeHtml(q)}</button>`).join('');
-      } catch(e) {}
-    };
-    App._hideRecentSearches = () => { if (recentRow) recentRow.classList.remove('visible'); };
+    // ── Chip tray: Recent on focus, Also Try after results ──
     if (this.UI.searchInput) {
       this.UI.searchInput.addEventListener('focus', () => {
-        renderRecentSearches();
-        if (recentRow && recentRow.children.length > 1) recentRow.classList.add('visible');
+        // Show recent on focus only when no results are loaded
+        if (!App.searchData.loaded) SearchPills.showRecent();
       });
       this.UI.searchInput.addEventListener('blur', () => {
         setTimeout(() => {
-          App._hideRecentSearches();
+          SearchPills.hideRecent();
           const sug = DOM.get('searchSuggestions');
           if (sug) { sug.innerHTML = ''; sug.classList.add('hidden'); }
         }, 200);
@@ -5081,13 +5164,12 @@ const App = {
         }
       });
       mobileInput.addEventListener('focus', () => {
-        renderRecentSearches();
-        if (recentRow && recentRow.children.length > 1) recentRow.classList.add('visible');
+        if (!App.searchData.loaded) SearchPills.showRecent();
         if (mobileBar) mobileBar.classList.add('loading');
         setTimeout(() => { if (mobileBar) mobileBar.classList.remove('loading'); }, 0);
       });
       mobileInput.addEventListener('blur', () => {
-        setTimeout(() => { App._hideRecentSearches(); DOM.get('searchSuggestionsMobile')?.classList.add('hidden'); }, 200);
+        setTimeout(() => { SearchPills.hideRecent(); DOM.get('searchSuggestionsMobile')?.classList.add('hidden'); }, 200);
       });
     }
 
