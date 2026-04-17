@@ -645,6 +645,8 @@ a, button, input, select { touch-action: manipulation; }
   margin: 8px 0 4px;
 }
 .market-prose strong { color: var(--text-primary); font-weight: 700; }
+.market-prose p { margin: 0 0 10px; }
+.market-prose p:last-child { margin-bottom: 0; }
 /* Action line — dominant text, commands attention */
 .market-action {
   font-size: clamp(1rem, 2.5vw, 1.2rem); font-weight: 900;
@@ -4811,6 +4813,7 @@ const App = {
     if (!m || !m.total) return;
     const now = Date.now();
     const total = m.total;
+    const tc = s => Utils.titleCase(s); // shorthand for vendor/agency name casing
 
     // ── Core inputs ───────────────────────────────────────────────
     const vendorSorted  = Object.entries(m.vendors).sort((a,b)=>b[1].spend-a[1].spend);
@@ -4818,7 +4821,7 @@ const App = {
     const vendorCount   = vendorSorted.length;
     const agencyCount   = agencySorted.length;
     const contractCount = m.contractCount || 0;
-    const topVendor     = vendorSorted[0]?.[0] || '';
+    const topVendor     = tc(vendorSorted[0]?.[0] || '');
     const top1Spend     = vendorSorted[0]?.[1].spend || 0;
     const top3Spend     = vendorSorted.slice(0,3).reduce((s,[,v])=>s+v.spend,0);
     const top1Pct       = total > 0 ? Math.round(top1Spend/total*100) : 0;
@@ -4830,7 +4833,7 @@ const App = {
     const smallPct      = contractCount > 0 ? smallContracts / contractCount : 0;
 
     // Expiry windows
-    const exp90d  = now + 90  * 86400000;
+    const exp90d  = now + 90 * 86400000;
     const exp90   = (m.expiring||[]).filter(c=>c._endTs<=exp90d);
     const exp12   = (m.expiring||[]);
     const exp90Val  = exp90.reduce((s,c)=>s+(parseFloat(c['Award Amount'])||0),0);
@@ -4850,15 +4853,21 @@ const App = {
 
     if (queryType === 'vendor') {
       // ═══ VENDOR MODE ═══════════════════════════════════════════
-      const tv = m.targetVendor || topVendor;
-      const tvData = m.targetVendorData || m.vendors[tv] || { spend: 0, count: 0, agencies: new Set() };
+      const tv = tc(m.targetVendor || vendorSorted[0]?.[0] || '');
+      const tvRaw = m.targetVendor || vendorSorted[0]?.[0] || '';
+      const tvData = m.targetVendorData || m.vendors[tvRaw] || { spend: 0, count: 0, agencies: new Set() };
       const tvPct = total > 0 ? Math.round(tvData.spend / total * 100) : 0;
       const tvAgencyCount = tvData.agencies?.size || 0;
       const tvContractCount = tvData.count || 0;
-      const tvExpiring = (m.expiring||[]).filter(c => (c['Recipient Name']||'') === tv);
+      const tvExpiring = (m.expiring||[]).filter(c => (c['Recipient Name']||'') === tvRaw);
       const tvExpiringVal = tvExpiring.reduce((s,c)=>s+(parseFloat(c['Award Amount'])||0),0);
-      const tvRecent = (m.recentAwards||[]).filter(c => (c['Recipient Name']||'') === tv);
-      const competitors = vendorSorted.filter(([n]) => n !== tv).slice(0, 5);
+      const tvRecent = (m.recentAwards||[]).filter(c => (c['Recipient Name']||'') === tvRaw);
+      // Competitors: exclude any name that looks like a variant of the target vendor
+      const tvClean = tvRaw.toUpperCase().replace(_RE_SUFFIX, '').trim();
+      const competitors = vendorSorted.filter(([n]) => {
+        const nc = n.toUpperCase().replace(_RE_SUFFIX, '').trim();
+        return nc !== tvClean && !nc.includes(tvClean) && !tvClean.includes(nc.substring(0, 8));
+      }).slice(0, 5);
       const competitorShare = competitors.reduce((s,[,v])=>s+v.spend,0);
       const competitorPct = total > 0 ? Math.round(competitorShare / total * 100) : 0;
 
@@ -4871,57 +4880,64 @@ const App = {
 
       if (isDominant && isDiversified && !hasExposure) {
         faceClass = 'open'; faceLabel = 'Dominant';
-        verdictSentence = `${tv} owns this market and has low recompete exposure.`;
+        verdictSentence = `${tv} owns this market and has low recompete risk.`;
       } else if (isDominant && hasExposure) {
         faceClass = 'watch'; faceLabel = 'Exposed';
-        verdictSentence = `${tv} is dominant but has significant contract value expiring soon.`;
+        verdictSentence = `${tv} is the dominant player, but a meaningful chunk of their book is coming up for recompete.`;
       } else if (isGrowing && isDiversified) {
         faceClass = 'open'; faceLabel = 'Growing';
-        verdictSentence = `${tv} is actively winning new work across ${tvAgencyCount} agencies.`;
+        verdictSentence = `${tv} is actively winning across ${tvAgencyCount} agencies. The trajectory is strong.`;
       } else if (!isDiversified && tvPct >= 30) {
         faceClass = 'watch'; faceLabel = 'Concentrated';
-        verdictSentence = `${tv} is strong but concentrated in ${tvAgencyCount === 1 ? 'a single agency' : 'just ' + tvAgencyCount + ' agencies'}.`;
+        verdictSentence = `${tv} has real spend here, but ${tvAgencyCount === 1 ? "it's all in one agency" : "it's spread across just " + tvAgencyCount + " agencies"}. That's a risk.`;
       } else if (tvPct < 15) {
         faceClass = 'locked'; faceLabel = 'Niche Player';
-        verdictSentence = `${tv} has a small footprint here — ${tvPct}% of a ${Utils.money(total)} market.`;
+        verdictSentence = `${tv} has a small footprint in this market, just ${tvPct}% of ${Utils.money(total)}.`;
       } else {
         faceClass = 'watch'; faceLabel = 'Established';
         verdictSentence = `${tv} is established at ${tvPct}% share across ${tvAgencyCount} agencies.`;
       }
 
-      // ── Vendor-mode recommendations (MEDDIC + Miller-Heiman lens) ──
-      proseLines.push(`<strong>Position:</strong> ${Utils.money(tvData.spend)} across ${tvContractCount} contracts in ${tvAgencyCount} ${tvAgencyCount === 1 ? 'agency' : 'agencies'}. ${tvPct}% of the addressable market.`);
+      // ── Vendor prose ──
+      proseLines.push(`${tv} holds ${Utils.money(tvData.spend)} across ${tvContractCount} contracts in ${tvAgencyCount} ${tvAgencyCount === 1 ? 'agency' : 'agencies'}, which is ${tvPct}% of the addressable market here.`);
 
       if (hasExposure) {
-        proseLines.push(`<strong>Recompete exposure:</strong> ${Utils.money(tvExpiringVal)} in contracts expiring within 90 days. ${tvExpiring.length === 1 ? 'This is a single large recompete' : 'These ' + tvExpiring.length + ' recompetes'} — identify the contracting officer and find out if the requirement is changing. MEDDIC: map the decision process now, before the RFI drops.`);
+        proseLines.push(`${Utils.money(tvExpiringVal)} of that is expiring within 90 days across ${tvExpiring.length} ${tvExpiring.length === 1 ? 'contract' : 'contracts'}. That's the window. The question to answer right now is whether the requirement is changing or if this is a straight re-up. Find the contracting officer and the program manager, map who makes the technical evaluation, and figure out if there's a real decision being made or if this is already wired.`);
       }
 
       if (!isDiversified) {
-        const topTvAgency = [...(tvData.agencies || [])][0] || topAgency;
-        proseLines.push(`<strong>Concentration risk:</strong> Most of ${tv}'s work flows through ${Utils.cleanAgency(topTvAgency)}. Miller-Heiman says protect the base — but also prospect adjacent agencies. Look at who else buys this capability in ${top2Agencies.filter(a => a !== Utils.cleanAgency(topTvAgency)).join(', ') || 'adjacent accounts'}.`);
+        const topTvAgency = Utils.cleanAgency([...(tvData.agencies || [])][0] || topAgency);
+        const adjacentAgencies = top2Agencies.filter(a => a !== topTvAgency).join(' and ');
+        proseLines.push(`Most of ${tv}'s work runs through ${topTvAgency}, which means the portfolio is fragile. If that relationship stalls or the buying office reorganizes, there's no backup. ${adjacentAgencies ? 'Look at ' + adjacentAgencies + ' as an expansion path because the same capability is being bought there by other vendors.' : 'Prospecting adjacent agencies should be the priority.'}`);
       }
 
       if (competitors.length > 0) {
-        const topComp = competitors[0][0];
+        const topComp = tc(competitors[0][0]);
         const topCompPct = total > 0 ? Math.round(competitors[0][1].spend / total * 100) : 0;
-        proseLines.push(`<strong>Competitive landscape:</strong> ${topComp} is the closest competitor at ${topCompPct}% share. ${competitorPct > tvPct ? 'Collectively, competitors outspend ' + tv + ' — this is a contested market, not a lock.' : competitors.length >= 3 ? 'Multiple competitors are active — the buying office has options.' : 'Limited competition suggests the incumbent relationship is sticky.'}`);
+        if (competitorPct > tvPct) {
+          proseLines.push(`${topComp} is the closest competitor at ${topCompPct}%, and collectively the competition outspends ${tv}. This is a contested market, not a lock. The incumbents will have to defend their positions, which creates openings if you know where the dissatisfaction is.`);
+        } else if (competitors.length >= 3) {
+          proseLines.push(`${topComp} is next at ${topCompPct}%, with ${competitors.length - 1} other vendors in the mix. The buying offices have alternatives, which means ${tv}'s relationships need constant maintenance.`);
+        } else {
+          proseLines.push(`Limited competition outside of ${tv}. ${topComp} is the only real alternative at ${topCompPct}%. That typically means sticky incumbent relationships and high switching costs for the agencies.`);
+        }
       }
 
       if (isGrowing) {
-        proseLines.push(`<strong>Growth signal:</strong> ${tvRecent.length} new awards in the last 90 days. The account team is executing. Sandler rule: don't try to unseat a vendor that's actively winning — instead, find the adjacent requirement they aren't covering.`);
+        proseLines.push(`${tv} won ${tvRecent.length} new awards in the last 90 days, which is a strong execution signal. When a vendor is actively winning, trying to displace them head-on is the wrong play. The better move is to find the adjacent requirement they are not covering and build your case around that gap.`);
       } else if (tvRecent.length === 0) {
-        proseLines.push(`<strong>Stall signal:</strong> No new awards in 90 days. This could mean the buying cycle is between waves, or the vendor's footprint is static. SPIN: investigate what has changed in the agency's requirements since these contracts were awarded.`);
+        proseLines.push(`No new awards in the last 90 days. That could mean the buying cycle is between waves, or it could mean the vendor's footprint has plateaued. Worth investigating what has changed in the agencies' requirements since these contracts were originally awarded.`);
       }
 
       // Action
       if (hasExposure && !isDiversified) {
-        action = `Watch the recompetes — ${tv} is concentrated and exposed`;
+        action = `Watch the recompetes closely. ${tv} is concentrated and exposed.`;
       } else if (isDominant && isDiversified) {
-        action = `${tv} is well-positioned — expand into adjacent NAICS or pursue sub opportunities`;
+        action = `${tv} is well positioned. Expand into adjacent NAICS codes or pursue sub opportunities under existing vehicles.`;
       } else if (tvPct < 15) {
-        action = `Small footprint — identify the 2-3 contracts where ${tv} can expand scope`;
+        action = `Small footprint. Identify the 2 or 3 contracts where ${tv} can expand scope or win the next task order.`;
       } else {
-        action = `Diversify across agencies — ${tvAgencyCount === 1 ? 'single-agency dependency is the biggest risk' : 'deepen the relationships that are working'}`;
+        action = `Diversify across agencies. ${tvAgencyCount === 1 ? 'Single-agency dependency is the biggest risk here.' : 'Deepen the relationships that are producing results.'}`;
       }
 
     } else if (queryType === 'agency') {
@@ -4933,55 +4949,56 @@ const App = {
 
       if (isActive && isFragmented && hasSetAsides) {
         faceClass = 'open'; faceLabel = 'Accessible';
-        verdictSentence = `This agency buys from many vendors and has active set-aside programs.`;
+        verdictSentence = `This agency buys from a broad vendor base and has active set-aside programs.`;
       } else if (isActive && isFragmented) {
         faceClass = 'open'; faceLabel = 'Open';
-        verdictSentence = `Diverse vendor base with recent buying activity — multiple entry points.`;
+        verdictSentence = `Diverse vendor base with recent buying activity. There are multiple ways in.`;
       } else if (isConcentrated && isActive) {
         faceClass = 'watch'; faceLabel = 'Incumbent-Heavy';
-        verdictSentence = `Active buying but ${topVendor} and a few primes control ${top3Pct}% of spend.`;
+        verdictSentence = `Active buying, but ${topVendor} and a handful of primes control ${top3Pct}% of spend.`;
       } else if (isConcentrated && !isActive) {
         faceClass = 'locked'; faceLabel = 'Locked';
-        verdictSentence = `Concentrated spend and limited new awards — this agency isn't buying much right now.`;
+        verdictSentence = `Spend is concentrated and there is not much new award activity. This agency is not buying right now.`;
       } else if (isActive) {
         faceClass = 'watch'; faceLabel = 'Competitive';
-        verdictSentence = `Active market but you'll need to differentiate sharply to win.`;
+        verdictSentence = `Active market, but you will need to differentiate sharply to win here.`;
       } else {
         faceClass = 'locked'; faceLabel = 'Quiet';
-        verdictSentence = `Low buying activity and limited expirations — plan for a longer cycle.`;
+        verdictSentence = `Low buying activity and limited expirations. Plan for a longer cycle.`;
       }
 
-      // ── Agency-mode recommendations (BANT + Sandler lens) ──
-      proseLines.push(`<strong>Buying profile:</strong> ${contractCount} contracts, ${vendorCount} vendors, average deal size ${Utils.money(avgContract)}. ${smallPct > 0.6 ? 'Predominantly small task orders — high volume, lower barrier to entry.' : smallPct < 0.3 ? 'Large contracts dominate — these are typically recompetes with lengthy procurement cycles.' : 'Mix of large and small awards — target the entry-level task orders first.'}`);
+      // ── Agency prose ──
+      proseLines.push(`${contractCount} contracts across ${vendorCount} vendors, with an average deal size of ${Utils.money(avgContract)}. ${smallPct > 0.6 ? 'Most of these are smaller task orders, which means lower barriers to entry and faster procurement timelines.' : smallPct < 0.3 ? 'Large contracts dominate this agency. These are typically recompetes with lengthy evaluation cycles and strong incumbent advantages.' : 'A mix of large and small awards. Start with the entry-level task orders to build past performance, then pursue larger work.'}`);
 
       if (isConcentrated) {
-        proseLines.push(`<strong>Incumbent power:</strong> ${topVendor} holds ${top1Pct}% and the top 3 vendors control ${top3Pct}%. Sandler: you won't displace these vendors on an existing contract. Instead, qualify the NEXT requirement — what capability gap does the agency have that incumbents aren't filling? BANT: confirm budget exists for new work, not just recompetes.`);
+        proseLines.push(`${topVendor} holds ${top1Pct}% and the top 3 vendors control ${top3Pct}%. You are not going to displace these vendors on an existing contract. The question is what comes next. What capability gap does this agency have that the incumbents are not filling? If you can identify a new requirement that does not map to an existing vehicle, that is your way in.`);
       } else {
-        proseLines.push(`<strong>Vendor diversity:</strong> ${vendorCount} vendors, no single dominant incumbent. This is a procurement office that evaluates multiple bidders — your past performance matters more than relationships here. Focus on LPTA-style wins to build your CPARS history.`);
+        proseLines.push(`No single dominant vendor, which means this procurement office evaluates multiple bidders seriously. Your past performance and CPARS ratings matter more than relationships here. Focus on winning an initial small contract to establish your record with this agency.`);
       }
 
       if (exp90Val > 0) {
         const topExpiring = exp90[0];
-        const topExpVendor = topExpiring ? topExpiring['Recipient Name'] : '';
-        proseLines.push(`<strong>Near-term opportunity:</strong> ${Utils.money(exp90Val)} expiring in 90 days across ${exp90.length} contracts. ${topExpVendor ? topExpVendor + "'s contract is first up — " : ''}MEDDIC: identify the technical evaluator and economic buyer NOW. The procurement timeline for a recompete started months ago.`);
+        const topExpVendor = topExpiring ? tc(topExpiring['Recipient Name'] || '') : '';
+        proseLines.push(`${Utils.money(exp90Val)} in contracts expiring in the next 90 days across ${exp90.length} awards. ${topExpVendor ? topExpVendor + "'s contract is first up. " : ''}The procurement timeline for any recompete started months ago, so if you are not already in the conversation, the play is to identify the technical evaluator and the economic buyer and start building that relationship now for the next cycle.`);
       } else if (exp12Val > 0) {
-        proseLines.push(`<strong>12-month pipeline:</strong> ${Utils.money(exp12Val)} expiring within a year. Start building relationships with the program office — attend industry days, respond to RFIs. Miller-Heiman: map your coach inside the agency before the solicitation drops.`);
+        proseLines.push(`${Utils.money(exp12Val)} expiring within the next 12 months. That gives you time to position. Attend industry days, respond to RFIs, and find your internal champion inside the program office before the solicitation drops.`);
       }
 
       if (hasSetAsides) {
         const topSA = Object.entries(setAsideCounts).sort((a,b)=>b[1]-a[1])[0];
-        proseLines.push(`<strong>Set-aside activity:</strong> ${Math.round(setAsidePct * 100)}% of contracts use set-asides${topSA ? ' (most common: ' + (VehicleDetector.setAsideLabels[topSA[0]] || topSA[0]) + ')' : ''}. If you qualify, this is your fastest path in — small business set-asides have shorter evaluation cycles and less competition.`);
+        const saLabel = topSA ? (VehicleDetector.setAsideLabels[topSA[0]] || topSA[0]) : '';
+        proseLines.push(`${Math.round(setAsidePct * 100)}% of contracts here use set-asides${saLabel ? ', most commonly ' + saLabel : ''}. If you qualify, this is the fastest path in. Set-aside competitions have shorter evaluation cycles, fewer bidders, and they build the past performance you need to compete for full-and-open work later.`);
       }
 
       // Action
       if (isActive && isFragmented && exp90Val > 0) {
-        action = `Target the ${exp90.length} contracts expiring in 90 days — this agency is buying and evaluating now`;
+        action = `Target the ${exp90.length} contracts expiring in 90 days. This agency is evaluating now.`;
       } else if (isConcentrated && exp90Val > 0) {
-        action = `Get on ${topVendor}'s team for the upcoming recompetes, or pursue the set-aside carve-outs`;
+        action = `Get on ${topVendor}'s team for the upcoming recompetes, or pursue the set-aside carve-outs.`;
       } else if (isActive) {
-        action = `Register in SAM.gov, respond to the next RFI, and get your CPARS started`;
+        action = `Register in SAM.gov, respond to the next RFI, and get your first CPARS rating at this agency.`;
       } else {
-        action = `Build relationships now — attend the next industry day and identify your coach`;
+        action = `Build relationships now. Attend the next industry day and find your internal champion.`;
       }
 
     } else {
@@ -5011,62 +5028,65 @@ const App = {
           : `This market is open and fragmented.`;
       } else if (faceLabel === 'Partner Play') {
         verdictSentence = isConcentrated
-          ? `The big primes own this — get in through them.`
-          : `This market is active but competitive.`;
+          ? `The large primes control this space. The fastest path in is through them, not around them.`
+          : `Active market, but competitive. You need a differentiated position.`;
       } else {
-        verdictSentence = `This is a long game market.`;
+        verdictSentence = `This market moves slowly. Plan for a 12 to 18 month engagement cycle.`;
       }
 
-      // ── Keyword-mode recommendations (SPIN + channel-first lens) ──
-      proseLines.push(`<strong>Market structure:</strong> ${Utils.money(total)} across ${agencyCount} agencies and ${vendorCount} vendors. ${isFragmented ? 'No single vendor dominates — procurement offices are evaluating multiple providers.' : topVendor + ' leads at ' + top1Pct + '% — incumbents have the advantage on recompetes.'}`);
+      // ── Keyword prose ──
+      proseLines.push(`${Utils.money(total)} across ${agencyCount} agencies and ${vendorCount} vendors. ${isFragmented ? 'No single vendor dominates, which means procurement offices are evaluating multiple providers and there is room for new entrants.' : topVendor + ' leads at ' + top1Pct + '%. The incumbents have the advantage on recompetes, so direct competition on existing contracts is expensive.'}`);
 
       if (exp90Val > 0) {
         const topExp = exp90[0];
-        proseLines.push(`<strong>Immediate opportunity:</strong> ${Utils.money(exp90Val)} turning over in 90 days. ${topExp ? topExp['Recipient Name'] + ' at ' + Utils.cleanAgency(topExp['Awarding Agency'] || '') + ' is up first.' : ''} SPIN: what's the agency's implicit pain — is the current solution working, or is this a reluctant recompete? The answer determines whether to bid prime or partner.`);
+        const topExpVendor = topExp ? tc(topExp['Recipient Name'] || '') : '';
+        const topExpAgency = topExp ? Utils.cleanAgency(topExp['Awarding Agency'] || '') : '';
+        proseLines.push(`${Utils.money(exp90Val)} is turning over in the next 90 days. ${topExpVendor && topExpAgency ? topExpVendor + ' at ' + topExpAgency + ' is up first. ' : ''}The real question is whether the agency is looking for a change or just re-upping. If the current solution is working, this is a partner play. If there is dissatisfaction, it is a prime opportunity. Talk to the program office to find out which one it is.`);
       }
 
       if (isConcentrated && hasRichSubData) {
-        proseLines.push(`<strong>Channel play:</strong> The primes control the paper but they sub technical work. Look at the Prime→Sub flow tab — identify which primes are subbing your capability area. MEDDIC: the prime's capture manager is your economic buyer for sub work, not the government.`);
+        proseLines.push(`The primes control the contract vehicles but they sub out technical work. Check the Prime to Sub flow tab to see who is subbing what. The capture manager at the prime is your buyer for sub work, not the government. Approach them with a specific capability gap you can fill.`);
       } else if (isConcentrated) {
-        proseLines.push(`<strong>Incumbent barrier:</strong> Top 3 vendors hold ${top3Pct}% — direct competition is expensive. Sandler rule: don't sell against the incumbent's strengths. Find the requirement they aren't covering and build your case around that gap.`);
+        proseLines.push(`Top 3 vendors hold ${top3Pct}%, so going head to head on an existing contract is not the play. Find the requirement the incumbents are not covering. Every large contract has capability gaps that get filled by OTAs, small purchases, or micro-task orders. That is where you build your foothold.`);
       }
 
       if (setAsidePct > 0.15) {
-        proseLines.push(`<strong>Small business path:</strong> ${Math.round(setAsidePct * 100)}% of contracts are set-asides. If you're a qualifying small business, target these directly — shorter cycles, less competition, and they build the past performance you need for full-and-open later.`);
+        proseLines.push(`${Math.round(setAsidePct * 100)}% of contracts here are set-asides. If you qualify as a small business, these are your fastest wins. Shorter evaluation cycles, fewer competitors, and they give you the past performance record you need to go after full-and-open work later.`);
       }
 
       if (recentCount >= 3) {
-        proseLines.push(`<strong>Active buying:</strong> ${recentCount} new awards in 90 days across ${new Set((m.recentAwards||[]).map(c=>c['Awarding Agency'])).size} agencies. The market is in a buying cycle. BANT: budget is allocated and timeline is NOW — don't wait for the next fiscal year.`);
+        const recentAgencies = new Set((m.recentAwards||[]).map(c=>c['Awarding Agency'])).size;
+        proseLines.push(`${recentCount} new awards in the last 90 days across ${recentAgencies} ${recentAgencies === 1 ? 'agency' : 'agencies'}. Budget is allocated and the buying cycle is active. Do not wait for the next fiscal year to engage.`);
       }
 
       // Action
       if (faceLabel === 'Easy') {
         if (exp90Val > 0 && top2Agencies.length >= 2) {
-          action = `Start with ${top2Agencies.join(' + ')} — recompetes are active and the vendor base is open`;
+          action = `Start with ${top2Agencies.join(' and ')}. Recompetes are active and the vendor base is open.`;
         } else if (top2Agencies.length > 0) {
-          action = `Lead with ${top2Agencies[0]} — lowest barrier, highest volume`;
+          action = `Lead with ${top2Agencies[0]}. Lowest barrier, highest volume.`;
         } else {
-          action = `Move now — conditions favor a new entrant`;
+          action = `Move now. Market conditions favor new entrants.`;
         }
       } else if (faceLabel === 'Partner Play') {
         if (top1Pct >= 40 && exp90Val > 0) {
-          action = `Target ${topVendor}'s expiring task orders — recompete is your opening`;
+          action = `Target ${topVendor}'s expiring task orders. The recompete is your opening.`;
         } else if (top1Pct >= 40) {
-          action = `Get on ${topVendor}'s team first — they need subs with your capability`;
+          action = `Get on ${topVendor}'s team. They need subs with specialized capability.`;
         } else if (hasRichSubData) {
-          action = `Find which primes are subbing tech — get on their vehicle and their team`;
+          action = `Find which primes are subbing your technology area and get on their vehicle.`;
         } else {
-          action = `Target smaller task orders — build past performance before competing for primes`;
+          action = `Target smaller task orders first. Build past performance before competing as a prime.`;
         }
       } else {
         const secondAgency = agencySorted[1] ? Utils.cleanAgency(agencySorted[1][0]) : '';
         action = secondAgency && secondAgency !== topAgency
-          ? `Start at ${secondAgency} — less entrenched than ${topAgency}, build from there`
-          : `Position now — attend industry days, respond to RFIs, relationships take 12–18 months`;
+          ? `Start at ${secondAgency}. Less entrenched than ${topAgency}, and a better place to build from.`
+          : `Start building relationships now. Attend industry days, respond to RFIs. This takes 12 to 18 months.`;
       }
     }
 
-    // ── Slot-machine face animation ──────────────────────────────
+    // ── Face animation ───────────────────────────────────────────
     const faceIds   = { open:'faceScaleOpen', watch:'faceScaleWatch', locked:'faceScaleLocked' };
     const faceOrder = ['open','watch','locked'];
     const scale = DOM.get('faceScale');
@@ -5085,14 +5105,12 @@ const App = {
       verdictEl.classList.remove('hidden');
     }
 
-    // Render prose recommendations into market signals area
     const proseEl = DOM.get('marketProse');
     if (proseEl) {
-      proseEl.innerHTML = proseLines.join('<br>');
+      proseEl.innerHTML = proseLines.map(p => `<p>${p}</p>`).join('');
       proseEl.classList.remove('hidden');
     }
 
-    // Action line
     const actionEl = DOM.get('marketAction');
     if (actionEl) {
       actionEl.textContent = action;
@@ -5112,6 +5130,7 @@ const App = {
   },
 
   init() {
+
     // Cache all static DOM elements — must be first in init() so all methods can use this.UI
     this.UI = {
       // Chart track & viewport
