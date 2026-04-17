@@ -188,28 +188,12 @@ a, button, input, select { touch-action: manipulation; }
   background: var(--accent-dim); color: var(--btn-bg); border-color: var(--accent-dim);
 }
 .chip-tray-item:active { transform: scale(0.96); }
-/* "Recent" chips get a subtle clock icon via ::before */
-.chip-tray-item--recent {
-  color: var(--text-tertiary); border-style: dashed;
-}
-.chip-tray-item--recent:hover {
-  border-style: solid; background: var(--accent-dim); color: var(--btn-bg); border-color: var(--accent-dim);
-}
 /* Code chips (NAICS, PSC) get a subtle monospace feel */
 .chip-tray-item--code {
   font-variant-numeric: tabular-nums; letter-spacing: 0.02em;
   background: var(--accent-dim); border-color: var(--border-inner); color: var(--btn-bg);
 }
 .chip-tray-item--code:hover { background: var(--chip-hover); color: var(--bg-app); border-color: transparent; }
-/* Clear history link */
-.chip-tray-clear {
-  font-size: 10px; font-weight: 500; color: var(--text-quaternary);
-  background: none; border: none; cursor: pointer; padding: 4px 6px;
-  white-space: nowrap; flex-shrink: 0; font-family: var(--font);
-  text-decoration: underline; text-underline-offset: 2px;
-  transition: color 0.15s ease;
-}
-.chip-tray-clear:hover { color: var(--text-secondary); }
 @media (max-width: 640px) {
   .chip-tray { padding: 6px 0 2px; gap: 6px; }
   .chip-tray-item { padding: 8px 14px; min-height: 44px; font-size: var(--text-sm); }
@@ -2529,65 +2513,27 @@ async searchAwards(keywords) {
 const SearchPills = {
   _cache: {},
   _current: null,
-  _mode: 'idle', // 'idle' | 'recent' | 'alsotry'
+  _mode: 'idle', // 'idle' | 'alsotry'
 
-  // ── RECENT MODE — shown on input focus ──
-  showRecent() {
-    const tray = DOM.get('chipTray');
-    if (!tray) return;
-    try {
-      const history = JSON.parse(localStorage.getItem('govhoo-recent') || '[]').slice(0, 6);
-      if (!history.length) return;
-      tray.innerHTML = '<span class="chip-tray-label">Recent</span>' +
-        history.map(q => {
-          const safe = q.replace(/'/g, "\\'");
-          return `<button class="chip-tray-item chip-tray-item--recent" onclick="SearchPills.hide();App.runSearch('${safe}')">${Html.escapeHtml(q)}</button>`;
-        }).join('') +
-        `<button class="chip-tray-clear" onclick="SearchPills.clearHistory()">Clear</button>`;
-      tray.classList.add('visible');
-      this._mode = 'recent';
-    } catch(e) {}
-  },
-
-  clearHistory() {
-    try { localStorage.removeItem('govhoo-recent'); } catch(e) {}
-    this.hide();
-    App.toast('Search history cleared.', 'ok');
-  },
-
-  hideRecent() {
-    if (this._mode === 'recent') this.hide();
-  },
-
-  // ── ALSO TRY MODE — fires after every search, always shows something ──
   generate(query) {
     if (!query || query.length < 2) return;
     const key = query.toLowerCase().trim();
-    // Skip NAICS/PSC code searches
     if (/^\d{6}$/.test(key) || /^[A-Z]{1,2}\d{1,3}$/i.test(key)) return;
     if (this._current === key && this._mode === 'alsotry') return;
     this._current = key;
 
-    // 1. Check local cache first (previous Gemini results or dictionary hits)
-    if (this._cache[key]) {
-      this._renderFromCache(this._cache[key], query);
-      return;
-    }
+    if (this._cache[key]) { this._renderFromCache(this._cache[key], query); return; }
 
-    // 2. Check keywords.json dictionary
     const intel = Utils.lookupIntel(query);
     if (intel && intel.pills && intel.pills.length > 0) {
-      this._cache[key] = { pills: intel.pills, competitors: intel.competitors || [], source: 'dictionary' };
+      this._cache[key] = { pills: intel.pills.map(t => ({ text: t, type: 'keyword' })), competitorPills: [], competitors: intel.competitors || [], source: 'dictionary' };
       this._renderFromCache(this._cache[key], query);
       return;
     }
 
-    // 3. Show recent as placeholder immediately, then fire Gemini in background
-    this._renderRecentAsSuggestions(query);
     this._fetchCompetitors(query, key);
   },
 
-  // Background Gemini call for competitor/keyword intelligence
   async _fetchCompetitors(query, key) {
     try {
       const res = await fetch(App.PROXY_ENDPOINT, {
@@ -2599,117 +2545,95 @@ const SearchPills = {
       const kw = await res.json();
       if (!kw || kw.error) return;
 
-      // Clean Gemini results for USASpending compatibility.
       const cleanForSearch = (raw) => {
         let t = (raw || '').trim();
         if (!t) return '';
-
         const upper = t.toUpperCase();
-
-        // Check vendor aliases — but only use the alias if it's a well-known
-        // search term (like AWS, GDIT) not an internal code (like RTX, LMCO)
         for (const [canonical, variations] of Object.entries(Utils.VENDOR_ALIASES || {})) {
           if (upper === canonical || variations.includes(upper)) {
-            // Find the shortest form that's actually searchable (4+ chars or known good)
             const allForms = [canonical, ...variations];
             const searchable = allForms.filter(f => f.length >= 4 || ['AWS','IBM','SAP','HP'].includes(f));
-            if (searchable.length > 0) {
-              const best = searchable.reduce((a, b) => a.length <= b.length ? a : b);
-              return best;
-            }
-            return t; // no good short form, keep original
+            if (searchable.length > 0) return searchable.reduce((a, b) => a.length <= b.length ? a : b);
+            return t;
           }
         }
-
-        // Check prefixes — "RAYTHEON TECHNOLOGIES" starts with "RAYTHEON"
         for (const [prefix, canonical] of (Utils.VENDOR_PREFIXES || [])) {
-          if (upper === prefix || upper.startsWith(prefix + ' ') || upper.startsWith(prefix + ',')) {
-            return canonical;
-          }
+          if (upper === prefix || upper.startsWith(prefix + ' ') || upper.startsWith(prefix + ',')) return canonical;
         }
-
-        // Strip corporate suffixes
         t = t.replace(/,?\s*(Inc\.?|LLC|Corp\.?|Corporation|Ltd\.?|L\.?P\.?|Group|International|Consulting|Federal|Solutions|Systems|Services|Technologies|Technology)\.?\s*$/i, '').trim();
         t = t.replace(/,?\s*(Inc\.?|LLC|Corp\.?|Corporation|Ltd\.?|L\.?P\.?|Group|International|Consulting|Federal|Solutions|Systems|Services|Technologies|Technology)\.?\s*$/i, '').trim();
-
-        // For 2-word compound names like "Amazon AWS" → "AWS" (parent + product)
         const parts = t.split(/\s+/);
         if (parts.length === 2) {
           const knownParents = ['AMAZON','MICROSOFT','GOOGLE','ORACLE','IBM','CISCO','DELL','HP','SAP','BROADCOM','ADOBE'];
-          if (knownParents.includes(parts[0].toUpperCase()) && parts[1].length >= 2) {
-            return parts[1];
-          }
+          if (knownParents.includes(parts[0].toUpperCase()) && parts[1].length >= 2) return parts[1];
         }
-
         return t;
       };
 
-      // Build pills from Gemini response: competitors + keywords + codes
       const pills = [];
+      const competitorPills = [];
       const seen = new Set([query.toUpperCase()]);
-      const add = (term) => {
+      const addComp = (term) => {
         if (pills.length >= 10) return;
         const cleaned = cleanForSearch(term);
         const k = cleaned.toUpperCase();
         if (!k || seen.has(k)) return;
         seen.add(k);
-        pills.push(cleaned);
+        pills.push({ text: cleaned, type: 'competitor' });
+        competitorPills.push(cleaned);
       };
-      (kw.competitors || []).slice(0, 6).forEach(add);
-      (kw.core_keywords || []).slice(0, 3).forEach(add);
-      (kw.naics_codes || []).slice(0, 1).forEach(add);
+      const addKw = (term) => {
+        if (pills.length >= 10) return;
+        const cleaned = cleanForSearch(term);
+        const k = cleaned.toUpperCase();
+        if (!k || seen.has(k)) return;
+        seen.add(k);
+        pills.push({ text: cleaned, type: 'keyword' });
+      };
+      (kw.competitors || []).slice(0, 6).forEach(addComp);
+      (kw.core_keywords || []).slice(0, 3).forEach(addKw);
+      (kw.naics_codes || []).slice(0, 1).forEach(c => {
+        if (pills.length < 10 && c && !seen.has(c)) { seen.add(c); pills.push({ text: c, type: 'code' }); }
+      });
 
-      // Also clean the competitors array for cache (used by empty state name hints)
-      const cleanedCompetitors = (kw.competitors || []).map(cleanTerm).filter(Boolean);
+      const cleanedCompetitors = (kw.competitors || []).map(cleanForSearch).filter(Boolean);
+      this._cache[key] = { pills, competitorPills, competitors: cleanedCompetitors, company: kw.company, source: 'gemini' };
 
-      this._cache[key] = { pills, competitors: cleanedCompetitors, company: kw.company, source: 'gemini' };
-
-      // Only render if this is still the active query
-      if (this._current === key) {
-        this._renderFromCache(this._cache[key], query);
-      }
-    } catch(e) { /* silent — pills are supplementary */ }
+      if (this._current === key) this._renderFromCache(this._cache[key], query);
+    } catch(e) { /* silent */ }
   },
 
   _renderFromCache(cached, query) {
     const tray = DOM.get('chipTray');
     if (!tray) return;
     const pills = cached.pills || [];
-    if (!pills.length) { this._renderRecentAsSuggestions(query); return; }
+    if (!pills.length) return;
     const seen = new Set([query.toUpperCase()]);
     const validPills = pills.filter(p => {
-      const k = p.toUpperCase();
+      const k = (p.text || p).toUpperCase();
       if (seen.has(k)) return false;
       seen.add(k); return true;
     }).slice(0, 10);
-    if (!validPills.length) { this._renderRecentAsSuggestions(query); return; }
-    tray.innerHTML = '<span class="chip-tray-label">Also try</span>' +
-      validPills.map(p => {
-        const isCode = /^\d{6}$/.test(p) || /^[A-Z]\d{3,}/.test(p);
-        const safe = p.replace(/'/g, "\\'");
-        return `<button class="chip-tray-item${isCode ? ' chip-tray-item--code' : ''}" onclick="App.runSearch('${safe}')">${Html.escapeHtml(p)}</button>`;
-      }).join('');
+    if (!validPills.length) return;
+
+    let html = '<span class="chip-tray-label">Also try</span>';
+    html += validPills.map(p => {
+      const text = p.text || p;
+      const isCode = /^\d{6}$/.test(text) || /^[A-Z]\d{3,}/.test(text);
+      const safe = text.replace(/'/g, "\\'");
+      return `<button class="chip-tray-item${isCode ? ' chip-tray-item--code' : ''}" onclick="App.runSearch('${safe}')">${Html.escapeHtml(text)}</button>`;
+    }).join('');
+
+    const compPills = cached.competitorPills || validPills.filter(p => (p.type || '') === 'competitor').map(p => p.text || p);
+    if (compPills.length >= 2) {
+      const allTerms = compPills.join(', ');
+      const safe = allTerms.replace(/'/g, "\\'");
+      html += `<button class="chip-tray-item" style="color:var(--accent);font-weight:700;border-color:var(--accent);" onclick="App.runSearch('${safe}')">Search all \u203a</button>`;
+    }
+
+    tray.innerHTML = html;
     tray.classList.add('visible');
     this._mode = 'alsotry';
-  },
-
-  // Fallback: recent searches excluding current query
-  _renderRecentAsSuggestions(currentQuery) {
-    const tray = DOM.get('chipTray');
-    if (!tray) return;
-    try {
-      const history = JSON.parse(localStorage.getItem('govhoo-recent') || '[]')
-        .filter(q => q.toLowerCase() !== (currentQuery || '').toLowerCase())
-        .slice(0, 5);
-      if (!history.length) { tray.classList.add('visible'); this._mode = 'alsotry'; return; }
-      tray.innerHTML = '<span class="chip-tray-label">Recent</span>' +
-        history.map(q => {
-          const safe = q.replace(/'/g, "\\'");
-          return `<button class="chip-tray-item chip-tray-item--recent" onclick="App.runSearch('${safe}')">${Html.escapeHtml(q)}</button>`;
-        }).join('');
-      tray.classList.add('visible');
-      this._mode = 'alsotry';
-    } catch(e) {}
   },
 
   hide() {
@@ -2718,10 +2642,7 @@ const SearchPills = {
     this._mode = 'idle';
   },
 
-  clear() {
-    this.hide();
-    this._current = null;
-  },
+  clear() { this.hide(); this._current = null; },
 
   get(query) { return this._cache[(query || '').toLowerCase()] || null; },
 };
@@ -5750,11 +5671,9 @@ const App = {
     // ── Chip tray: Recent on focus, Also Try after results ──
     if (this.UI.searchInput) {
       this.UI.searchInput.addEventListener('focus', () => {
-        SearchPills.showRecent();
       });
       this.UI.searchInput.addEventListener('blur', () => {
         setTimeout(() => {
-          SearchPills.hideRecent();
           // If results are loaded and we had pills, restore them
           if (App.searchData.loaded && SearchPills._current) {
             SearchPills.generate(App.displayQuery || App.currentQuery);
@@ -5817,13 +5736,11 @@ const App = {
         }
       });
       mobileInput.addEventListener('focus', () => {
-        SearchPills.showRecent();
         if (mobileBar) mobileBar.classList.add('loading');
         setTimeout(() => { if (mobileBar) mobileBar.classList.remove('loading'); }, 0);
       });
       mobileInput.addEventListener('blur', () => {
         setTimeout(() => {
-          SearchPills.hideRecent();
           if (App.searchData.loaded && SearchPills._current) {
             SearchPills.generate(App.displayQuery || App.currentQuery);
           }
