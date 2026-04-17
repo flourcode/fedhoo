@@ -32,8 +32,8 @@
   --text-secondary:  #535059;
   --text-tertiary:   #7572B7;
   --text-quaternary: #ACAAD4;
-  --border:       #E2E0EC;
-  --border-inner: #ECEAF6;
+  --border:       #E8E6F0;
+  --border-inner: #F0EEF8;
   --btn-bg:    #46446E;
   --btn-text:  #FFFFFF;
   --btn-hover: #5E5B92;
@@ -45,10 +45,10 @@
   --accent:     #46446E;
   --accent-mid: #5E5B92;
   --accent-dim: #ECEAF6;
-  --radius:    14px;
-  --radius-xs: 8px;
-  --shadow:    0 1px 2px rgba(44,41,51,0.04), 0 4px 12px rgba(44,41,51,0.06);
-  --shadow-sm: 0 1px 2px rgba(44,41,51,0.05);
+  --radius:    16px;
+  --radius-xs: 10px;
+  --shadow:    0 1px 3px rgba(44,41,51,0.03), 0 6px 16px rgba(44,41,51,0.05);
+  --shadow-sm: 0 1px 2px rgba(44,41,51,0.04);
   --font: 'Google Sans Flex', -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
   --transition: all 0.16s cubic-bezier(0.4,0,0.2,1);
   --safe-top:    env(safe-area-inset-top, 0px);
@@ -115,7 +115,7 @@ a, button, input, select { touch-action: manipulation; }
   background: rgba(244,243,248,0.96);
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
-  padding: max(8px, var(--safe-top)) 12px 8px;
+  padding: max(10px, var(--safe-top)) 16px 10px;
 }
 .header-row {
   display: flex; align-items: center; gap: 8px;
@@ -219,7 +219,7 @@ a, button, input, select { touch-action: manipulation; }
 /* Recent/pills now unified into chip-tray above */
 
 /* ── PAGE LAYOUT ── */
-.page-wrap { max-width: min(96vw, 1920px); margin: 0 auto; padding: 20px 16px calc(4rem + var(--safe-bottom)); }
+.page-wrap { max-width: min(96vw, 1920px); margin: 0 auto; padding: 24px 20px calc(4rem + var(--safe-bottom)); }
 
 /* ── CONTRACT LIST CARDS ── */
 .contract-list { display: flex; flex-direction: column; margin-top: 4px; }
@@ -228,10 +228,10 @@ a, button, input, select { touch-action: manipulation; }
 .contract-row {
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: 10px 12px;
-  padding: 11px 0; border-bottom: 1px solid var(--border-inner);
+  gap: 10px 14px;
+  padding: 14px 0; border-bottom: 1px solid var(--border-inner);
   transition: background 0.12s ease;
-  margin: 0 -6px; padding-left: 6px; padding-right: 6px;
+  margin: 0 -8px; padding-left: 8px; padding-right: 8px;
   border-radius: var(--radius-xs); cursor: default;
 }
 .contract-row:last-child { border-bottom: none; }
@@ -477,8 +477,8 @@ a, button, input, select { touch-action: manipulation; }
 .primes-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
 .primes-list { display: flex; flex-direction: column; margin-top: 4px; }
 .prime-row {
-  display: flex; align-items: center; gap: 12px;
-  padding: 11px 0; border-bottom: 1px solid var(--border-inner);
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 0; border-bottom: 1px solid var(--border-inner);
 }
 .prime-row:last-child { border-bottom: none; }
 .prime-rank {
@@ -610,7 +610,7 @@ a, button, input, select { touch-action: manipulation; }
   font-size: clamp(2rem, 5vw, 3rem);
   font-weight: 900; letter-spacing: -0.04em;
   color: var(--text-primary); line-height: 1;
-  margin: 2px 0 2px; font-variant-numeric: tabular-nums;
+  margin: 4px 0 4px; font-variant-numeric: tabular-nums;
 }
 
 /* Market header row — hero number + face badge side by side */
@@ -649,7 +649,7 @@ a, button, input, select { touch-action: manipulation; }
 }
 
 /* Analysis toggle */
-.market-analysis-wrap { margin-top: 14px; }
+.market-analysis-wrap { margin-top: 14px; margin-bottom: 6px; }
 .market-analysis-toggle {
   display: inline-flex; align-items: center; gap: 5px;
   background: none; border: none; padding: 2px 0; cursor: pointer;
@@ -726,7 +726,7 @@ a, button, input, select { touch-action: manipulation; }
 .search-territory-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
 
 .search-input {
-  flex: 1; border: none; background: transparent; padding: 16px 16px;
+  flex: 1; border: none; background: transparent; padding: 14px 16px;
   font-size: var(--text-lg); font-family: var(--font); color: var(--text-primary);
   outline: none; min-width: 0;
 }
@@ -770,11 +770,11 @@ a, button, input, select { touch-action: manipulation; }
 /* ── TOOLS GRID (minitools exact) ── */
 .tools-grid {
   columns: 6 340px;
-  column-gap: 18px;
+  column-gap: 20px;
 }
 .tools-grid > * {
   break-inside: avoid;
-  margin-bottom: 18px;
+  margin-bottom: 20px;
   display: inline-block;
   width: 100%;
 }
@@ -785,12 +785,12 @@ a, button, input, select { touch-action: manipulation; }
 /* ── CARD ── */
 .app-card {
   background: var(--bg-app); border-radius: var(--radius);
-  border: 1px solid var(--border); padding: 22px 24px;
+  border: 1px solid var(--border); padding: 28px 28px;
   box-shadow: var(--shadow); display: flex; flex-direction: column;
   scroll-margin-top: 80px;
-  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
 }
-.app-card:hover { box-shadow: 0 2px 6px rgba(44,41,51,0.06), 0 12px 28px rgba(44,41,51,0.08); transform: translateY(-1px); }
+.app-card:hover { box-shadow: 0 2px 8px rgba(44,41,51,0.05), 0 16px 32px rgba(44,41,51,0.07); transform: translateY(-1px); }
 .app-card.wide { column-span: all; -webkit-column-span: all; }
 .card-title { font-size: var(--text-lg); font-weight: 800; color: var(--text-primary); letter-spacing: -0.02em; margin-bottom: 2px; }
 .card-desc  { font-size: var(--text-xs); color: var(--text-quaternary); font-weight: 400; margin-bottom: 14px; line-height: 1.45; }
@@ -970,9 +970,9 @@ a, button, input, select { touch-action: manipulation; }
 
 /* ── MOBILE ── */
 @media (max-width: 640px) {
-  .page-wrap { padding: 12px 10px calc(3rem + var(--safe-bottom)); }
-  .tools-grid { column-gap: 10px; }
-  .app-card { padding: 16px 14px; }
+  .page-wrap { padding: 14px 12px calc(3rem + var(--safe-bottom)); }
+  .tools-grid { column-gap: 12px; }
+  .app-card { padding: 22px 18px; }
   .search-input { font-size: 16px; }
   .toast-wrap { bottom: 14px; left: 10px; right: 10px; }
   .toast { transform: translateY(110%); max-width: 100%; }
