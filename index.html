@@ -3087,9 +3087,12 @@ const App = {
       this.searchData = { raw: results, active: filtered, baseline: filtered, filter: null, loaded: true };
       this.analyzeMarket(filtered);
 
-      // Card title = title-cased search query, no "Market" suffix
+      // Card title — if query is a known vendor alias (e.g. "aws" → "AMAZON WEB SERVICES"),
+      // show the canonical name so it matches the data. Otherwise show what the user typed.
       const rawForTitle = (this.displayQuery || this.UI.searchInput?.value || query).trim();
-      if (this.UI.marketCardTitle) this.UI.marketCardTitle.textContent = rawForTitle.toUpperCase();
+      const normalizedTitle = Utils.normalizeVendorName(rawForTitle.toUpperCase());
+      const titleDisplay = (normalizedTitle !== rawForTitle.toUpperCase()) ? normalizedTitle : rawForTitle.toUpperCase();
+      if (this.UI.marketCardTitle) this.UI.marketCardTitle.textContent = titleDisplay;
       if (this.UI.marketCardDesc) this.UI.marketCardDesc.textContent = 'Where the money is concentrated. Click any segment to drill in.';
 
       // Territory context line — explain when user's agency is outside the territory
@@ -4265,7 +4268,9 @@ const App = {
       const mainTotal = (this.searchData.active || []).reduce((s, c) => s + (parseFloat(c['Award Amount']) || 0), 0);
       if (heroEl) Utils.countUp(heroEl, mainTotal, Utils.money);
       const rawForTitle = (this.UI.searchInput?.value || this.currentQuery || '').trim();
-      if (titleEl) titleEl.textContent = rawForTitle.toUpperCase();
+      const normalizedTitle = Utils.normalizeVendorName(rawForTitle.toUpperCase());
+      const titleDisplay = (normalizedTitle !== rawForTitle.toUpperCase()) ? normalizedTitle : rawForTitle.toUpperCase();
+      if (titleEl) titleEl.textContent = titleDisplay;
     }
 
     if (view === 'sankey') {
@@ -4832,6 +4837,7 @@ const App = {
         unique_vendors: Object.keys(m.vendors).length,
         unique_agencies: Object.keys(m.agencies).length,
         top_set_asides: topSetAsides,
+        top_vehicles: Object.entries(m.vehicles || {}).sort((a,b) => b[1].spend - a[1].spend).slice(0, 4).map(([name, d]) => ({ name, spend: d.spend, count: d.count })),
       },
       top_agencies: topAgencies,
       top_vendors: topVendors,
@@ -4859,6 +4865,7 @@ const App = {
       recentAwards: [],
       contractSizes: [],
       contractCount: 0,
+      vehicles: {},  // contract vehicle → { spend, count }
       queryType: 'keyword', // 'keyword' | 'vendor' | 'agency'
     };
     data.forEach(c => {
@@ -4875,6 +4882,13 @@ const App = {
       m.vendors[vendor].agencies.add(c['Awarding Agency'] || '');
       if (c._endTs > nowTs && c._endTs <= exp90Ts && amt > 50000) m.expiring.push(c);
       if (c._startTs && c._startTs >= rec90Ts && amt > 50000) m.recentAwards.push(c);
+      // Vehicle tracking
+      const veh = Utils.detectVehicle(c);
+      if (veh) {
+        if (!m.vehicles[veh]) m.vehicles[veh] = { spend: 0, count: 0 };
+        m.vehicles[veh].spend += amt;
+        m.vehicles[veh].count++;
+      }
     });
     m.expiring.sort((a, b) => a._endTs - b._endTs);
     m.recentAwards.sort((a, b) => b._startTs - a._startTs);
@@ -5009,6 +5023,20 @@ const App = {
     (this.searchData.active || []).forEach(c => { const sa = c['Type of Set Aside']; if (sa) setAsideCounts[sa] = (setAsideCounts[sa] || 0) + 1; });
     const setAsidePct = contractCount > 0 ? Object.values(setAsideCounts).reduce((s,v)=>s+v,0) / contractCount : 0;
 
+    // Vehicle intelligence — shared across all modes
+    const vehicleSorted = Object.entries(m.vehicles || {}).sort((a,b) => b[1].spend - a[1].spend);
+    const _vehicleProse = () => {
+      if (vehicleSorted.length === 0) return null;
+      const topVehicles = vehicleSorted.slice(0, 3);
+      const vehTotal = topVehicles.reduce((s,[,v]) => s + v.spend, 0);
+      const vehPct = total > 0 ? Math.round(vehTotal / total * 100) : 0;
+      if (topVehicles.length === 1) {
+        return `Most of this spend flows through ${topVehicles[0][0]} (${Utils.money(topVehicles[0][1].spend)}, ${topVehicles[0][1].count} awards). If you are not on this vehicle, that is the first problem to solve.`;
+      }
+      const vehList = topVehicles.map(([name, d]) => `${name} (${Utils.money(d.spend)})`).join(', ');
+      return `The primary contract vehicles here are ${vehList}, covering ${vehPct}% of identifiable spend. These are how dollars actually move in this market. If you are not on at least one of these vehicles, your path is either a sub-arrangement with someone who is, or waiting for the next on-ramp.`;
+    };
+
     // ── Mode-specific scoring ─────────────────────────────────────
     const queryType = m.queryType || 'keyword';
     let faceClass, faceLabel, verdictSentence, proseLines = [], action = '';
@@ -5091,6 +5119,69 @@ const App = {
         proseLines.push(`No new awards in the last 90 days. That could mean the buying cycle is between waves, or it could mean the vendor's footprint has plateaued. Worth investigating what has changed in the agencies' requirements since these contracts were originally awarded.`);
       }
 
+      // ── Competitive attack surface ──
+      // Identify where this vendor is vulnerable — useful for both portfolio managers and competitors
+      const attackLines = [];
+      
+      // Single-threaded agencies (concentration vulnerability)
+      const tvAgencyList = [...(tvData.agencies || [])];
+      const tvAgencySpend = {};
+      (this.searchData.active || []).forEach(c => {
+        if ((c['Recipient Name'] || '') === tvRaw) {
+          const ag = c['Awarding Agency'] || '';
+          tvAgencySpend[ag] = (tvAgencySpend[ag] || 0) + (parseFloat(c['Award Amount']) || 0);
+        }
+      });
+      const tvAgencySorted = Object.entries(tvAgencySpend).sort((a,b) => b[1] - a[1]);
+      if (tvAgencySorted.length === 1) {
+        attackLines.push(`All of ${tv}'s work here is at ${Utils.cleanAgency(tvAgencySorted[0][0])}. That is a single point of failure. Any leadership change, reorganization, or shift in requirements at that agency puts the entire book at risk.`);
+      } else if (tvAgencySorted.length >= 2 && tvAgencySorted[0][1] > tvData.spend * 0.6) {
+        const topAg = Utils.cleanAgency(tvAgencySorted[0][0]);
+        const topAgPct = Math.round(tvAgencySorted[0][1] / tvData.spend * 100);
+        attackLines.push(`${topAg} accounts for ${topAgPct}% of ${tv}'s spend here. That concentration is a vulnerability. A competitor who can build a relationship at ${topAg} and offer a credible alternative on the next recompete has a real shot.`);
+      }
+
+      // Expiring contracts as attack surface
+      if (tvExpiring.length > 0) {
+        const biggestExpiring = tvExpiring.sort((a,b) => (parseFloat(b['Award Amount'])||0) - (parseFloat(a['Award Amount'])||0))[0];
+        const bigExpAmt = parseFloat(biggestExpiring['Award Amount']) || 0;
+        const bigExpAgency = Utils.cleanAgency(biggestExpiring['Awarding Agency'] || '');
+        const bigExpDays = Math.ceil((biggestExpiring._endTs - Date.now()) / 86400000);
+        attackLines.push(`The biggest recompete opportunity is a ${Utils.money(bigExpAmt)} contract at ${bigExpAgency} expiring in ${bigExpDays} days. If the incumbent has not been performing, the program office may be looking for alternatives. The play is to get in front of the technical evaluator now and understand whether the requirement is changing.`);
+      }
+
+      // Agencies where competitors are also present (proves willingness to switch)
+      if (competitors.length > 0) {
+        const compAgencies = new Set();
+        competitors.forEach(([name]) => {
+          const vData = m.vendors[name];
+          if (vData && vData.agencies) vData.agencies.forEach(a => compAgencies.add(a));
+        });
+        const tvAgencySet = new Set(tvAgencyList);
+        const sharedAgencies = [...compAgencies].filter(a => tvAgencySet.has(a));
+        if (sharedAgencies.length >= 2) {
+          const sharedNames = sharedAgencies.slice(0, 3).map(a => Utils.cleanAgency(a)).join(', ');
+          attackLines.push(`${sharedAgencies.length} agencies in this market buy from both ${tv} and their competitors, including ${sharedNames}. Those agencies have already proven they evaluate alternatives. That is where a takeout play has the highest probability of success.`);
+        }
+      }
+
+      // Small contracts as entry points
+      const tvSmall = (this.searchData.active || []).filter(c => 
+        (c['Recipient Name'] || '') === tvRaw && (parseFloat(c['Award Amount']) || 0) < 5000000 && (parseFloat(c['Award Amount']) || 0) > 50000
+      );
+      if (tvSmall.length >= 2 && tvData.spend > 10000000) {
+        attackLines.push(`${tv} has ${tvSmall.length} contracts under $5M. These smaller task orders are the easiest displacement targets because they typically have shorter evaluation cycles and lower switching costs for the agency. Win one of these first to establish past performance, then use it to go after the larger recompetes.`);
+      }
+
+      if (attackLines.length > 0) {
+        proseLines.push(`<strong style="color:var(--text-primary);font-size:var(--text-xs);text-transform:uppercase;letter-spacing:0.04em;">Where they are vulnerable</strong>`);
+        attackLines.forEach(l => proseLines.push(l));
+      }
+
+      // Vehicle intelligence
+      const vp = _vehicleProse();
+      if (vp) proseLines.push(vp);
+
       // Action
       if (hasExposure && !isDiversified) {
         action = `Watch the recompetes closely. ${tv} is concentrated and exposed.`;
@@ -5151,6 +5242,10 @@ const App = {
         const saLabel = topSA ? (VehicleDetector.setAsideLabels[topSA[0]] || topSA[0]) : '';
         proseLines.push(`${Math.round(setAsidePct * 100)}% of contracts here use set-asides${saLabel ? ', most commonly ' + saLabel : ''}. If you qualify, this is the fastest path in. Set-aside competitions have shorter evaluation cycles, fewer bidders, and they build the past performance you need to compete for full-and-open work later.`);
       }
+
+      // Vehicle intelligence
+      const vp = _vehicleProse();
+      if (vp) proseLines.push(vp);
 
       // Action
       if (isActive && isFragmented && exp90Val > 0) {
@@ -5223,6 +5318,10 @@ const App = {
         const recentAgencies = new Set((m.recentAwards||[]).map(c=>c['Awarding Agency'])).size;
         proseLines.push(`${recentCount} new awards in the last 90 days across ${recentAgencies} ${recentAgencies === 1 ? 'agency' : 'agencies'}. Budget is allocated and the buying cycle is active. Do not wait for the next fiscal year to engage.`);
       }
+
+      // Vehicle intelligence
+      const vp = _vehicleProse();
+      if (vp) proseLines.push(vp);
 
       // Action
       if (faceLabel === 'Easy') {
