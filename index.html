@@ -216,7 +216,6 @@ a, button, input, select { touch-action: manipulation; }
   .chip-tray.visible { max-height: 58px; }
 }
 
-/* Recent/pills now unified into chip-tray above */
 
 /* ── PAGE LAYOUT ── */
 .page-wrap { max-width: min(96vw, 1920px); margin: 0 auto; padding: 24px 20px calc(4rem + var(--safe-bottom)); }
@@ -370,7 +369,6 @@ a, button, input, select { touch-action: manipulation; }
   letter-spacing: .07em; padding-bottom: 12px;
   border-bottom: 1px solid var(--border-inner); margin-bottom: 14px;
 }
-/* .sheet-ask-more-chips removed with chips */
 .sheet-input-row { display: flex; gap: 6px; align-items: center; }
 .sheet-input {
   flex: 1; background: var(--bg-hover); border: 1.5px solid var(--border);
@@ -381,11 +379,9 @@ a, button, input, select { touch-action: manipulation; }
 .sheet-input:focus { border-color: var(--accent); background: var(--bg-app); box-shadow: 0 0 0 3px var(--accent-dim); }
 .sheet-input::placeholder { color: var(--text-quaternary); }
 
-.arti-hero-insight strong { color: var(--text-secondary); font-weight: 600; }
 
 #chatInputWrap { border-top: 1px solid var(--border-inner); padding-top: 12px; margin-top: 8px; }
 
-.arti-bridge-text strong { color: var(--text-primary); font-weight: 700; }
 
 /* ── ARTI GREETING (inline-tag editorial style) ── */
 
@@ -448,13 +444,7 @@ a, button, input, select { touch-action: manipulation; }
 .empty-hint-box { background:var(--accent-dim); border:1px solid var(--border-inner); border-radius:var(--radius); padding:14px 16px; margin-bottom:20px; text-align:left; min-height:72px; /* #12: reserve space to prevent layout shift when pills load async */ }
 .empty-hint-label { font-size:var(--text-xs); font-weight:700; color:var(--btn-bg); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px; }
 .empty-hint-desc { font-size:var(--text-sm); color:var(--text-secondary); margin-bottom:10px; line-height:1.5; }
-.empty-chip {
-  background: var(--bg); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 6px 14px;
-  font-size: var(--text-sm); font-weight: 500; color: var(--text-secondary);
-  cursor: pointer; font-family: var(--font); transition: var(--transition);
-}
-.empty-chip:hover { background: var(--accent-dim); color: var(--btn-bg); border-color: var(--accent-dim); }
+
 
 /* ── VEHICLE TAG ── */
 .vehicle-tag {
@@ -627,7 +617,6 @@ a, button, input, select { touch-action: manipulation; }
 .face-scale-item.active .face-scale-svg { opacity: 1; filter: none; }
 
 /* Signal prose block */
-.market-signals { display: flex; flex-direction: column; gap: 3px; margin: 0 0 10px; }
 /* Verdict — colored diagnosis */
 .market-verdict {
   font-weight: 700; font-size: var(--text-sm);
@@ -681,7 +670,6 @@ a, button, input, select { touch-action: manipulation; }
 /* Treemap context label */
 
 /* Arti brief collapse/expand */
-.arti-brief-collapsed { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 
 /* Seller lens prompt card */
 /* Arti lens question — subtle invitation after the brief */
@@ -2327,11 +2315,6 @@ AWARD_FIELDS: [
   _autocompleteController: new AbortController(),
 
   // 2. Add a method to trigger the kill switch
-  abortCurrentSearch() {
-    this._searchController.abort();
-    this._searchController = new AbortController(); // Reset for the new search
-  },
-
   // 3. Inject the signal into your primary POST method
 async _post(endpoint, body, { maxRetries = 2, signal } = {}) {
     const sig = signal || this._searchController.signal;
@@ -3282,7 +3265,7 @@ const App = {
     }
 
     // Re-run search with new territory so API applies the sector filter at fetch time
-    const q = this.currentQuery || (this.UI.searchInput?.value || '').trim();
+    const q = this.originalQuery || this.currentQuery || (this.UI.searchInput?.value || '').trim();
     if (q) this.runSearch(q);
   },
 
@@ -4043,32 +4026,12 @@ const App = {
     if (input) { input.value = ''; input.focus(); }
   },
 
-  _showFollowupBar() {
-    DOM.hide('artiLensPrompt');
-    const label = DOM.get('artiLensLabel');
-    if (label) label.textContent = this._sellerLens || '';
-    DOM.show('artiFollowupBar');
-  },
-
-  _sendArtiInlineChatFromInput() {
-    // No longer used for lens — lens has its own Save button
-    // This now only fires from sheet chat input wired in init
-  },
-
   sendArtiChatFromInput() {
     const input = DOM.get('chatInput');
     const msg = (input?.value || '').trim();
     if (!msg) return;
     input.value = '';
     this.sendArtiChat(msg, false);
-  },
-
-  copyArtiBrief() {
-    const container = DOM.get('aiContentContainer');
-    const raw = container?.dataset.rawPlan;
-    if (!raw) return;
-    const btn = DOM.get('copyArtiBtn');
-    Utils.copyAndAnimate(Utils.stripMarkdown(raw), btn, 'Copied!');
   },
 
   _buildContractRow(c, timeHtml) {
@@ -5507,7 +5470,6 @@ const App = {
       darkToggleIcon:       DOM.get('darkToggleIcon'),
       searchInput:          DOM.get('searchInput'),
       searchSuggestions:    DOM.get('searchSuggestions'),
-      scrollTopBtn:         null, // removed
       toastWrap:            DOM.get('toastWrap'),
     };
 
