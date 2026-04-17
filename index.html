@@ -4916,16 +4916,38 @@ const App = {
     const topVendorName = (vendorSorted[0]?.[0] || '').toUpperCase();
     const topVendorPct = m.total > 0 ? (vendorSorted[0]?.[1].spend || 0) / m.total : 0;
 
-    // Vendor detection: top vendor's name matches query AND holds 50%+ of spend
-    // OR query exactly matches any vendor holding 30%+ of results
+    // Vendor detection: query matches a vendor name AND that vendor holds 30%+ of spend.
+    // BUT: if known VARs are prominent in the results, this is a product/channel search,
+    // not a vendor portfolio search. "Cloudflare" with Thundercat, GovPlace, FCN in the
+    // results means the user wants the Cloudflare ecosystem, not Cloudflare's portfolio.
     const queryClean = query.replace(_RE_SUFFIX, '').trim();
     const vendorMatch = vendorSorted.find(([name]) => {
       const n = name.toUpperCase().replace(_RE_SUFFIX, '').trim();
       return n === queryClean || n.includes(queryClean) || queryClean.includes(n.substring(0, 10));
     });
-    if (vendorMatch && (vendorMatch[1].spend / m.total) >= 0.30) {
+
+    // Check if known VARs/channel partners are in the top vendors
+    const KNOWN_VARS_SET = new Set([
+      'CARAHSOFT','CARAHSOFT TECHNOLOGY','GOVPLACE','FCN','THUNDERCAT','THUNDERCAT TECHNOLOGY',
+      'IMMIX','IMMIX GROUP','DLT','DLT SOLUTIONS','OPTIV','OPTIV FEDERAL','INSIGHT','INSIGHT DIRECT',
+      'CDW','CDW GOVERNMENT','CDWG','SHI','SHI INTERNATIONAL','WORLD WIDE TECHNOLOGY','WWT',
+      'IRON BOW','IRON BOW TECHNOLOGIES','MERLIN','MERLIN INTERNATIONAL','RED RIVER',
+      'RED RIVER TECHNOLOGY','PRESIDIO','PRESIDIO FEDERAL','UNICOM','UNICOM GOVERNMENT',
+      'GOVCONNECTION','DELL FEDERAL','DELL TECHNOLOGIES',
+      'PANAMERICA COMPUTERS','ANACAPA MICRO PRODUCTS','AUGUST SCHELL','AUGUST SCHELL ENTERPRISES',
+      'STANDARD-BLAZAR','GOVSMART','WILDFLOWER INTERNATIONAL','NEW TECH SOLUTIONS',
+      'SAVE AGAIN','SAVEAGAIN.COM','SOFTCHOICE','EC AMERICA',
+      'FOUR POINTS TECHNOLOGY','SOFTWARE INFORMATION RESOURCE','TECHNOLOGY SOLUTIONS PROVIDER',
+      'SOFTWAREONE','STERLING COMPUTERS','STERLING COMPUTER','SMARTRONIX',
+      'COLOSSAL CONTRACTING','SENECA STRATEGIC PARTNERS','ALVAREZ',
+    ]);
+    const top8Vendors = vendorSorted.slice(0, 8).map(([name]) => name.toUpperCase());
+    const varCountInResults = top8Vendors.filter(v => KNOWN_VARS_SET.has(v)).length;
+    const isChannelSearch = varCountInResults >= 2;
+
+    if (vendorMatch && (vendorMatch[1].spend / m.total) >= 0.30 && !isChannelSearch) {
       m.queryType = 'vendor';
-      m.targetVendor = vendorMatch[0]; // original casing
+      m.targetVendor = vendorMatch[0];
       m.targetVendorData = vendorMatch[1];
     }
 
