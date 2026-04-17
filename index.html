@@ -2556,30 +2556,76 @@ const SearchPills = {
   },
 
   hideRecent() {
-    // Only hide if currently showing recent — don't kill "also try" chips
     if (this._mode === 'recent') this.hide();
   },
 
-  // ── ALSO TRY MODE — shown after search results load ──
+  // ── ALSO TRY MODE — fires after every search, always shows something ──
   generate(query) {
     if (!query || query.length < 2) return;
     const key = query.toLowerCase().trim();
+    // Skip NAICS/PSC code searches
+    if (/^\d{6}$/.test(key) || /^[A-Z]{1,2}\d{1,3}$/i.test(key)) return;
     if (this._current === key && this._mode === 'alsotry') return;
     this._current = key;
-    const intel = Utils.lookupIntel(query);
-    if (intel) {
-      this._cache[key] = intel;
-      this._renderAlsoTry(intel, query);
-    } else {
-      // No dictionary match — show recent searches as contextual suggestions instead
-      this._renderRecentAsSuggestions(query);
+
+    // 1. Check local cache first (previous Gemini results or dictionary hits)
+    if (this._cache[key]) {
+      this._renderFromCache(this._cache[key], query);
+      return;
     }
+
+    // 2. Check keywords.json dictionary
+    const intel = Utils.lookupIntel(query);
+    if (intel && intel.pills && intel.pills.length > 0) {
+      this._cache[key] = { pills: intel.pills, competitors: intel.competitors || [], source: 'dictionary' };
+      this._renderFromCache(this._cache[key], query);
+      return;
+    }
+
+    // 3. Show recent as placeholder immediately, then fire Gemini in background
+    this._renderRecentAsSuggestions(query);
+    this._fetchCompetitors(query, key);
   },
 
-  _renderAlsoTry(intel, query) {
+  // Background Gemini call for competitor/keyword intelligence
+  async _fetchCompetitors(query, key) {
+    try {
+      const res = await fetch(App.PROXY_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ request_type: 'govhoo_market_research', company: query }),
+      });
+      if (!res.ok) return;
+      const kw = await res.json();
+      if (!kw || kw.error) return;
+
+      // Build pills from Gemini response: competitors + keywords + codes
+      const pills = [];
+      const seen = new Set([query.toUpperCase()]);
+      const add = (term) => {
+        if (pills.length >= 10) return;
+        const k = (term || '').toUpperCase().trim();
+        if (!k || seen.has(k)) return;
+        seen.add(k);
+        pills.push(term.trim());
+      };
+      (kw.competitors || []).slice(0, 6).forEach(add);
+      (kw.core_keywords || []).slice(0, 3).forEach(add);
+      (kw.naics_codes || []).slice(0, 1).forEach(add);
+
+      this._cache[key] = { pills, competitors: kw.competitors || [], company: kw.company, source: 'gemini' };
+
+      // Only render if this is still the active query
+      if (this._current === key) {
+        this._renderFromCache(this._cache[key], query);
+      }
+    } catch(e) { /* silent — pills are supplementary */ }
+  },
+
+  _renderFromCache(cached, query) {
     const tray = DOM.get('chipTray');
     if (!tray) return;
-    const pills = intel.pills || [];
+    const pills = cached.pills || [];
     if (!pills.length) { this._renderRecentAsSuggestions(query); return; }
     const seen = new Set([query.toUpperCase()]);
     const validPills = pills.filter(p => {
@@ -2598,8 +2644,7 @@ const SearchPills = {
     this._mode = 'alsotry';
   },
 
-  // Fallback: when no dictionary pills exist, show recent searches
-  // (excluding the current query) so the tray isn't empty
+  // Fallback: recent searches excluding current query
   _renderRecentAsSuggestions(currentQuery) {
     const tray = DOM.get('chipTray');
     if (!tray) return;
@@ -2607,14 +2652,14 @@ const SearchPills = {
       const history = JSON.parse(localStorage.getItem('govhoo-recent') || '[]')
         .filter(q => q.toLowerCase() !== (currentQuery || '').toLowerCase())
         .slice(0, 5);
-      if (!history.length) { this.hide(); return; }
+      if (!history.length) { tray.classList.add('visible'); this._mode = 'alsotry'; return; }
       tray.innerHTML = '<span class="chip-tray-label">Recent</span>' +
         history.map(q => {
           const safe = q.replace(/'/g, "\\'");
           return `<button class="chip-tray-item chip-tray-item--recent" onclick="App.runSearch('${safe}')">${Html.escapeHtml(q)}</button>`;
         }).join('');
       tray.classList.add('visible');
-      this._mode = 'alsotry'; // treat as "alsotry" so blur doesn't dismiss it
+      this._mode = 'alsotry';
     } catch(e) {}
   },
 
