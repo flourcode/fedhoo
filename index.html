@@ -1075,6 +1075,11 @@ a, button, input, select { touch-action: manipulation; }
 
     </div>
     <div class="header-actions">
+      <button class="hdr-icon-circle" id="briefingBtn" onclick="App.generateBriefing()" title="Weekly briefing" aria-label="Generate weekly briefing">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+        </svg>
+      </button>
       <button class="hdr-icon-circle hidden" id="shareBtn" onclick="App.shareSearch(this)" title="Copy link" aria-label="Share search">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
@@ -1338,6 +1343,24 @@ a, button, input, select { touch-action: manipulation; }
 
   </div><!-- /arti-sheet-body -->
 </div><!-- /arti-sheet -->
+
+<!-- BRIEFING MODAL -->
+<div class="arti-backdrop hidden" id="briefingBackdrop" onclick="App.closeBriefing()"></div>
+<div class="arti-sheet hidden" id="briefingSheet" role="dialog" aria-modal="true" aria-label="Weekly Briefing">
+  <div class="arti-sheet-header">
+    <div class="arti-sheet-title">
+      <svg class="arti-sheet-face" aria-hidden="true"><use href="#icon-arti"/></svg>
+      <div>
+        <div style="font-size:var(--text-sm);font-weight:800;color:var(--text-primary);">Mo's Weekly Briefing</div>
+        <div style="font-size:var(--text-xs);color:var(--text-quaternary);">Where to spend time this week</div>
+      </div>
+    </div>
+    <button class="arti-sheet-close" onclick="App.closeBriefing()">✕</button>
+  </div>
+  <div class="arti-sheet-body" id="briefingBody">
+    <div style="text-align:center;padding:3rem;color:var(--text-quaternary);">Scanning markets…</div>
+  </div>
+</div>
 
 <footer class="site-footer">
   <div class="footer-brand">
@@ -4822,6 +4845,164 @@ const App = {
     toggle.setAttribute('aria-expanded', !isOpen);
     prose.style.display = isOpen ? 'none' : '';
     if (label) label.textContent = isOpen ? 'See analysis' : 'Hide analysis';
+  },
+
+  // ── WEEKLY BRIEFING ────────────────────────────────────────────
+  async generateBriefing() {
+    // Open the sheet immediately with a loading state
+    const backdrop = DOM.get('briefingBackdrop');
+    const sheet = DOM.get('briefingSheet');
+    const body = DOM.get('briefingBody');
+    if (!backdrop || !sheet || !body) return;
+    backdrop.classList.remove('hidden');
+    sheet.classList.remove('hidden');
+    requestAnimationFrame(() => {
+      backdrop.classList.add('open');
+      requestAnimationFrame(() => sheet.classList.add('open'));
+    });
+    body.innerHTML = '<div style="text-align:center;padding:3rem;color:var(--text-quaternary);">Scanning markets…</div>';
+
+    // Pick briefing topics — use territory suggestions if set, otherwise defaults
+    const sector = this.territory && this.SECTORS[this.territory] ? this.SECTORS[this.territory] : null;
+    const topics = sector
+      ? sector.suggestions.filter(s => !/^\d{6}$/.test(s)).slice(0, 4)
+      : ['Cloud', 'AI', 'Cybersecurity', 'Zero Trust'];
+
+    // Run each search through the scoring engine
+    const results = [];
+    for (const topic of topics) {
+      try {
+        await Utils.loadMarketIntel();
+        const apiQuery = Utils.normalizeQuery(topic.toUpperCase());
+        const raw = await API.searchAwards(apiQuery);
+        const filtered = Utils.filterActiveContracts(raw);
+        const total = filtered.reduce((s, c) => s + (parseFloat(c['Award Amount']) || 0), 0);
+        if (!filtered.length || total <= 0) {
+          results.push({ topic, total: 0, count: 0, verdict: 'No data', action: '', agencies: [], face: 'locked' });
+          continue;
+        }
+
+        // Run analyzeMarket to get metrics (but don't render — this is background)
+        const nowTs = Date.now();
+        const exp90Ts = nowTs + 90 * 86400000;
+        const rec90Ts = nowTs - 90 * 86400000;
+        const agencies = {}, vendors = {};
+        let expVal = 0, recentCount = 0;
+        filtered.forEach(c => {
+          const amt = parseFloat(c['Award Amount']) || 0;
+          const ag = c['Awarding Agency'] || '';
+          const vn = c['Recipient Name'] || '';
+          agencies[ag] = (agencies[ag] || 0) + amt;
+          if (!vendors[vn]) vendors[vn] = 0;
+          vendors[vn] += amt;
+          if (c._endTs > nowTs && c._endTs <= exp90Ts && amt > 50000) expVal += amt;
+          if (c._startTs >= rec90Ts) recentCount++;
+        });
+
+        const vendorSorted = Object.entries(vendors).sort((a,b) => b[1] - a[1]);
+        const agencySorted = Object.entries(agencies).sort((a,b) => b[1] - a[1]);
+        const top3Pct = total > 0 ? Math.round(vendorSorted.slice(0,3).reduce((s,[,v])=>s+v,0) / total * 100) : 0;
+        const topAgencies = agencySorted.slice(0, 3).map(([a]) => Utils.cleanAgency(a));
+        const topVendor = vendorSorted[0]?.[0] || '';
+        const isActive = recentCount >= 3 || (expVal / total) > 0.03;
+        const isConcentrated = top3Pct >= 60 || vendorSorted.length <= 3;
+
+        let face, verdict, approach;
+        if (isActive && !isConcentrated) {
+          face = 'open';
+          verdict = "This one's pretty open. You've got room to work with.";
+          approach = "You don't need a perfect angle here. Just get into the conversation with something specific.";
+        } else if (isConcentrated && isActive) {
+          face = 'watch';
+          verdict = "Active, but the bigger vendors hold most of the work.";
+          approach = "Look for a way in rather than going head on. Smaller task orders or partner routes.";
+        } else if (isConcentrated) {
+          face = 'locked';
+          verdict = "More established. Not closed, but not wide open either.";
+          approach = "Look for add-ons or partner routes. Going direct is tougher here.";
+        } else {
+          face = 'watch';
+          verdict = "Some movement, worth a look.";
+          approach = "Find where the turnover is and start there.";
+        }
+
+        results.push({
+          topic, total, count: filtered.length,
+          expVal, recentCount,
+          verdict, approach, face,
+          agencies: topAgencies,
+          topVendor: Utils.titleCase(topVendor),
+          top3Pct,
+        });
+      } catch(e) {
+        results.push({ topic, total: 0, count: 0, verdict: 'Could not scan', action: '', agencies: [], face: 'locked' });
+      }
+    }
+
+    // Sort by opportunity: open first, then watch, then locked
+    const faceOrder = { open: 0, watch: 1, locked: 2 };
+    results.sort((a, b) => (faceOrder[a.face] || 2) - (faceOrder[b.face] || 2));
+
+    // Build the briefing HTML
+    const faceIcon = f => f === 'open' ? '#icon-face-open' : f === 'watch' ? '#icon-face-watch' : '#icon-face-locked';
+    const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    const territoryLabel = sector ? ` · ${sector.label}` : '';
+
+    // Quick summary line
+    const quickSummary = results.filter(r => r.total > 0).map(r => {
+      if (r.face === 'open') return `<strong>${r.topic}</strong> → good place to start`;
+      if (r.face === 'watch') return `<strong>${r.topic}</strong> → active, but crowded`;
+      return `<strong>${r.topic}</strong> → more established`;
+    }).join('<br>');
+
+    let html = `
+      <div style="margin-bottom:20px;">
+        <div style="font-size:var(--text-xs);color:var(--text-quaternary);margin-bottom:8px;">${today}${territoryLabel}</div>
+        <div style="font-size:var(--text-sm);font-weight:600;color:var(--text-primary);margin-bottom:10px;">If you only have a minute</div>
+        <div style="font-size:var(--text-sm);color:var(--text-secondary);line-height:1.6;">${quickSummary}</div>
+      </div>`;
+
+    results.forEach((r, i) => {
+      if (r.total <= 0) return;
+      const agencyList = r.agencies.length > 0 ? r.agencies.join(', ') : 'See treemap for breakdown';
+      html += `
+        <div style="padding:16px 0;${i > 0 ? 'border-top:1px solid var(--border-inner);' : ''}">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+            <svg width="24" height="24" style="border-radius:50%;flex-shrink:0;"><use href="${faceIcon(r.face)}"/></svg>
+            <div style="font-size:var(--text-base);font-weight:800;color:var(--text-primary);letter-spacing:-0.01em;">${Html.escapeHtml(r.topic)}</div>
+            <span style="font-size:var(--text-xs);color:var(--text-quaternary);margin-left:auto;">${Utils.money(r.total)}</span>
+          </div>
+          <div style="font-size:var(--text-sm);color:var(--text-secondary);line-height:1.55;margin-bottom:8px;">
+            ${Html.escapeHtml(r.verdict)}${r.expVal > 0 ? ` ${Utils.money(r.expVal)} turning over in the next 90 days.` : ''}
+          </div>
+          <div style="font-size:var(--text-xs);color:var(--text-tertiary);margin-bottom:4px;">
+            <strong style="color:var(--text-secondary);">Where to look</strong> ${Html.escapeHtml(agencyList)}
+          </div>
+          <div style="font-size:var(--text-xs);color:var(--text-tertiary);">
+            <strong style="color:var(--text-secondary);">Approach</strong> ${Html.escapeHtml(r.approach)}
+          </div>
+          <button class="chip-tray-item" style="margin-top:8px;font-size:var(--text-xs);" onclick="App.closeBriefing();App.runSearch('${Html.escapeHtml(r.topic)}')">${Html.escapeHtml(r.topic)} →</button>
+        </div>`;
+    });
+
+    // Pick one recommendation
+    const best = results.find(r => r.face === 'open') || results[0];
+    if (best && best.total > 0) {
+      html += `
+        <div style="border-top:1px solid var(--border-inner);padding:16px 0 8px;margin-top:4px;">
+          <div style="font-size:var(--text-sm);font-weight:700;color:var(--text-primary);margin-bottom:4px;">If you had to pick one</div>
+          <div style="font-size:var(--text-sm);color:var(--text-secondary);">Start with ${Html.escapeHtml(best.topic)}. ${best.face === 'open' ? "There's enough turnover and not everything is locked up." : "Worth watching for the next opening."}</div>
+        </div>`;
+    }
+
+    body.innerHTML = html;
+  },
+
+  closeBriefing() {
+    const backdrop = DOM.get('briefingBackdrop');
+    const sheet = DOM.get('briefingSheet');
+    if (backdrop) { backdrop.classList.remove('open'); setTimeout(() => backdrop.classList.add('hidden'), 300); }
+    if (sheet) { sheet.classList.remove('open'); setTimeout(() => sheet.classList.add('hidden'), 300); }
   },
 
   selectAgencySuggestion(name, boxId, selectionType) {
