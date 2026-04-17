@@ -4154,7 +4154,10 @@ const App = {
     const list = DOM.get('subawardsList');
     if (!card || !list || !this.searchData.loaded) return;
 
-    // Build filters fresh from the current query using the same logic as searchAwards
+    // Subawards are a SEPARATE lens from prime awards — not a subset.
+    // Prime data shows who won the contract. Subaward data shows who is
+    // actually delivering the work underneath. The totals won't match
+    // because they answer different questions about the same market.
     const timePeriod = Utils.getTrailing12Mo();
     const period = timePeriod[0];
     const { pscCodes, naicsCodes, keywordTerms } = Utils.parseSearchTerms(this.currentQuery);
@@ -4270,7 +4273,11 @@ const App = {
       const subs = this._subawardData || [];
       const subTotal = subs.reduce((s, r) => s + (parseFloat(r['Sub-Award Amount']) || 0), 0);
       if (heroEl) Utils.countUp(heroEl, subTotal, Utils.money);
-      if (titleEl) titleEl.textContent = `${(this.currentQuery || 'Market').toUpperCase()} · Subawards`;
+      const rawQ = (this.currentQuery || 'Market').toUpperCase();
+      const normQ = Utils.normalizeVendorName(rawQ);
+      const displayQ = (normQ !== rawQ) ? normQ : rawQ;
+      if (titleEl) titleEl.textContent = `${displayQ} · Subcontracting`;
+      if (this.UI.marketCardDesc) this.UI.marketCardDesc.textContent = 'Who is subcontracting to whom. This searches all federal subawards, including work under contracts not shown in the prime view.';
     } else {
       // Restore main search total
       const mainTotal = (this.searchData.active || []).reduce((s, c) => s + (parseFloat(c['Award Amount']) || 0), 0);
@@ -4279,6 +4286,7 @@ const App = {
       const normalizedTitle = Utils.normalizeVendorName(rawForTitle.toUpperCase());
       const titleDisplay = (normalizedTitle !== rawForTitle.toUpperCase()) ? normalizedTitle : rawForTitle.toUpperCase();
       if (titleEl) titleEl.textContent = titleDisplay;
+      if (this.UI.marketCardDesc) this.UI.marketCardDesc.textContent = 'Where the money is concentrated. Click any segment to drill in.';
     }
 
     if (view === 'sankey') {
@@ -4381,7 +4389,7 @@ const App = {
     const proseLines = [];
     // Executive summary
     const subConcentrationSignal = isConcentrated ? `${topPrime} controls ${topPrimePct}% of the subcontracting flow.` : `Work is distributed across ${primeCount} prime contractors.`;
-    proseLines.push(`${Utils.money(totalSubVal)} in subcontracting value across ${primeCount} primes and ${subCount} subcontractors. ${subConcentrationSignal}`);
+    proseLines.push(`${Utils.money(totalSubVal)} in reported subcontracting across ${primeCount} primes and ${subCount} subcontractors. This includes all federal subcontracts that reference this search term, not just work under the prime contracts shown in the other tabs. ${subConcentrationSignal}`);
 
     proseLines.push(`Average sub-award size is ${Utils.money(avgSubSize)} across ${subs.length} awards.`);
 
