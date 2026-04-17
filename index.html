@@ -4118,7 +4118,10 @@ const App = {
     this._renderListCard(this.UI.expiringList, this.UI.expiringCard, data, c => {
       const days = Math.ceil((c._endTs - nowTs) / 86400000);
       const cls  = days <= 30 ? 'contract-urgency urgent' : days <= 60 ? 'contract-urgency warn' : 'contract-urgency';
-      return this._buildContractRow(c, `<span class="${cls}">${days}d</span>`);
+      // Calculate tenure — how long has this vendor held this contract
+      const tenureYears = c._startTs ? Math.round((c._endTs - c._startTs) / (365.25 * 86400000)) : 0;
+      const tenureHtml = tenureYears >= 2 ? `<span class="contract-meta">${tenureYears}yr tenure</span>` : '';
+      return this._buildContractRow(c, `<span class="${cls}">${days}d</span>${tenureHtml}`);
     }, 'expiring contracts', '_renderExpiringAll');
   },
 
@@ -4128,11 +4131,26 @@ const App = {
     const data = this.searchData.active
       .filter(c => c._startTs >= cutoffTs && c._startTs <= nowTs)
       .sort((a, b) => b._startTs - a._startTs);
+
+    // Build a set of vendor→agency pairings from ALL contracts (not just recent)
+    // to detect when a recent award represents a NEW relationship
+    const existingPairings = new Set();
+    (this.searchData.active || []).forEach(c => {
+      if (c._startTs < cutoffTs) { // only count pre-existing (non-recent) contracts
+        const key = `${(c['Recipient Name']||'').toUpperCase()}|${(c['Awarding Agency']||'').toUpperCase()}`;
+        existingPairings.add(key);
+      }
+    });
+
     this._renderListCard(this.UI.recentList, this.UI.recentCard, data, c => {
       const d = Math.floor((nowTs - c._startTs) / 86400000);
       const ago = d === 0 ? 'Today' : d === 1 ? 'Yesterday'
         : d <= 7 ? `${d}d ago` : d <= 30 ? `${Math.ceil(d/7)}w ago` : `${Math.floor(d/30)}mo ago`;
-      return this._buildContractRow(c, `<span class="contract-date">${ago}</span>`);
+      // Check if this is a new vendor-agency pairing
+      const pairKey = `${(c['Recipient Name']||'').toUpperCase()}|${(c['Awarding Agency']||'').toUpperCase()}`;
+      const isNew = !existingPairings.has(pairKey);
+      const newTag = isNew ? `<span class="vehicle-tag" style="background:var(--go-bg);color:var(--go-text);">New</span>` : '';
+      return this._buildContractRow(c, `<span class="contract-date">${ago}</span>${newTag}`);
     }, 'recent awards', '_renderRecentAll');
   },
 
@@ -4598,7 +4616,6 @@ const App = {
     const card = this.UI.primesCard;
     if (!list || !card) return;
 
-    // Use pre-aggregated market metrics — avoids re-looping searchData.active
     const vendors = this.marketMetrics?.vendors || {};
     const primes = Object.entries(vendors)
       .sort((a, b) => b[1].spend - a[1].spend)
@@ -4609,12 +4626,24 @@ const App = {
 
     const totalSpend = primes.reduce((s, [, v]) => s + v.spend, 0);
 
+    // Pre-compute per-vendor agency list and top NAICS for enrichment
+    const vendorDetail = {};
+    data.forEach(c => {
+      const v = c['Recipient Name'] || '';
+      if (!vendorDetail[v]) vendorDetail[v] = { agencies: {}, naics: {} };
+      const ag = c['Awarding Agency'] || '';
+      const amt = parseFloat(c['Award Amount']) || 0;
+      if (ag) vendorDetail[v].agencies[ag] = (vendorDetail[v].agencies[ag] || 0) + amt;
+      const nc = c['NAICS'] ? (typeof c['NAICS'] === 'object' ? c['NAICS'].code : c['NAICS']) : '';
+      const nd = c['NAICS'] ? (typeof c['NAICS'] === 'object' && c['NAICS'].description ? c['NAICS'].description.split('(')[0].trim() : '') : '';
+      if (nc) vendorDetail[v].naics[nc] = { desc: nd, spend: (vendorDetail[v].naics[nc]?.spend || 0) + amt };
+    });
+
     list.innerHTML = primes.map(([rawName, d], i) => {
       const name = rawName;
       const agencyCount = d.agencies.size;
       const saLabel = VehicleDetector.getSetAsideLabel(d.setAside);
 
-      // Dominant/established/emerging signal based on spend share and contract density
       const shareOfMarket = totalSpend > 0 ? (d.spend / totalSpend) : 0;
       let signal = '', signalClass = '';
       if (shareOfMarket >= 0.25 || (shareOfMarket >= 0.15 && d.count >= 8)) {
@@ -4625,22 +4654,28 @@ const App = {
         signal = 'Emerging'; signalClass = 'prime-signal-emerging';
       }
 
-      // Universal URL pattern, quoted name works for any company, known or unknown
+      // Agency detail — show top 2 agencies by spend
+      const vd = vendorDetail[rawName];
+      const topAgencies = vd ? Object.entries(vd.agencies).sort((a,b) => b[1] - a[1]).slice(0, 2).map(([a]) => Utils.cleanAgency(a)) : [];
+      const agencyLine = topAgencies.length > 0 ? topAgencies.join(', ') : '';
+
+      // Top NAICS description
+      const topNaics = vd ? Object.entries(vd.naics).sort((a,b) => b[1].spend - a[1].spend)[0] : null;
+      const naicsLine = topNaics && topNaics[1].desc ? Utils.titleCase(topNaics[1].desc.toLowerCase()).slice(0, 50) : '';
+
       const clean = Utils.normalizeVendorName(name);
       const quoted = encodeURIComponent(`"${clean}"`);
       const plain  = encodeURIComponent(clean);
-      // People: quoted name finds profiles that mention the company, works even without a company page
       const liPeople = `https://www.linkedin.com/search/results/people/?keywords=${quoted}&origin=GLOBAL_SEARCH_HEADER`;
-      // Jobs: keyword search scoped to company name, no company ID needed
       const liJobs   = `https://www.linkedin.com/jobs/search/?keywords=${plain}&location=United+States`;
-      // News: Google News with quoted name for precision
       const news     = `https://www.linkedin.com/search/results/content/?keywords=${quoted}`;
 
       return `<div class="prime-row">
         <span class="prime-rank">${i + 1}</span>
         <div class="prime-body">
           <div class="prime-name">${Html.escapeHtml(name)}${saLabel ? ` <span class="inline-tag">${Html.escapeHtml(saLabel)}</span>` : ''}</div>
-          <div class="prime-meta">${d.count} contract${d.count !== 1 ? 's' : ''} · ${agencyCount} agenc${agencyCount !== 1 ? 'ies' : 'y'}</div>
+          <div class="prime-meta">${d.count} contract${d.count !== 1 ? 's' : ''} · ${agencyCount} agenc${agencyCount !== 1 ? 'ies' : 'y'}${agencyLine ? ' · ' + Html.escapeHtml(agencyLine) : ''}</div>
+          ${naicsLine ? `<div class="prime-meta" style="color:var(--text-quaternary);">${Html.escapeHtml(naicsLine)}</div>` : ''}
         </div>
         <span class="prime-signal ${signalClass}">${signal}</span>
         <span class="prime-amount">${Utils.money(d.spend)}</span>
