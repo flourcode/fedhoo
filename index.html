@@ -4270,6 +4270,9 @@ const App = {
 
     if (view === 'sankey') {
       if (this.searchData.loaded) {
+        // Restore main market signals if coming from subsankey
+        this.analyzeMarket(this.searchData.active);
+        this.renderMarketSignals();
         const c = this.UI.sankeyContainer;
         if (c && !c.dataset.rendered) this.renderSankey();
         setTimeout(() => {
@@ -4285,8 +4288,15 @@ const App = {
           const panel = this.UI.panelSubSankey;
           if (viewport && panel) viewport.style.height = panel.scrollHeight + 'px';
         }, 370);
+        // Re-analyze with subaward lens
+        this._renderSubawardSignals();
       }
     } else {
+      // Restore main market signals if coming from subsankey
+      if (this.searchData.loaded) {
+        this.analyzeMarket(this.searchData.active);
+        this.renderMarketSignals();
+      }
       // Read the treemap SVG's actual height and apply it — no redraw needed
       const treemapSvg = DOM.get('panelTreemap')?.querySelector('svg');
       if (viewport && treemapSvg) {
@@ -4299,6 +4309,116 @@ const App = {
           if (this.searchData.loaded) this.renderBubbleChart();
         }, 360);
       }
+    }
+  },
+
+  _renderSubawardSignals() {
+    const subs = this._subawardData;
+    if (!subs || !subs.length) return;
+    const tc = s => Utils.titleCase(s);
+
+    // Analyze subaward data
+    const primes = {}, subvendors = {}, agencies = {};
+    let totalSubVal = 0;
+    subs.forEach(s => {
+      const amt = parseFloat(s['Sub-Award Amount']) || 0;
+      const prime = s['Prime Recipient Name'] || 'Unknown';
+      const sub = s['Sub-Awardee Name'] || 'Unknown';
+      const agency = s['Awarding Agency'] || 'Unknown';
+      totalSubVal += amt;
+      if (!primes[prime]) primes[prime] = { spend: 0, count: 0, subs: new Set() };
+      primes[prime].spend += amt; primes[prime].count++; primes[prime].subs.add(sub);
+      if (!subvendors[sub]) subvendors[sub] = { spend: 0, count: 0, primes: new Set() };
+      subvendors[sub].spend += amt; subvendors[sub].count++; subvendors[sub].primes.add(prime);
+      agencies[agency] = (agencies[agency] || 0) + amt;
+    });
+
+    const primeSorted = Object.entries(primes).sort((a,b) => b[1].spend - a[1].spend);
+    const subSorted = Object.entries(subvendors).sort((a,b) => b[1].spend - a[1].spend);
+    const topPrime = tc(primeSorted[0]?.[0] || '');
+    const topPrimeData = primeSorted[0]?.[1] || { spend: 0, count: 0, subs: new Set() };
+    const topPrimePct = totalSubVal > 0 ? Math.round(topPrimeData.spend / totalSubVal * 100) : 0;
+    const topSub = tc(subSorted[0]?.[0] || '');
+    const topSubData = subSorted[0]?.[1] || { spend: 0, count: 0, primes: new Set() };
+    const primeCount = primeSorted.length;
+    const subCount = subSorted.length;
+    const avgSubSize = subs.length > 0 ? totalSubVal / subs.length : 0;
+
+    // Scoring
+    let faceClass, faceLabel, verdictSentence;
+    const isConcentrated = topPrimePct >= 50;
+    const hasManyPrimes = primeCount >= 3;
+    const hasManySubs = subCount >= 5;
+
+    if (hasManyPrimes && hasManySubs && !isConcentrated) {
+      faceClass = 'open'; faceLabel = 'Active Channel';
+      verdictSentence = `Healthy subcontracting ecosystem. ${primeCount} primes are distributing work across ${subCount} subs.`;
+    } else if (isConcentrated && hasManyPrimes) {
+      faceClass = 'watch'; faceLabel = 'Top-Heavy';
+      verdictSentence = `${topPrime} controls ${topPrimePct}% of subcontract flow. Other primes are active but smaller.`;
+    } else if (isConcentrated) {
+      faceClass = 'locked'; faceLabel = 'Gated';
+      verdictSentence = `Subcontracting runs through ${topPrime}. Getting on their team is the only realistic path.`;
+    } else {
+      faceClass = 'watch'; faceLabel = 'Emerging';
+      verdictSentence = `Subcontracting activity is limited. ${subs.length} sub-awards across ${primeCount} primes.`;
+    }
+
+    // Prose
+    const proseLines = [];
+    proseLines.push(`${Utils.money(totalSubVal)} in subcontract value across ${subs.length} awards. Average sub-award is ${Utils.money(avgSubSize)}. ${primeCount} primes are distributing work to ${subCount} subcontractors.`);
+
+    if (topPrimeData.subs.size >= 3) {
+      proseLines.push(`${topPrime} works with ${topPrimeData.subs.size} different subs, which signals they actively build teaming arrangements. If you have a niche capability, approach their capture team directly. They are more likely to add a sub than a prime that works with just one or two partners.`);
+    }
+
+    if (topSubData.primes.size >= 2) {
+      proseLines.push(`${topSub} subs to ${topSubData.primes.size} different primes, making them the most connected subcontractor in this market. Study what they offer and either partner with them or differentiate against them.`);
+    }
+
+    const multiPrimeSubs = subSorted.filter(([,d]) => d.primes.size >= 2);
+    if (multiPrimeSubs.length >= 2) {
+      proseLines.push(`${multiPrimeSubs.length} subs work with multiple primes, which means the primes are competing for the same sub-tier talent. That gives subs leverage in teaming negotiations.`);
+    }
+
+    // Action
+    let action;
+    if (isConcentrated) {
+      action = `Get on ${topPrime}'s approved sub list. They control the flow.`;
+    } else if (hasManyPrimes) {
+      action = `Approach the 2 or 3 primes with the most sub-awards. They are actively building teams.`;
+    } else {
+      action = `Limited sub activity. Consider proposing directly or teaming with ${topPrime} on the next opportunity.`;
+    }
+
+    // Render
+    const faceIds = { open:'faceScaleOpen', watch:'faceScaleWatch', locked:'faceScaleLocked' };
+    const faceOrder = ['open','watch','locked'];
+    const scale = DOM.get('faceScale');
+    if (scale) {
+      scale.classList.remove('hidden');
+      faceOrder.forEach(v => { const el = DOM.get(faceIds[v]); if (el) el.classList.toggle('active', v === faceClass); });
+    }
+    const lbl = DOM.get('faceLabel');
+    if (lbl) { lbl.textContent = faceLabel; lbl.className = `face-label ${faceClass}`; lbl.classList.remove('hidden'); }
+
+    const verdictEl = DOM.get('marketVerdict');
+    if (verdictEl) { verdictEl.textContent = verdictSentence; verdictEl.className = `market-verdict ${faceClass}`; verdictEl.classList.remove('hidden'); }
+
+    const actionEl = DOM.get('marketAction');
+    if (actionEl) { actionEl.textContent = action; actionEl.classList.remove('hidden'); }
+
+    const analysisWrap = DOM.get('marketAnalysisWrap');
+    const proseEl = DOM.get('marketProse');
+    const analysisToggle = DOM.get('marketAnalysisToggle');
+    const analysisLabel = DOM.get('marketAnalysisToggleText');
+    if (proseEl && proseLines.length > 0) {
+      proseEl.innerHTML = proseLines.map(p => `<p>${p}</p>`).join('');
+      const isMobile = window.innerWidth <= 640;
+      proseEl.style.display = isMobile ? 'none' : '';
+      if (analysisToggle) analysisToggle.setAttribute('aria-expanded', !isMobile);
+      if (analysisLabel) analysisLabel.textContent = isMobile ? 'See analysis' : 'Hide analysis';
+      if (analysisWrap) analysisWrap.classList.remove('hidden');
     }
   },
 
