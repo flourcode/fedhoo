@@ -2573,11 +2573,25 @@ const SearchPills = {
       const pills = [];
       const competitorPills = [];
       const seen = new Set([query.toUpperCase()]);
+      // Known short terms that are safe as USASpending searches
+      const safeShortTerms = new Set([
+        'AWS','IBM','SAP','HP','BAH','F5','GCP','CDW','CGI','DXC','EY','RSA','SAS',
+        'SNYK','SAIC','GDIT','ATOS','CACI','ESRI','OKTA','SUSE','DISA','NIST',
+        'KPMG','DELL','VISA','FICO','JIRA','SNOW','HIVE','DOMO','VEAM',
+      ]);
+      const isSafeSearch = (term) => {
+        if (term.length >= 5) return true; // 5+ chars are generally safe
+        if (safeShortTerms.has(term.toUpperCase())) return true; // known good short terms
+        if (/^\d{6}$/.test(term)) return true; // NAICS codes
+        if (/^[A-Z]{1,2}\d{2,}$/.test(term)) return true; // PSC codes
+        return false; // short terms like "MEND", "ARC", "SAP" (if not in safe list) produce noise
+      };
       const addComp = (term) => {
         if (pills.length >= 10) return;
         const cleaned = cleanForSearch(term);
         const k = cleaned.toUpperCase();
         if (!k || seen.has(k)) return;
+        if (!isSafeSearch(cleaned)) return; // skip short ambiguous terms
         seen.add(k);
         pills.push({ text: cleaned, type: 'competitor' });
         competitorPills.push(cleaned);
@@ -2587,6 +2601,7 @@ const SearchPills = {
         const cleaned = cleanForSearch(term);
         const k = cleaned.toUpperCase();
         if (!k || seen.has(k)) return;
+        if (!isSafeSearch(cleaned)) return;
         seen.add(k);
         pills.push({ text: cleaned, type: 'keyword' });
       };
@@ -2596,7 +2611,7 @@ const SearchPills = {
         if (pills.length < 10 && c && !seen.has(c)) { seen.add(c); pills.push({ text: c, type: 'code' }); }
       });
 
-      const cleanedCompetitors = (kw.competitors || []).map(cleanForSearch).filter(Boolean);
+      const cleanedCompetitors = (kw.competitors || []).map(cleanForSearch).filter(c => c && isSafeSearch(c));
       this._cache[key] = { pills, competitorPills, competitors: cleanedCompetitors, company: kw.company, source: 'gemini' };
 
       if (this._current === key) this._renderFromCache(this._cache[key], query);
