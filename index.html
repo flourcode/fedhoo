@@ -640,7 +640,11 @@ a, button, input, select { touch-action: manipulation; }
 :root.dark .market-verdict.watch { color: #D4AA72; }
 :root.dark .market-verdict.locked{ color: #C48A96; }
 /* Supporting prose — faded, secondary, provides evidence */
-.market-prose { color: var(--text-tertiary); font-size: var(--text-sm); opacity: 0.8; line-height: 1.5; }
+.market-prose {
+  color: var(--text-secondary); font-size: var(--text-sm); line-height: 1.65;
+  margin: 8px 0 4px;
+}
+.market-prose strong { color: var(--text-primary); font-weight: 700; }
 /* Action line — dominant text, commands attention */
 .market-action {
   font-size: clamp(1rem, 2.5vw, 1.2rem); font-weight: 900;
@@ -1173,6 +1177,10 @@ a, button, input, select { touch-action: manipulation; }
       </div>
       <!-- Single verdict line — colored by score -->
       <div class="market-verdict hidden" id="marketVerdict"></div>
+      <!-- Prose recommendations — multi-line substantive analysis -->
+      <div class="market-prose hidden" id="marketProse"></div>
+      <!-- Action line — bold recommended move -->
+      <div class="market-action hidden" id="marketAction"></div>
 
       <!-- Breadcrumb — shown when drilled in -->
       <div class="hidden" id="bubbleBreadcrumb">
@@ -2925,6 +2933,8 @@ const App = {
     DOM.hide('bioCard');
     DOM.get('faceScale')?.classList.add('hidden');
     const verdictEl = DOM.get('marketVerdict'); if (verdictEl) verdictEl.classList.add('hidden');
+    const proseEl = DOM.get('marketProse'); if (proseEl) { proseEl.innerHTML = ''; proseEl.classList.add('hidden'); }
+    const actionEl = DOM.get('marketAction'); if (actionEl) { actionEl.textContent = ''; actionEl.classList.add('hidden'); }
     const fl = DOM.get('faceLabel'); if (fl) fl.classList.add('hidden');
     const inlineChatHistory = DOM.get('artiInlineChatHistory'); if (inlineChatHistory) { inlineChatHistory.innerHTML = ''; inlineChatHistory.classList.add('hidden'); }
     // input always in query bar
@@ -4642,6 +4652,10 @@ const App = {
 
     return {
       query: this.currentQuery,
+      query_type: m.queryType || 'keyword', // 'keyword' | 'vendor' | 'agency'
+      target_vendor: m.targetVendor || null,
+      formula_verdict: this._formulaVerdict || null,
+      formula_action: this._formulaAction || null,
       total_value: m.total,
       contract_count: data.length,
       // Statistical summary for better Mo analysis
@@ -4678,10 +4692,10 @@ const App = {
     const rec90Ts  = nowTs - 90  * 86400000; // recent = started in last 90 days
     const m = {
       total: 0, agencies: {}, vendors: {}, expiring: [],
-      // New signals
-      recentAwards: [],      // contracts awarded (started) in last 90 days
-      contractSizes: [],     // all award amounts for distribution analysis
+      recentAwards: [],
+      contractSizes: [],
       contractCount: 0,
+      queryType: 'keyword', // 'keyword' | 'vendor' | 'agency'
     };
     data.forEach(c => {
       const amt = parseFloat(c['Award Amount']) || 0;
@@ -4700,6 +4714,37 @@ const App = {
     });
     m.expiring.sort((a, b) => a._endTs - b._endTs);
     m.recentAwards.sort((a, b) => b._startTs - a._startTs);
+
+    // ── Query type detection ──────────────────────────────────────
+    const query = (this.currentQuery || '').toUpperCase();
+    const vendorSorted = Object.entries(m.vendors).sort((a,b) => b[1].spend - a[1].spend);
+    const topVendorName = (vendorSorted[0]?.[0] || '').toUpperCase();
+    const topVendorPct = m.total > 0 ? (vendorSorted[0]?.[1].spend || 0) / m.total : 0;
+
+    // Vendor detection: top vendor's name matches query AND holds 50%+ of spend
+    // OR query exactly matches any vendor holding 30%+ of results
+    const queryClean = query.replace(_RE_SUFFIX, '').trim();
+    const vendorMatch = vendorSorted.find(([name]) => {
+      const n = name.toUpperCase().replace(_RE_SUFFIX, '').trim();
+      return n === queryClean || n.includes(queryClean) || queryClean.includes(n.substring(0, 10));
+    });
+    if (vendorMatch && (vendorMatch[1].spend / m.total) >= 0.30) {
+      m.queryType = 'vendor';
+      m.targetVendor = vendorMatch[0]; // original casing
+      m.targetVendorData = vendorMatch[1];
+    }
+
+    // Agency detection: query resolved to an agency filter (checked via _lastSearchFilters)
+    if (m.queryType === 'keyword' && this._lastSearchFilters?.agencies?.length > 0) {
+      const searchAgencyNames = this._lastSearchFilters.agencies.map(a => (a.name || '').toLowerCase());
+      const queryLower = query.toLowerCase();
+      // If the search term is in the agency aliases or matches a filter agency name, it's an agency search
+      const resolvedAgency = Utils.resolveAgencyAlias(queryLower);
+      if (resolvedAgency || searchAgencyNames.some(n => n.includes(queryLower) || queryLower.includes(n.substring(0, 8)))) {
+        m.queryType = 'agency';
+      }
+    }
+
     this.marketMetrics = m;
   },
 
@@ -4786,42 +4831,242 @@ const App = {
 
     // Expiry windows
     const exp90d  = now + 90  * 86400000;
-    const exp12Mo = now + 365 * 86400000;
     const exp90   = (m.expiring||[]).filter(c=>c._endTs<=exp90d);
     const exp12   = (m.expiring||[]);
     const exp90Val  = exp90.reduce((s,c)=>s+(parseFloat(c['Award Amount'])||0),0);
     const exp12Val  = exp12.reduce((s,c)=>s+(parseFloat(c['Award Amount'])||0),0);
     const exp90Pct  = total > 0 ? exp90Val/total : 0;
 
-    // Recent awards (started in last 90 days)
     const recentCount = (m.recentAwards||[]).length;
-
-    // Sub-award signal
     const subCount    = (this._subawardData||[]).length;
     const hasRichSubData = subCount >= 5;
+    const setAsideCounts = {};
+    (this.searchData.active || []).forEach(c => { const sa = c['Type of Set Aside']; if (sa) setAsideCounts[sa] = (setAsideCounts[sa] || 0) + 1; });
+    const setAsidePct = contractCount > 0 ? Object.values(setAsideCounts).reduce((s,v)=>s+v,0) / contractCount : 0;
 
-    // ── Scoring — three distinct selling motions ──────────────────
-    const isActive      = recentCount >= 3 || exp90Pct > 0.03;
-    const isExpiring    = exp90Val > 0 || exp12Val > 0;
-    const isFragmented  = top3Pct < 60;
-    const isConcentrated = top3Pct >= 60;
-    const isTaskOrder   = avgContract < 10000000;
-    const hasSubActivity = hasRichSubData || (isConcentrated && isExpiring);
+    // ── Mode-specific scoring ─────────────────────────────────────
+    const queryType = m.queryType || 'keyword';
+    let faceClass, faceLabel, verdictSentence, proseLines = [], action = '';
 
-    let faceClass, faceLabel;
-    if (isActive && (isFragmented || isTaskOrder) && exp90Pct > 0.02) {
-      faceClass = 'open';   faceLabel = 'Easy';
-    } else if (isConcentrated && (isActive || hasSubActivity)) {
-      faceClass = 'watch';  faceLabel = 'Partner Play';
-    } else if (isActive && isFragmented) {
-      faceClass = 'open';   faceLabel = 'Easy';
-    } else if (isExpiring || recentCount >= 2) {
-      faceClass = 'watch';  faceLabel = 'Partner Play';
+    if (queryType === 'vendor') {
+      // ═══ VENDOR MODE ═══════════════════════════════════════════
+      const tv = m.targetVendor || topVendor;
+      const tvData = m.targetVendorData || m.vendors[tv] || { spend: 0, count: 0, agencies: new Set() };
+      const tvPct = total > 0 ? Math.round(tvData.spend / total * 100) : 0;
+      const tvAgencyCount = tvData.agencies?.size || 0;
+      const tvContractCount = tvData.count || 0;
+      const tvExpiring = (m.expiring||[]).filter(c => (c['Recipient Name']||'') === tv);
+      const tvExpiringVal = tvExpiring.reduce((s,c)=>s+(parseFloat(c['Award Amount'])||0),0);
+      const tvRecent = (m.recentAwards||[]).filter(c => (c['Recipient Name']||'') === tv);
+      const competitors = vendorSorted.filter(([n]) => n !== tv).slice(0, 5);
+      const competitorShare = competitors.reduce((s,[,v])=>s+v.spend,0);
+      const competitorPct = total > 0 ? Math.round(competitorShare / total * 100) : 0;
+
+      // Vendor health score
+      const isDiversified = tvAgencyCount >= 3;
+      const isDominant = tvPct >= 50;
+      const isGrowing = tvRecent.length >= 2;
+      const hasExposure = tvExpiringVal > tvData.spend * 0.15;
+      const hasBreadth = tvContractCount >= 5;
+
+      if (isDominant && isDiversified && !hasExposure) {
+        faceClass = 'open'; faceLabel = 'Dominant';
+        verdictSentence = `${tv} owns this market and has low recompete exposure.`;
+      } else if (isDominant && hasExposure) {
+        faceClass = 'watch'; faceLabel = 'Exposed';
+        verdictSentence = `${tv} is dominant but has significant contract value expiring soon.`;
+      } else if (isGrowing && isDiversified) {
+        faceClass = 'open'; faceLabel = 'Growing';
+        verdictSentence = `${tv} is actively winning new work across ${tvAgencyCount} agencies.`;
+      } else if (!isDiversified && tvPct >= 30) {
+        faceClass = 'watch'; faceLabel = 'Concentrated';
+        verdictSentence = `${tv} is strong but concentrated in ${tvAgencyCount === 1 ? 'a single agency' : 'just ' + tvAgencyCount + ' agencies'}.`;
+      } else if (tvPct < 15) {
+        faceClass = 'locked'; faceLabel = 'Niche Player';
+        verdictSentence = `${tv} has a small footprint here — ${tvPct}% of a ${Utils.money(total)} market.`;
+      } else {
+        faceClass = 'watch'; faceLabel = 'Established';
+        verdictSentence = `${tv} is established at ${tvPct}% share across ${tvAgencyCount} agencies.`;
+      }
+
+      // ── Vendor-mode recommendations (MEDDIC + Miller-Heiman lens) ──
+      proseLines.push(`<strong>Position:</strong> ${Utils.money(tvData.spend)} across ${tvContractCount} contracts in ${tvAgencyCount} ${tvAgencyCount === 1 ? 'agency' : 'agencies'}. ${tvPct}% of the addressable market.`);
+
+      if (hasExposure) {
+        proseLines.push(`<strong>Recompete exposure:</strong> ${Utils.money(tvExpiringVal)} in contracts expiring within 90 days. ${tvExpiring.length === 1 ? 'This is a single large recompete' : 'These ' + tvExpiring.length + ' recompetes'} — identify the contracting officer and find out if the requirement is changing. MEDDIC: map the decision process now, before the RFI drops.`);
+      }
+
+      if (!isDiversified) {
+        const topTvAgency = [...(tvData.agencies || [])][0] || topAgency;
+        proseLines.push(`<strong>Concentration risk:</strong> Most of ${tv}'s work flows through ${Utils.cleanAgency(topTvAgency)}. Miller-Heiman says protect the base — but also prospect adjacent agencies. Look at who else buys this capability in ${top2Agencies.filter(a => a !== Utils.cleanAgency(topTvAgency)).join(', ') || 'adjacent accounts'}.`);
+      }
+
+      if (competitors.length > 0) {
+        const topComp = competitors[0][0];
+        const topCompPct = total > 0 ? Math.round(competitors[0][1].spend / total * 100) : 0;
+        proseLines.push(`<strong>Competitive landscape:</strong> ${topComp} is the closest competitor at ${topCompPct}% share. ${competitorPct > tvPct ? 'Collectively, competitors outspend ' + tv + ' — this is a contested market, not a lock.' : competitors.length >= 3 ? 'Multiple competitors are active — the buying office has options.' : 'Limited competition suggests the incumbent relationship is sticky.'}`);
+      }
+
+      if (isGrowing) {
+        proseLines.push(`<strong>Growth signal:</strong> ${tvRecent.length} new awards in the last 90 days. The account team is executing. Sandler rule: don't try to unseat a vendor that's actively winning — instead, find the adjacent requirement they aren't covering.`);
+      } else if (tvRecent.length === 0) {
+        proseLines.push(`<strong>Stall signal:</strong> No new awards in 90 days. This could mean the buying cycle is between waves, or the vendor's footprint is static. SPIN: investigate what has changed in the agency's requirements since these contracts were awarded.`);
+      }
+
+      // Action
+      if (hasExposure && !isDiversified) {
+        action = `Watch the recompetes — ${tv} is concentrated and exposed`;
+      } else if (isDominant && isDiversified) {
+        action = `${tv} is well-positioned — expand into adjacent NAICS or pursue sub opportunities`;
+      } else if (tvPct < 15) {
+        action = `Small footprint — identify the 2-3 contracts where ${tv} can expand scope`;
+      } else {
+        action = `Diversify across agencies — ${tvAgencyCount === 1 ? 'single-agency dependency is the biggest risk' : 'deepen the relationships that are working'}`;
+      }
+
+    } else if (queryType === 'agency') {
+      // ═══ AGENCY MODE ════════════════════════════════════════════
+      const isActive      = recentCount >= 3 || exp90Pct > 0.03;
+      const isFragmented  = top3Pct < 55;
+      const isConcentrated = top3Pct >= 55;
+      const hasSetAsides  = setAsidePct > 0.20;
+
+      if (isActive && isFragmented && hasSetAsides) {
+        faceClass = 'open'; faceLabel = 'Accessible';
+        verdictSentence = `This agency buys from many vendors and has active set-aside programs.`;
+      } else if (isActive && isFragmented) {
+        faceClass = 'open'; faceLabel = 'Open';
+        verdictSentence = `Diverse vendor base with recent buying activity — multiple entry points.`;
+      } else if (isConcentrated && isActive) {
+        faceClass = 'watch'; faceLabel = 'Incumbent-Heavy';
+        verdictSentence = `Active buying but ${topVendor} and a few primes control ${top3Pct}% of spend.`;
+      } else if (isConcentrated && !isActive) {
+        faceClass = 'locked'; faceLabel = 'Locked';
+        verdictSentence = `Concentrated spend and limited new awards — this agency isn't buying much right now.`;
+      } else if (isActive) {
+        faceClass = 'watch'; faceLabel = 'Competitive';
+        verdictSentence = `Active market but you'll need to differentiate sharply to win.`;
+      } else {
+        faceClass = 'locked'; faceLabel = 'Quiet';
+        verdictSentence = `Low buying activity and limited expirations — plan for a longer cycle.`;
+      }
+
+      // ── Agency-mode recommendations (BANT + Sandler lens) ──
+      proseLines.push(`<strong>Buying profile:</strong> ${contractCount} contracts, ${vendorCount} vendors, average deal size ${Utils.money(avgContract)}. ${smallPct > 0.6 ? 'Predominantly small task orders — high volume, lower barrier to entry.' : smallPct < 0.3 ? 'Large contracts dominate — these are typically recompetes with lengthy procurement cycles.' : 'Mix of large and small awards — target the entry-level task orders first.'}`);
+
+      if (isConcentrated) {
+        proseLines.push(`<strong>Incumbent power:</strong> ${topVendor} holds ${top1Pct}% and the top 3 vendors control ${top3Pct}%. Sandler: you won't displace these vendors on an existing contract. Instead, qualify the NEXT requirement — what capability gap does the agency have that incumbents aren't filling? BANT: confirm budget exists for new work, not just recompetes.`);
+      } else {
+        proseLines.push(`<strong>Vendor diversity:</strong> ${vendorCount} vendors, no single dominant incumbent. This is a procurement office that evaluates multiple bidders — your past performance matters more than relationships here. Focus on LPTA-style wins to build your CPARS history.`);
+      }
+
+      if (exp90Val > 0) {
+        const topExpiring = exp90[0];
+        const topExpVendor = topExpiring ? topExpiring['Recipient Name'] : '';
+        proseLines.push(`<strong>Near-term opportunity:</strong> ${Utils.money(exp90Val)} expiring in 90 days across ${exp90.length} contracts. ${topExpVendor ? topExpVendor + "'s contract is first up — " : ''}MEDDIC: identify the technical evaluator and economic buyer NOW. The procurement timeline for a recompete started months ago.`);
+      } else if (exp12Val > 0) {
+        proseLines.push(`<strong>12-month pipeline:</strong> ${Utils.money(exp12Val)} expiring within a year. Start building relationships with the program office — attend industry days, respond to RFIs. Miller-Heiman: map your coach inside the agency before the solicitation drops.`);
+      }
+
+      if (hasSetAsides) {
+        const topSA = Object.entries(setAsideCounts).sort((a,b)=>b[1]-a[1])[0];
+        proseLines.push(`<strong>Set-aside activity:</strong> ${Math.round(setAsidePct * 100)}% of contracts use set-asides${topSA ? ' (most common: ' + (VehicleDetector.setAsideLabels[topSA[0]] || topSA[0]) + ')' : ''}. If you qualify, this is your fastest path in — small business set-asides have shorter evaluation cycles and less competition.`);
+      }
+
+      // Action
+      if (isActive && isFragmented && exp90Val > 0) {
+        action = `Target the ${exp90.length} contracts expiring in 90 days — this agency is buying and evaluating now`;
+      } else if (isConcentrated && exp90Val > 0) {
+        action = `Get on ${topVendor}'s team for the upcoming recompetes, or pursue the set-aside carve-outs`;
+      } else if (isActive) {
+        action = `Register in SAM.gov, respond to the next RFI, and get your CPARS started`;
+      } else {
+        action = `Build relationships now — attend the next industry day and identify your coach`;
+      }
+
     } else {
-      faceClass = 'locked'; faceLabel = 'Long Game';
+      // ═══ KEYWORD/TOPIC MODE ═════════════════════════════════════
+      const isActive      = recentCount >= 3 || exp90Pct > 0.03;
+      const isExpiring    = exp90Val > 0 || exp12Val > 0;
+      const isFragmented  = top3Pct < 60;
+      const isConcentrated = top3Pct >= 60;
+      const isTaskOrder   = avgContract < 10000000;
+      const hasSubActivity = hasRichSubData || (isConcentrated && isExpiring);
+
+      if (isActive && (isFragmented || isTaskOrder) && exp90Pct > 0.02) {
+        faceClass = 'open';   faceLabel = 'Easy';
+      } else if (isConcentrated && (isActive || hasSubActivity)) {
+        faceClass = 'watch';  faceLabel = 'Partner Play';
+      } else if (isActive && isFragmented) {
+        faceClass = 'open';   faceLabel = 'Easy';
+      } else if (isExpiring || recentCount >= 2) {
+        faceClass = 'watch';  faceLabel = 'Partner Play';
+      } else {
+        faceClass = 'locked'; faceLabel = 'Long Game';
+      }
+
+      if (faceLabel === 'Easy') {
+        verdictSentence = exp90Pct > 0.05
+          ? `This market has real near-term opportunity.`
+          : `This market is open and fragmented.`;
+      } else if (faceLabel === 'Partner Play') {
+        verdictSentence = isConcentrated
+          ? `The big primes own this — get in through them.`
+          : `This market is active but competitive.`;
+      } else {
+        verdictSentence = `This is a long game market.`;
+      }
+
+      // ── Keyword-mode recommendations (SPIN + channel-first lens) ──
+      proseLines.push(`<strong>Market structure:</strong> ${Utils.money(total)} across ${agencyCount} agencies and ${vendorCount} vendors. ${isFragmented ? 'No single vendor dominates — procurement offices are evaluating multiple providers.' : topVendor + ' leads at ' + top1Pct + '% — incumbents have the advantage on recompetes.'}`);
+
+      if (exp90Val > 0) {
+        const topExp = exp90[0];
+        proseLines.push(`<strong>Immediate opportunity:</strong> ${Utils.money(exp90Val)} turning over in 90 days. ${topExp ? topExp['Recipient Name'] + ' at ' + Utils.cleanAgency(topExp['Awarding Agency'] || '') + ' is up first.' : ''} SPIN: what's the agency's implicit pain — is the current solution working, or is this a reluctant recompete? The answer determines whether to bid prime or partner.`);
+      }
+
+      if (isConcentrated && hasRichSubData) {
+        proseLines.push(`<strong>Channel play:</strong> The primes control the paper but they sub technical work. Look at the Prime→Sub flow tab — identify which primes are subbing your capability area. MEDDIC: the prime's capture manager is your economic buyer for sub work, not the government.`);
+      } else if (isConcentrated) {
+        proseLines.push(`<strong>Incumbent barrier:</strong> Top 3 vendors hold ${top3Pct}% — direct competition is expensive. Sandler rule: don't sell against the incumbent's strengths. Find the requirement they aren't covering and build your case around that gap.`);
+      }
+
+      if (setAsidePct > 0.15) {
+        proseLines.push(`<strong>Small business path:</strong> ${Math.round(setAsidePct * 100)}% of contracts are set-asides. If you're a qualifying small business, target these directly — shorter cycles, less competition, and they build the past performance you need for full-and-open later.`);
+      }
+
+      if (recentCount >= 3) {
+        proseLines.push(`<strong>Active buying:</strong> ${recentCount} new awards in 90 days across ${new Set((m.recentAwards||[]).map(c=>c['Awarding Agency'])).size} agencies. The market is in a buying cycle. BANT: budget is allocated and timeline is NOW — don't wait for the next fiscal year.`);
+      }
+
+      // Action
+      if (faceLabel === 'Easy') {
+        if (exp90Val > 0 && top2Agencies.length >= 2) {
+          action = `Start with ${top2Agencies.join(' + ')} — recompetes are active and the vendor base is open`;
+        } else if (top2Agencies.length > 0) {
+          action = `Lead with ${top2Agencies[0]} — lowest barrier, highest volume`;
+        } else {
+          action = `Move now — conditions favor a new entrant`;
+        }
+      } else if (faceLabel === 'Partner Play') {
+        if (top1Pct >= 40 && exp90Val > 0) {
+          action = `Target ${topVendor}'s expiring task orders — recompete is your opening`;
+        } else if (top1Pct >= 40) {
+          action = `Get on ${topVendor}'s team first — they need subs with your capability`;
+        } else if (hasRichSubData) {
+          action = `Find which primes are subbing tech — get on their vehicle and their team`;
+        } else {
+          action = `Target smaller task orders — build past performance before competing for primes`;
+        }
+      } else {
+        const secondAgency = agencySorted[1] ? Utils.cleanAgency(agencySorted[1][0]) : '';
+        action = secondAgency && secondAgency !== topAgency
+          ? `Start at ${secondAgency} — less entrenched than ${topAgency}, build from there`
+          : `Position now — attend industry days, respond to RFIs, relationships take 12–18 months`;
+      }
     }
 
-    // ── Slot-machine animation ────────────────────────────────────
+    // ── Slot-machine face animation ──────────────────────────────
     const faceIds   = { open:'faceScaleOpen', watch:'faceScaleWatch', locked:'faceScaleLocked' };
     const faceOrder = ['open','watch','locked'];
     const scale = DOM.get('faceScale');
@@ -4832,67 +5077,7 @@ const App = {
     const lbl = DOM.get('faceLabel');
     if (lbl) { lbl.textContent = faceLabel; lbl.className = `face-label ${faceClass}`; lbl.classList.remove('hidden'); }
 
-    // Color Mo's face to match the verdict
-
-    // ── Verdict sentence ──────────────────────────────────────────
-    let verdictSentence;
-    if (faceLabel === 'Easy') {
-      verdictSentence = exp90Pct > 0.05
-        ? `This market has real near-term opportunity.`
-        : `This market is open and fragmented.`;
-    } else if (faceLabel === 'Partner Play') {
-      verdictSentence = isConcentrated
-        ? `The big primes own this — get in through them.`
-        : `This market is active but competitive.`;
-    } else {
-      verdictSentence = `This is a long game market.`;
-    }
-
-    // ── ONE prose line (timing only) — concentration lives in the treemap ──
-    const proseLines = [];
-    if (exp90Val > 0) {
-      proseLines.push(`${Utils.money(exp90Val)} turning over in 90 days.`);
-    } else if (recentCount >= 3) {
-      proseLines.push(`${recentCount} contracts awarded recently — buying season is active.`);
-    } else if (exp12Val > 0) {
-      proseLines.push(`${Utils.money(exp12Val)} expiring in 12 months — time to position.`);
-    } else {
-      proseLines.push(`No significant expirations in 12 months.`);
-    }
-
-    // ── Action line — the dominant text, owns the "what to do" ───────
-    let action = '';
-    if (faceLabel === 'Easy') {
-      if (exp90Val > 0 && top2Agencies.length >= 2) {
-        action = `Start with ${top2Agencies.join(' + ')}`;
-      } else if (top2Agencies.length > 0) {
-        action = `Lead with ${top2Agencies[0]}`;
-      } else {
-        action = `Move now — conditions favor a new entrant`;
-      }
-    } else if (faceLabel === 'Partner Play') {
-      if (top1Pct >= 40 && exp90Val > 0) {
-        action = `Target ${topVendor}'s expiring task orders`;
-      } else if (top1Pct >= 40) {
-        action = `Get on ${topVendor}'s team first`;
-      } else if (hasRichSubData) {
-        action = `Find which primes are subbing tech — get on their list`;
-      } else {
-        action = `Target smaller task orders, not prime contracts`;
-      }
-    } else {
-      const secondAgency = agencySorted[1] ? Utils.cleanAgency(agencySorted[1][0]) : '';
-      action = secondAgency && secondAgency !== topAgency
-        ? `Start at ${secondAgency} — less entrenched than ${topAgency}`
-        : `Position now — relationships take 12–18 months`;
-    }
-
-    // ── Show FAB colored by verdict ───────────────────────────────────
-    this._formulaVerdict = faceLabel;
-    this._formulaAction  = action;
-    this._formulaTopAgencies = top2Agencies;
-
-    // Verdict line under the number
+    // ── Verdict + prose + action → DOM ───────────────────────────
     const verdictEl = DOM.get('marketVerdict');
     if (verdictEl) {
       verdictEl.textContent = verdictSentence;
@@ -4900,10 +5085,30 @@ const App = {
       verdictEl.classList.remove('hidden');
     }
 
-    // Color the FAB smiley to match the verdict
+    // Render prose recommendations into market signals area
+    const proseEl = DOM.get('marketProse');
+    if (proseEl) {
+      proseEl.innerHTML = proseLines.join('<br>');
+      proseEl.classList.remove('hidden');
+    }
+
+    // Action line
+    const actionEl = DOM.get('marketAction');
+    if (actionEl) {
+      actionEl.textContent = action;
+      actionEl.classList.remove('hidden');
+    }
+
+    // Store for Mo context
+    this._formulaVerdict = faceLabel;
+    this._formulaAction  = action;
+    this._formulaTopAgencies = top2Agencies;
+    this._formulaQueryType = queryType;
+    this._formulaProseLines = proseLines;
+
+    // Show FAB
     const fab = DOM.get('artiFab');
     if (fab) fab.classList.remove('hidden');
-    // Sheet face always green — Mo's identity doesn't change with the verdict
   },
 
   init() {
