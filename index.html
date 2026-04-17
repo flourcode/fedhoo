@@ -2599,21 +2599,47 @@ const SearchPills = {
       const kw = await res.json();
       if (!kw || kw.error) return;
 
+      // Clean Gemini results for USASpending compatibility.
+      // Gemini returns web-style names ("Amazon AWS", "Microsoft Azure") but
+      // USASpending matches on individual terms. Strip the parent company prefix
+      // when a brand name is appended (e.g. "AMAZON AWS" → "AWS", "MICROSOFT AZURE" → "AZURE").
+      const cleanTerm = (raw) => {
+        let t = (raw || '').trim();
+        if (!t) return '';
+        // If the term has a space, check if the first word is a known parent company
+        // and the second word is itself a recognizable brand/product
+        const parts = t.split(/\s+/);
+        if (parts.length === 2) {
+          const parents = ['AMAZON','MICROSOFT','GOOGLE','ORACLE','IBM','CISCO','PALO ALTO','DELL','HEWLETT','HP','SAP','VMWARE','BROADCOM','ADOBE'];
+          if (parents.includes(parts[0].toUpperCase())) {
+            // Use the shorter, more specific term — the one USASpending actually matches
+            return parts[1];
+          }
+        }
+        // Strip corporate suffixes
+        t = t.replace(/,?\s*(Inc\.?|LLC|Corp\.?|Ltd\.?|L\.?P\.?)$/i, '').trim();
+        return t;
+      };
+
       // Build pills from Gemini response: competitors + keywords + codes
       const pills = [];
       const seen = new Set([query.toUpperCase()]);
       const add = (term) => {
         if (pills.length >= 10) return;
-        const k = (term || '').toUpperCase().trim();
+        const cleaned = cleanTerm(term);
+        const k = cleaned.toUpperCase();
         if (!k || seen.has(k)) return;
         seen.add(k);
-        pills.push(term.trim());
+        pills.push(cleaned);
       };
       (kw.competitors || []).slice(0, 6).forEach(add);
       (kw.core_keywords || []).slice(0, 3).forEach(add);
       (kw.naics_codes || []).slice(0, 1).forEach(add);
 
-      this._cache[key] = { pills, competitors: kw.competitors || [], company: kw.company, source: 'gemini' };
+      // Also clean the competitors array for cache (used by empty state name hints)
+      const cleanedCompetitors = (kw.competitors || []).map(cleanTerm).filter(Boolean);
+
+      this._cache[key] = { pills, competitors: cleanedCompetitors, company: kw.company, source: 'gemini' };
 
       // Only render if this is still the active query
       if (this._current === key) {
