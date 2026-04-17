@@ -1218,7 +1218,7 @@ a, button, input, select { touch-action: manipulation; }
         <button class="bubble-toggle-btn" data-mode="subagencies" id="bubbleToggleSubAgencies">Office</button>
         <button class="bubble-toggle-btn" data-mode="vendors" id="bubbleToggleVendors">Prime</button>
       </div>
-      <div class="intel-source-note">Top 100 contracts by obligated value · active funding past 12 months · USASpending.gov</div>
+      <div class="intel-source-note">Top 100 contracts · last 12 months · USASpending.gov</div>
 
     </div><!-- /marketCard unified -->
 
@@ -1238,7 +1238,7 @@ a, button, input, select { touch-action: manipulation; }
       <div class="card-header-row">
         <div>
           <h2 class="card-title card-title--flush">Prime to Sub Relationships</h2>
-          <p class="card-desc card-desc--sub">Who the primes are subbing to — teaming intelligence for this market.</p>
+          <p class="card-desc card-desc--sub">Which primes are teaming with which subs on these contracts.</p>
         </div>
         <button class="export-btn" onclick="App.exportSubawardsCSV()" title="Export subawards to CSV">Export CSV</button>
       </div>
@@ -1297,7 +1297,7 @@ a, button, input, select { touch-action: manipulation; }
     <div class="arti-sheet-drag"></div>
     <div class="arti-sheet-title">
       <svg class="arti-sheet-face" id="artiSheetFace" aria-label="Mo"><use href="#icon-arti"/></svg>
-      <div class="arti-sheet-sub" id="artiSheetSub">Hi, I'm Mo. Ask me about opportunities, channel partners, or how to break in.</div>
+      <div class="arti-sheet-sub" id="artiSheetSub">Ask about incumbents, expiring contracts, partners, or how to break in.</div>
     </div>
     <button class="arti-sheet-close" onclick="App.closeArtiSheet()" aria-label="Close">✕</button>
   </div>
@@ -3013,7 +3013,7 @@ const App = {
     DOM.get('tabSankey')?.classList.remove('active');
     DOM.get('dotTreemap')?.classList.add('active');
     DOM.get('dotSankey')?.classList.remove('active');
-    this.showLoader('Searching USASpending…', `"${query}"`);
+    this.showLoader('Finding contracts and vendors', `${query}`);
 
     // Update URL — only when user-initiated, not on auto-restore from localStorage
     if (!skipUrlUpdate) try {
@@ -3047,7 +3047,7 @@ const App = {
         const misdirectedTerm = keywordTerms.find(t => Utils.resolveAgencyAlias(t) !== null);
 
         if (misdirectedTerm) {
-          this.showLoader('Trying a different angle…', `"${misdirectedTerm}"`);
+          this.showLoader('Trying a different angle', `${misdirectedTerm}`);
           try {
             const now = new Date();
             const start = new Date(now); start.setFullYear(start.getFullYear() - 1);
@@ -3119,7 +3119,7 @@ const App = {
       const normalizedTitle = Utils.normalizeVendorName(rawForTitle.toUpperCase());
       const titleDisplay = (normalizedTitle !== rawForTitle.toUpperCase()) ? normalizedTitle : rawForTitle.toUpperCase();
       if (this.UI.marketCardTitle) this.UI.marketCardTitle.textContent = titleDisplay;
-      if (this.UI.marketCardDesc) this.UI.marketCardDesc.textContent = 'Where the money is concentrated. Click any segment to drill in.';
+      if (this.UI.marketCardDesc) this.UI.marketCardDesc.textContent = 'Tap any agency or vendor to drill deeper.';
 
       // Territory context line — explain when user's agency is outside the territory
       const ctxEl = DOM.get('territoryContextLine');
@@ -3173,7 +3173,7 @@ const App = {
       if (thisSearch !== this._searchId) return;
       this.hideLoader();
       this._lastSearchKey = null; // #8: clear dedup so user can retry
-      this.toast('Search failed: ' + (err.message || 'Please try again.'), 'error');
+      this.toast('Search did not complete. Check your connection and try again.', 'error');
     }
   },
 
@@ -3230,15 +3230,14 @@ const App = {
     if (container) container.innerHTML = `
       <div class="empty-state">
         <svg class="arti-avatar-lg" aria-label="Mo"><use href="#icon-arti"/></svg>
-        <h3 class="empty-title">Well, this is awkward.</h3>
-        <p class="empty-desc">Nothing came back for "<strong>${Html.escapeHtml(query)}</strong>"${territoryNote}. This is a strict government database, brand names and nicknames often don't match how contracts are filed.</p>
+        <h3 class="empty-title">No contracts matched "${Html.escapeHtml(query)}"${territoryNote}</h3>
+        <p class="empty-desc">Federal contracts are filed under legal entity names and technical descriptions, not brand names. Here are a few ways to find what you are looking for.</p>
         ${nameHintHtml}
         <ul class="empty-tips">
-          <li><strong>Use the legal entity name</strong>, "Primer Federal" not "Primer.ai"</li>
-          <li><strong>Search what they sell</strong>, try a keyword like <code>Zero Trust</code> or <code>Cloud Migration</code></li>
-          <li><strong>Intersect with an agency</strong>, <code>DHS AND Splunk</code> narrows it down</li>
-          <li><strong>Use a NAICS code</strong>, 6 digits catches contracts regardless of vendor name spelling</li>
-          <li><strong>AND searches are strict</strong>, both terms must appear in the same contract description</li>
+          <li><strong>Try the legal entity name.</strong> "Primer Federal" instead of "Primer.ai"</li>
+          <li><strong>Search by what they sell.</strong> A keyword like <code>Zero Trust</code> or <code>Cloud Migration</code></li>
+          <li><strong>Narrow with an agency.</strong> <code>DHS AND Splunk</code> finds contracts at DHS that mention Splunk</li>
+          <li><strong>Use a NAICS code.</strong> Six digits catches contracts regardless of how the vendor name is spelled</li>
         </ul>
         <div class="empty-chips" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;">${chips}</div>
       </div>`;
@@ -3518,7 +3517,7 @@ const App = {
         const scopeName = drill.path[drill.path.length - 1].name;
         descEl.textContent = `Spend within ${scopeName}. Click a segment to go deeper.`;
       } else {
-        descEl.textContent = 'Where the money is concentrated. Click any segment to drill in.';
+        descEl.textContent = 'Tap any agency or vendor to drill deeper.';
       }
     }
 
@@ -3778,7 +3777,7 @@ const App = {
 
   async runAiActionPlan() {
     if (!this.searchData.loaded || this.searchData.active.length === 0) {
-      this.toast('Run a search first — Mo needs market data to work with.', 'warning');
+      this.toast('Search for a market first so Mo has data to analyze.', 'warning');
       return;
     }
 
@@ -4275,7 +4274,7 @@ const App = {
       const normQ = Utils.normalizeVendorName(rawQ);
       const displayQ = (normQ !== rawQ) ? normQ : rawQ;
       if (titleEl) titleEl.textContent = `${displayQ} · Subcontracting`;
-      if (this.UI.marketCardDesc) this.UI.marketCardDesc.textContent = 'Who is subcontracting to whom. This searches all federal subawards, including work under contracts not shown in the prime view.';
+      if (this.UI.marketCardDesc) this.UI.marketCardDesc.textContent = 'Who is subcontracting to whom across all federal awards referencing this search.';
     } else {
       // Restore main search total
       const mainTotal = (this.searchData.active || []).reduce((s, c) => s + (parseFloat(c['Award Amount']) || 0), 0);
@@ -4284,7 +4283,7 @@ const App = {
       const normalizedTitle = Utils.normalizeVendorName(rawForTitle.toUpperCase());
       const titleDisplay = (normalizedTitle !== rawForTitle.toUpperCase()) ? normalizedTitle : rawForTitle.toUpperCase();
       if (titleEl) titleEl.textContent = titleDisplay;
-      if (this.UI.marketCardDesc) this.UI.marketCardDesc.textContent = 'Where the money is concentrated. Click any segment to drill in.';
+      if (this.UI.marketCardDesc) this.UI.marketCardDesc.textContent = 'Tap any agency or vendor to drill deeper.';
     }
 
     if (view === 'sankey') {
@@ -4677,7 +4676,7 @@ const App = {
     });
     // Update sheet subtitle with current market
     const sub = DOM.get('artiSheetSub');
-    if (sub) sub.textContent = `Hi, I'm Mo. Ask me about opportunities, channel partners, or how to break in.`;
+    if (sub) sub.textContent = `Ask about incumbents, expiring contracts, partners, or how to break in.`;
 
     if (this._sellerLens) {
       const label = DOM.get('sheetLensLabel');
@@ -4702,13 +4701,13 @@ const App = {
 
   exportExpiringCSV() {
     const data = this.searchData.active;
-    if (!data || !data.length) { this.toast('No data to export.', 'warning'); return; }
+    if (!data || !data.length) { this.toast('No data available to export.', 'warning'); return; }
     const nowTs = Date.now();
     const cutoffTs = nowTs + 90 * 86400000;
     const expiring = data
       .filter(c => c._endTs > nowTs && c._endTs <= cutoffTs && (parseFloat(c['Award Amount'])||0) > 50000)
       .sort((a, b) => a._endTs - b._endTs);
-    if (!expiring.length) { this.toast('No expiring contracts to export.', 'warning'); return; }
+    if (!expiring.length) { this.toast('No contracts expiring in the next 90 days.', 'warning'); return; }
     const headers = ['Recipient Name','Awarding Agency','Award Amount','End Date','Description','NAICS','PSC','Type of Set Aside','pop_state_code','USASpending URL'];
     const esc = v => `"${String(v ?? '').replace(/"/g,'""')}"`;
     const rows = expiring.map(c => [
@@ -4729,7 +4728,7 @@ const App = {
 
   exportSubawardsCSV() {
     const subs = this._subawardData;
-    if (!subs || !subs.length) { this.toast('No subaward data to export.', 'warning'); return; }
+    if (!subs || !subs.length) { this.toast('No subaward data for this search.', 'warning'); return; }
     const headers = ['Sub-Awardee Name','Prime Recipient Name','Awarding Agency','Sub-Award Amount','Sub-Award Date','Description','NAICS','pop_state_code','USASpending URL'];
     const esc = v => `"${String(v ?? '').replace(/"/g,'""')}"`;
     const rows = subs.map(s => [
@@ -4751,7 +4750,7 @@ const App = {
     // #10: Export respects drill state — uses active (filtered) data when drilled in
     const isDrilled = this.drillState && this.drillState.level > 0;
     const data = isDrilled ? this.searchData.active : this.searchData.raw;
-    if (!data || !data.length) { this.toast('No data to export, run a search first.', 'warning'); return; }
+    if (!data || !data.length) { this.toast('Run a search first to export data.', 'warning'); return; }
     const headers = ['Award ID','Recipient Name','Awarding Agency','Awarding Sub Agency','Awarding Office','Award Amount','Start Date','End Date','Description','NAICS','PSC','Contract Award Type','Type of Set Aside','pop_city_name','pop_state_code','USASpending URL'];
     const esc = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
     const rows = data.map(c => {
