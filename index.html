@@ -5089,6 +5089,11 @@ const App = {
       }
 
       // ── Vendor prose ──
+      // Executive summary — plain language for non-federal audiences
+      const tvGrowthSignal = isGrowing ? 'actively winning new contracts' : tvRecent.length === 0 ? 'not winning new work recently' : 'maintaining its current position';
+      const tvRiskSignal = hasExposure ? `, with ${Utils.money(tvExpiringVal)} in contracts up for renewal in the next 90 days` : '';
+      proseLines.push(`The federal government spent ${Utils.money(total)} on this in the last 12 months. ${tv} captured ${tvPct}% of that, worth ${Utils.money(tvData.spend)}, spread across ${tvAgencyCount} government ${tvAgencyCount === 1 ? 'agency' : 'agencies'}. The company is ${tvGrowthSignal}${tvRiskSignal}.`);
+
       proseLines.push(`${tv} holds ${Utils.money(tvData.spend)} across ${tvContractCount} contracts in ${tvAgencyCount} ${tvAgencyCount === 1 ? 'agency' : 'agencies'}, which is ${tvPct}% of the addressable market here.`);
 
       if (hasExposure) {
@@ -5221,6 +5226,12 @@ const App = {
       }
 
       // ── Agency prose ──
+      // Executive summary
+      const agencyBuyingSignal = isActive ? 'is actively buying right now' : 'has limited new purchasing activity';
+      const agencyCompSignal = isConcentrated ? `Most of the spend goes to a few large vendors led by ${topVendor}.` : `The vendor base is diverse, with ${vendorCount} companies winning work.`;
+      const agencyExpSignal = exp90Val > 0 ? ` ${Utils.money(exp90Val)} in contracts are up for renewal in the next 90 days.` : exp12Val > 0 ? ` ${Utils.money(exp12Val)} comes up for renewal within a year.` : '';
+      proseLines.push(`This agency spent ${Utils.money(total)} in the last 12 months and ${agencyBuyingSignal}. ${agencyCompSignal}${agencyExpSignal}`);
+
       proseLines.push(`${contractCount} contracts across ${vendorCount} vendors, with an average deal size of ${Utils.money(avgContract)}. ${smallPct > 0.6 ? 'Most of these are smaller task orders, which means lower barriers to entry and faster procurement timelines.' : smallPct < 0.3 ? 'Large contracts dominate this agency. These are typically recompetes with lengthy evaluation cycles and strong incumbent advantages.' : 'A mix of large and small awards. Start with the entry-level task orders to build past performance, then pursue larger work.'}`);
 
       if (isConcentrated) {
@@ -5295,6 +5306,12 @@ const App = {
       }
 
       // ── Keyword prose ──
+      // Executive summary
+      const kwBuyingSignal = recentCount >= 3 ? `${recentCount} new contracts were awarded in the last 90 days, so agencies are actively spending.` : 'Buying activity has been moderate.';
+      const kwCompSignal = isFragmented ? `The market is competitive with ${vendorCount} vendors, and no single company dominates.` : `The market is concentrated. ${topVendor} leads with ${top1Pct}% share.`;
+      const kwExpSignal = exp90Val > 0 ? ` ${Utils.money(exp90Val)} in existing contracts are up for renewal in the next 90 days, which creates near-term opportunity.` : '';
+      proseLines.push(`The federal government spent ${Utils.money(total)} on this category in the last 12 months across ${agencyCount} agencies. ${kwBuyingSignal} ${kwCompSignal}${kwExpSignal}`);
+
       proseLines.push(`${Utils.money(total)} across ${agencyCount} agencies and ${vendorCount} vendors. ${isFragmented ? 'No single vendor dominates, which means procurement offices are evaluating multiple providers and there is room for new entrants.' : topVendor + ' leads at ' + top1Pct + '%. The incumbents have the advantage on recompetes, so direct competition on existing contracts is expensive.'}`);
 
       if (exp90Val > 0) {
