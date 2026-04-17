@@ -2509,13 +2509,13 @@ const SearchPills = {
   _current: null,
   _mode: 'idle', // 'idle' | 'recent' | 'alsotry'
 
-  // ── RECENT MODE — shown on input focus before a search ──
+  // ── RECENT MODE — shown on input focus ──
   showRecent() {
     const tray = DOM.get('chipTray');
     if (!tray) return;
     try {
       const history = JSON.parse(localStorage.getItem('govhoo-recent') || '[]').slice(0, 6);
-      if (!history.length) { this.hide(); return; }
+      if (!history.length) return;
       tray.innerHTML = '<span class="chip-tray-label">Recent</span>' +
         history.map(q => {
           const safe = q.replace(/'/g, "\\'");
@@ -2545,21 +2545,27 @@ const SearchPills = {
     if (this._current === key && this._mode === 'alsotry') return;
     this._current = key;
     const intel = Utils.lookupIntel(query);
-    if (intel) { this._cache[key] = intel; this.render(intel, query); }
+    if (intel) {
+      this._cache[key] = intel;
+      this._renderAlsoTry(intel, query);
+    } else {
+      // No dictionary match — show recent searches as contextual suggestions instead
+      this._renderRecentAsSuggestions(query);
+    }
   },
 
-  render(intel, query) {
+  _renderAlsoTry(intel, query) {
     const tray = DOM.get('chipTray');
     if (!tray) return;
     const pills = intel.pills || [];
-    if (!pills.length) { this._hideAlsoTry(); return; }
+    if (!pills.length) { this._renderRecentAsSuggestions(query); return; }
     const seen = new Set([query.toUpperCase()]);
     const validPills = pills.filter(p => {
       const k = p.toUpperCase();
       if (seen.has(k)) return false;
       seen.add(k); return true;
     }).slice(0, 10);
-    if (!validPills.length) { this._hideAlsoTry(); return; }
+    if (!validPills.length) { this._renderRecentAsSuggestions(query); return; }
     tray.innerHTML = '<span class="chip-tray-label">Also try</span>' +
       validPills.map(p => {
         const isCode = /^\d{6}$/.test(p) || /^[A-Z]\d{3,}/.test(p);
@@ -2570,12 +2576,24 @@ const SearchPills = {
     this._mode = 'alsotry';
   },
 
-  _hideAlsoTry() {
-    if (this._mode === 'alsotry' || this._mode === 'idle') {
-      const tray = DOM.get('chipTray');
-      if (tray) { tray.classList.remove('visible'); }
-      this._mode = 'idle';
-    }
+  // Fallback: when no dictionary pills exist, show recent searches
+  // (excluding the current query) so the tray isn't empty
+  _renderRecentAsSuggestions(currentQuery) {
+    const tray = DOM.get('chipTray');
+    if (!tray) return;
+    try {
+      const history = JSON.parse(localStorage.getItem('govhoo-recent') || '[]')
+        .filter(q => q.toLowerCase() !== (currentQuery || '').toLowerCase())
+        .slice(0, 5);
+      if (!history.length) { this.hide(); return; }
+      tray.innerHTML = '<span class="chip-tray-label">Recent</span>' +
+        history.map(q => {
+          const safe = q.replace(/'/g, "\\'");
+          return `<button class="chip-tray-item chip-tray-item--recent" onclick="App.runSearch('${safe}')">${Html.escapeHtml(q)}</button>`;
+        }).join('');
+      tray.classList.add('visible');
+      this._mode = 'alsotry'; // treat as "alsotry" so blur doesn't dismiss it
+    } catch(e) {}
   },
 
   hide() {
@@ -2801,19 +2819,25 @@ const App = {
     if (!sectorAgencies) return filters;
 
     if (!filters.agencies || filters.agencies.length === 0) {
+      // No user-specified agency — apply territory filter normally
       filters.agencies = sectorAgencies;
       App._territoryAgencyOverride = null;
     } else {
+      // User specified an agency AND a territory is active.
+      // Check if the user's agency overlaps with the territory.
       const sectorNames = new Set(sectorAgencies.map(a => a.name.toLowerCase()));
       const intersected = filters.agencies.filter(a =>
         sectorNames.has((a.name || '').toLowerCase())
       );
       if (intersected.length > 0) {
+        // User's agency is within the territory — narrow to just the intersection
         filters.agencies = intersected;
         App._territoryAgencyOverride = null;
       } else {
-        App._territoryAgencyOverride = filters.agencies.map(a => a.name || '');
-        filters.agencies = sectorAgencies;
+        // User's agency is OUTSIDE the territory (e.g. searching Navy in FedHealth).
+        // The user's explicit agency search takes priority — don't override with territory.
+        // Keep the user's agency filter as-is and let results reflect what they searched.
+        App._territoryAgencyOverride = null;
       }
     }
     return filters;
@@ -5100,15 +5124,18 @@ const App = {
     // ── Chip tray: Recent on focus, Also Try after results ──
     if (this.UI.searchInput) {
       this.UI.searchInput.addEventListener('focus', () => {
-        // Show recent on focus only when no results are loaded
-        if (!App.searchData.loaded) SearchPills.showRecent();
+        SearchPills.showRecent();
       });
       this.UI.searchInput.addEventListener('blur', () => {
         setTimeout(() => {
           SearchPills.hideRecent();
+          // If results are loaded and we had pills, restore them
+          if (App.searchData.loaded && SearchPills._current) {
+            SearchPills.generate(App.displayQuery || App.currentQuery);
+          }
           const sug = DOM.get('searchSuggestions');
           if (sug) { sug.innerHTML = ''; sug.classList.add('hidden'); }
-        }, 200);
+        }, 250);
       });
     }
 
@@ -5164,12 +5191,18 @@ const App = {
         }
       });
       mobileInput.addEventListener('focus', () => {
-        if (!App.searchData.loaded) SearchPills.showRecent();
+        SearchPills.showRecent();
         if (mobileBar) mobileBar.classList.add('loading');
         setTimeout(() => { if (mobileBar) mobileBar.classList.remove('loading'); }, 0);
       });
       mobileInput.addEventListener('blur', () => {
-        setTimeout(() => { SearchPills.hideRecent(); DOM.get('searchSuggestionsMobile')?.classList.add('hidden'); }, 200);
+        setTimeout(() => {
+          SearchPills.hideRecent();
+          if (App.searchData.loaded && SearchPills._current) {
+            SearchPills.generate(App.displayQuery || App.currentQuery);
+          }
+          DOM.get('searchSuggestionsMobile')?.classList.add('hidden');
+        }, 250);
       });
     }
 
