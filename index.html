@@ -3275,6 +3275,9 @@ const App = {
     this.searchData.filter = null;
     if (!silent && this.searchData.loaded) {
       this.searchData.active = this.searchData.baseline || Utils.filterActiveContracts(this.searchData.raw);
+      // Re-score the full dataset
+      this.analyzeMarket(this.searchData.active);
+      this.renderMarketSignals();
       this._treemapVersion++;
       this.renderBubbleChart();
       this.renderPrimes();
@@ -3308,6 +3311,9 @@ const App = {
     }
     // Update bridge text for the drill
     this.renderBridge();
+    // Re-score the drilled subset
+    this.analyzeMarket(this.searchData.active);
+    this.renderMarketSignals();
 
     this._treemapVersion++;
     if (!preventRender) this.renderBubbleChart();
@@ -3332,6 +3338,10 @@ const App = {
     this.searchData.active = (this.searchData.baseline || this.searchData.raw).filter(a =>
       (a['Awarding Sub Agency'] || '') === name || (a['Awarding Office'] || '') === name
     );
+    // Re-score the drilled subset
+    this.analyzeMarket(this.searchData.active);
+    this.renderMarketSignals();
+
     if (!preventRender) this.renderBubbleChart();
     this.renderBubbleBreadcrumb();
     this.renderPrimes();
