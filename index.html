@@ -5296,8 +5296,28 @@ const App = {
       const isTaskOrder   = avgContract < 10000000;
       const hasSubActivity = hasRichSubData || (isConcentrated && isExpiring);
 
+      // Detect if this is a channel/VAR-driven market vs a prime-driven market
+      const KNOWN_VARS = new Set([
+        'CARAHSOFT','CARAHSOFT TECHNOLOGY','GOVPLACE','FCN','THUNDERCAT','THUNDERCAT TECHNOLOGY',
+        'IMMIX','IMMIX GROUP','DLT','DLT SOLUTIONS','OPTIV','OPTIV FEDERAL','INSIGHT','INSIGHT DIRECT',
+        'CDW','CDW GOVERNMENT','CDWG','SHI','SHI INTERNATIONAL','WORLD WIDE TECHNOLOGY','WWT',
+        'IRON BOW','IRON BOW TECHNOLOGIES','MERLIN','MERLIN INTERNATIONAL','RED RIVER',
+        'RED RIVER TECHNOLOGY','PRESIDIO','PRESIDIO FEDERAL','UNICOM','UNICOM GOVERNMENT',
+        'GOVCONNECTION','GOVCONNECTION INC','DELL FEDERAL','DELL TECHNOLOGIES',
+        'PANAMERICA COMPUTERS','ANACAPA MICRO PRODUCTS','AUGUST SCHELL','AUGUST SCHELL ENTERPRISES',
+        'STANDARD-BLAZAR','GOVSMART','WILDFLOWER INTERNATIONAL','NEW TECH SOLUTIONS',
+        'SAVE AGAIN','SAVEAGAIN.COM','SOFTCHOICE','TIGER ANALYTICS','EC AMERICA',
+        'FOUR POINTS TECHNOLOGY','SOFTWARE INFORMATION RESOURCE','TECHNOLOGY SOLUTIONS PROVIDER',
+        'SOFTWAREONE','STERLING COMPUTERS','STERLING COMPUTER','SMARTRONIX',
+      ]);
+      const top5Vendors = vendorSorted.slice(0, 5).map(([name]) => name.toUpperCase());
+      const varCount = top5Vendors.filter(v => KNOWN_VARS.has(v)).length;
+      const isChannelMarket = varCount >= 2; // 2+ of top 5 are VARs = channel-driven
+
       // Concentration check comes FIRST — 3 vendors is never "Easy" regardless of other signals
-      if (isConcentrated && (isActive || hasSubActivity)) {
+      if (isChannelMarket) {
+        faceClass = 'open'; faceLabel = 'Channel Market';
+      } else if (isConcentrated && (isActive || hasSubActivity)) {
         faceClass = 'watch';  faceLabel = 'Partner Play';
       } else if (isActive && isFragmented && exp90Pct > 0.02) {
         faceClass = 'open';   faceLabel = 'Easy';
@@ -5311,13 +5331,16 @@ const App = {
         faceClass = 'locked'; faceLabel = 'Long Game';
       }
 
-      if (faceLabel === 'Easy') {
+      if (faceLabel === 'Channel Market') {
+        const topVars = top5Vendors.filter(v => KNOWN_VARS.has(v)).slice(0, 3).map(v => tc(v));
+        verdictSentence = `This is a channel market. VARs like ${topVars.join(', ')} move the product. Pick the right reseller, not the right contract.`;
+      } else if (faceLabel === 'Easy') {
         verdictSentence = exp90Pct > 0.05
           ? `This market has real near-term opportunity.`
           : `This market is open and fragmented.`;
       } else if (faceLabel === 'Partner Play') {
         verdictSentence = isConcentrated
-          ? `The large primes control this space. The fastest path in is through them, not around them.`
+          ? `The top vendors control this space. The fastest path in is through them, not around them.`
           : `Active market, but competitive. You need a differentiated position.`;
       } else {
         verdictSentence = `This market moves slowly. Plan for a 12 to 18 month engagement cycle.`;
@@ -5326,11 +5349,19 @@ const App = {
       // ── Keyword prose ──
       // Executive summary
       const kwBuyingSignal = recentCount >= 3 ? `${recentCount} new contracts were awarded in the last 90 days, so agencies are actively spending.` : 'Buying activity has been moderate.';
-      const kwCompSignal = isFragmented ? `The market is competitive with ${vendorCount} vendors, and no single company dominates.` : `The market is concentrated. ${topVendor} leads with ${top1Pct}% share.`;
+      const kwCompSignal = isChannelMarket
+        ? `The top vendors are value-added resellers, not end-user buyers. This spend flows through channel partners.`
+        : isFragmented ? `The market is competitive with ${vendorCount} vendors, and no single company dominates.` : `The market is concentrated. ${topVendor} leads with ${top1Pct}% share.`;
       const kwExpSignal = exp90Val > 0 ? ` ${Utils.money(exp90Val)} in existing contracts are up for renewal in the next 90 days, which creates near-term opportunity.` : '';
       proseLines.push(`The federal government spent ${Utils.money(total)} on this category in the last 12 months across ${agencyCount} agencies. ${kwBuyingSignal} ${kwCompSignal}${kwExpSignal}`);
 
-      proseLines.push(`${Utils.money(total)} across ${agencyCount} agencies and ${vendorCount} vendors. ${isFragmented ? 'No single vendor dominates, which means procurement offices are evaluating multiple providers and there is room for new entrants.' : topVendor + ' leads at ' + top1Pct + '%. The incumbents have the advantage on recompetes, so direct competition on existing contracts is expensive.'}`);
+      if (isChannelMarket) {
+        const topVarNames = top5Vendors.filter(v => KNOWN_VARS.has(v)).slice(0, 3).map(v => tc(v));
+        proseLines.push(`${Utils.money(total)} across ${agencyCount} agencies, but the buyers are not purchasing directly. The spend flows through resellers like ${topVarNames.join(', ')}. These VARs hold the contract vehicles and agency relationships. For a SaaS or product company, the play is to get listed with the right VAR, not to chase the contract yourself.`);
+        proseLines.push(`The agency procurement offices buy through these channels because it simplifies their acquisition process. Your job is to make it easy for the VAR to sell your product on their vehicle. That means getting on their price list, providing demo environments, and supporting their sales engineers on agency calls.`);
+      } else {
+        proseLines.push(`${Utils.money(total)} across ${agencyCount} agencies and ${vendorCount} vendors. ${isFragmented ? 'No single vendor dominates, which means procurement offices are evaluating multiple providers and there is room for new entrants.' : topVendor + ' leads at ' + top1Pct + '%. The incumbents have the advantage on recompetes, so direct competition on existing contracts is expensive.'}`);
+      }
 
       if (exp90Val > 0) {
         const topExp = exp90[0];
@@ -5359,7 +5390,10 @@ const App = {
       if (vp) proseLines.push(vp);
 
       // Action
-      if (faceLabel === 'Easy') {
+      if (faceLabel === 'Channel Market') {
+        const topVar = tc(top5Vendors.find(v => KNOWN_VARS.has(v)) || topVendor);
+        action = `Get listed with ${topVar}. They hold the vehicle and the agency relationship. Your product sells through them.`;
+      } else if (faceLabel === 'Easy') {
         if (exp90Val > 0 && top2Agencies.length >= 2) {
           action = `Start with ${top2Agencies.join(' and ')}. Recompetes are active and the vendor base is open.`;
         } else if (top2Agencies.length > 0) {
