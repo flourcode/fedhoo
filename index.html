@@ -2917,7 +2917,11 @@ const App = {
     document.querySelectorAll('.territory-dropdown').forEach(d => d.classList.remove('open'));
 
     const rawQuery = query.trim();
-    const displayQuery = rawQuery; // always show what the user typed
+    // Preserve the ORIGINAL user input (before keyword expansion) for display, URL, and history.
+    // If this query came from normalizeQuery expansion (contains commas from expansion),
+    // check if the first term before the comma is the real user input.
+    const displayQuery = rawQuery;
+
     // NOTE: apiQuery is computed AFTER loadMarketIntel resolves below — don't normalize here
 
     // Search input always shows the display term (what the user typed)
@@ -3001,7 +3005,7 @@ const App = {
     // Update URL — only when user-initiated, not on auto-restore from localStorage
     if (!skipUrlUpdate) try {
       const url = new URL(window.location);
-      url.searchParams.set('q', query);
+      url.searchParams.set('q', displayQuery); // URL always gets the original user input, not the expanded form
       if (this.territory) url.searchParams.set('territory', this.territory);
       else url.searchParams.delete('territory');
       history.replaceState(null, '', url.toString());
@@ -3012,6 +3016,7 @@ const App = {
       await Utils.loadMarketIntel();
       const apiQuery = isDirectSelection ? rawQuery : Utils.normalizeQuery(rawQuery.toUpperCase());
       this.currentQuery = apiQuery;
+      this.originalQuery = displayQuery; // preserve what the user actually typed
 
       const [, results] = await Promise.all([LibLoader.loadD3(), API.searchAwards(apiQuery)]);
       if (thisSearch !== this._searchId) return;
@@ -3741,7 +3746,7 @@ const App = {
   shareSearch(btn) {
     // Build a clean shareable URL with current query and territory
     const url = new URL(window.location.href);
-    if (this.currentQuery) url.searchParams.set('q', this.currentQuery);
+    if (this.originalQuery || this.currentQuery) url.searchParams.set('q', this.originalQuery || this.currentQuery);
     else url.searchParams.delete('q');
     if (this.territory) url.searchParams.set('territory', this.territory);
     else url.searchParams.delete('territory');
