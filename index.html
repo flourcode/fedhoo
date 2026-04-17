@@ -4862,9 +4862,23 @@ const App = {
     body.innerHTML = '<div style="text-align:center;padding:3rem;color:var(--text-quaternary);">Scanning markets…</div>';
 
     const sector = this.territory && this.SECTORS[this.territory] ? this.SECTORS[this.territory] : null;
-    const topics = sector
-      ? sector.suggestions.filter(s => !/^\d{6}$/.test(s)).slice(0, 4)
-      : ['Cloud', 'AI', 'Cybersecurity', 'Zero Trust'];
+    // Use the user's recent searches if they have enough history.
+    // These are the markets they actually care about, not generic defaults.
+    let topics;
+    try {
+      const history = JSON.parse(localStorage.getItem('govhoo-recent') || '[]')
+        .filter(q => q && q.length >= 2 && !/^\d{6}$/.test(q))
+        .slice(0, 5);
+      if (history.length >= 2) {
+        topics = history;
+      }
+    } catch(e) {}
+    // Fall back to territory suggestions or defaults for new users
+    if (!topics || !topics.length) {
+      topics = sector
+        ? sector.suggestions.filter(s => !/^\d{6}$/.test(s)).slice(0, 4)
+        : ['Cloud', 'AI', 'Cybersecurity', 'Zero Trust'];
+    }
 
     const results = [];
     for (const topic of topics) {
