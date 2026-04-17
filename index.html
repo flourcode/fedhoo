@@ -2600,24 +2600,47 @@ const SearchPills = {
       if (!kw || kw.error) return;
 
       // Clean Gemini results for USASpending compatibility.
-      // Gemini returns web-style names ("Amazon AWS", "Microsoft Azure") but
-      // USASpending matches on individual terms. Strip the parent company prefix
-      // when a brand name is appended (e.g. "AMAZON AWS" → "AWS", "MICROSOFT AZURE" → "AZURE").
-      const cleanTerm = (raw) => {
+      const cleanForSearch = (raw) => {
         let t = (raw || '').trim();
         if (!t) return '';
-        // If the term has a space, check if the first word is a known parent company
-        // and the second word is itself a recognizable brand/product
+
+        const upper = t.toUpperCase();
+
+        // Check vendor aliases — but only use the alias if it's a well-known
+        // search term (like AWS, GDIT) not an internal code (like RTX, LMCO)
+        for (const [canonical, variations] of Object.entries(Utils.VENDOR_ALIASES || {})) {
+          if (upper === canonical || variations.includes(upper)) {
+            // Find the shortest form that's actually searchable (4+ chars or known good)
+            const allForms = [canonical, ...variations];
+            const searchable = allForms.filter(f => f.length >= 4 || ['AWS','IBM','SAP','HP'].includes(f));
+            if (searchable.length > 0) {
+              const best = searchable.reduce((a, b) => a.length <= b.length ? a : b);
+              return best;
+            }
+            return t; // no good short form, keep original
+          }
+        }
+
+        // Check prefixes — "RAYTHEON TECHNOLOGIES" starts with "RAYTHEON"
+        for (const [prefix, canonical] of (Utils.VENDOR_PREFIXES || [])) {
+          if (upper === prefix || upper.startsWith(prefix + ' ') || upper.startsWith(prefix + ',')) {
+            return canonical;
+          }
+        }
+
+        // Strip corporate suffixes
+        t = t.replace(/,?\s*(Inc\.?|LLC|Corp\.?|Corporation|Ltd\.?|L\.?P\.?|Group|International|Consulting|Federal|Solutions|Systems|Services|Technologies|Technology)\.?\s*$/i, '').trim();
+        t = t.replace(/,?\s*(Inc\.?|LLC|Corp\.?|Corporation|Ltd\.?|L\.?P\.?|Group|International|Consulting|Federal|Solutions|Systems|Services|Technologies|Technology)\.?\s*$/i, '').trim();
+
+        // For 2-word compound names like "Amazon AWS" → "AWS" (parent + product)
         const parts = t.split(/\s+/);
         if (parts.length === 2) {
-          const parents = ['AMAZON','MICROSOFT','GOOGLE','ORACLE','IBM','CISCO','PALO ALTO','DELL','HEWLETT','HP','SAP','VMWARE','BROADCOM','ADOBE'];
-          if (parents.includes(parts[0].toUpperCase())) {
-            // Use the shorter, more specific term — the one USASpending actually matches
+          const knownParents = ['AMAZON','MICROSOFT','GOOGLE','ORACLE','IBM','CISCO','DELL','HP','SAP','BROADCOM','ADOBE'];
+          if (knownParents.includes(parts[0].toUpperCase()) && parts[1].length >= 2) {
             return parts[1];
           }
         }
-        // Strip corporate suffixes
-        t = t.replace(/,?\s*(Inc\.?|LLC|Corp\.?|Ltd\.?|L\.?P\.?)$/i, '').trim();
+
         return t;
       };
 
@@ -2626,7 +2649,7 @@ const SearchPills = {
       const seen = new Set([query.toUpperCase()]);
       const add = (term) => {
         if (pills.length >= 10) return;
-        const cleaned = cleanTerm(term);
+        const cleaned = cleanForSearch(term);
         const k = cleaned.toUpperCase();
         if (!k || seen.has(k)) return;
         seen.add(k);
