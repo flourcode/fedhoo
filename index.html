@@ -1019,7 +1019,7 @@ a, button, input, select { touch-action: manipulation; }
         </div>
         <div class="search-bar-inner" id="searchBarInner">
         <input type="search" id="searchInput" class="search-input"
-          placeholder="Company, keyword, or NAICS code…"
+          placeholder="Search or tell Mo what you sell…"
           autocomplete="off" autocorrect="off" autocapitalize="none"
           enterkeyhint="search" aria-label="Search federal contracts by company, keyword, or NAICS code">
         </div>
@@ -1082,7 +1082,7 @@ a, button, input, select { touch-action: manipulation; }
       </div>
       <div class="search-bar-inner" id="searchBarInnerMobile">
       <input type="search" id="searchInputMobile" class="search-input"
-        placeholder="Company, keyword, or NAICS code…"
+        placeholder="Search or tell Mo what you sell…"
         autocomplete="off" autocorrect="off" autocapitalize="none"
         enterkeyhint="search" aria-label="Search federal contracts by company, keyword, or NAICS code">
       </div>
@@ -2902,6 +2902,100 @@ const App = {
   },
 
   // Sets the active territory, persists to localStorage, re-runs search if active
+
+  // ── INTENT PARSER ──────────────────────────────────────────────
+  // Detects if the user input is a "what I sell" statement vs a keyword search.
+  // If seller intent is detected, routes through Gemini to get search terms,
+  // sets the seller lens, then runs the search with the right keywords.
+  _isSellerIntent(query) {
+    const q = query.toLowerCase().trim();
+    // Explicit seller phrases
+    if (/^i (sell|offer|provide|market|rep|represent)\b/i.test(q)) return true;
+    if (/^(we|my company|our team) (sell|offer|provide)\b/i.test(q)) return true;
+    if (/\b(to|for|at)\s+(dod|DoD|hhs|HHS|fed|federal|army|navy|air force|va|dhs|gsa|cms|fda|cdc|nih|usda|doe|doj|dot|ed|treasury|interior|state|commerce|osd|socom|disa|dla)\b/i.test(q)) return true;
+    // Product + agency pattern: "Sonatype for HHS", "CrowdStrike to DoD"
+    if (/\b(to|for|at|into)\s+\w/i.test(q) && q.split(/\s+/).length >= 3) {
+      // Check if it looks like a product pitch rather than a simple keyword
+      const hasProduct = /[A-Z]/.test(query.charAt(0)) || /\b(software|platform|solution|tool|service|product|saas|cloud)\b/i.test(q);
+      const hasTarget = /\b(to|for|at|into)\s+(the\s+)?\w/i.test(q);
+      if (hasProduct && hasTarget) return true;
+    }
+    return false;
+  },
+
+  async processSellerIntent(rawInput) {
+    const q = rawInput.trim();
+
+    // Show loading state
+    this.toast('Understanding what you sell...', 'ok', 8000);
+    const inp = this.UI.searchInput;
+    if (inp) inp.disabled = true;
+    const mobileInp = DOM.get('searchInputMobile');
+    if (mobileInp) mobileInp.disabled = true;
+
+    try {
+      // Call Gemini to parse intent into search keywords
+      const res = await fetch(this.PROXY_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ request_type: 'govhoo_market_research', company: q }),
+      });
+
+      if (!res.ok) throw new Error('Gemini unavailable');
+      const kw = await res.json();
+      if (!kw || kw.error) throw new Error(kw?.error || 'Bad response');
+
+      console.log('Seller intent parsed:', kw);
+
+      // Extract the product name for seller lens
+      const productName = kw.company || q.replace(/^(i|we|my company|our team)\s+(sell|offer|provide|market|rep|represent)\s+/i, '').replace(/\s+(to|for|at|into)\s+.*/i, '').trim();
+
+      // Set seller lens — this feeds into Mo's analysis
+      this._sellerLens = productName;
+      this._sellerProduct = productName;
+      localStorage.setItem('fedmo_seller_product', productName);
+      this._showSellerContextSet(productName);
+
+      // Store competitors for competitive view later
+      this._sellerCompetitors = (kw.competitors || []).slice(0, 6);
+      this._sellerKeywords = kw.core_keywords || [];
+      this._sellerSummary = kw.summary || '';
+
+      // Build the search query from keywords + company name
+      // Use the first 3-4 core keywords joined — this gives broad coverage
+      const searchTerms = [];
+      if (kw.core_keywords && kw.core_keywords.length > 0) {
+        searchTerms.push(...kw.core_keywords.slice(0, 4));
+      }
+      // If the company/product itself is a known brand, add it
+      const brandName = (kw.company || '').toUpperCase();
+      if (brandName && brandName.length >= 3 && !searchTerms.some(t => t.toUpperCase() === brandName)) {
+        searchTerms.unshift(brandName);
+      }
+
+      const searchQuery = searchTerms.join(', ');
+
+      if (!searchQuery) throw new Error('Could not determine search terms');
+
+      // Update input to show what we're searching
+      if (inp) inp.value = searchQuery;
+      if (mobileInp) mobileInp.value = searchQuery;
+
+      this.toast(`Searching for: ${searchQuery}`, 'ok', 3000);
+
+      // Run the search with the generated keywords
+      await this.runSearch(searchQuery, false, false);
+
+    } catch(e) {
+      console.warn('Seller intent error:', e);
+      this.toast('Could not parse that. Searching as keywords instead.', 'warning', 3000);
+      // Fallback: just search the raw input as keywords
+      await this.runSearch(q, false, false);
+    } finally {
+      if (inp) inp.disabled = false;
+      if (mobileInp) mobileInp.disabled = false;
+    }
+  },
 
   async runSearch(query, isDirectSelection = false, skipUrlUpdate = false) {
     if (!query) {
@@ -6136,8 +6230,13 @@ ${gemData.next_steps.map((step, i) => `<div class="ns-item"><span class="ns-num"
         if (e.key === 'Enter') {
           hideBox();
           input.blur();
-          document.activeElement?.blur(); // force iOS keyboard dismiss
-          App.runSearch(e.target.value);
+          document.activeElement?.blur();
+          const val = e.target.value;
+          if (App._isSellerIntent(val)) {
+            App.processSellerIntent(val);
+          } else {
+            App.runSearch(val);
+          }
         }
       });
       input.addEventListener('keydown', e => {
