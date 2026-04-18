@@ -4966,53 +4966,87 @@ const App = {
     let html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>Market Focus: ${Html.escapeHtml(query)}</title>
 <style>
-  @page { size: letter; margin: 0.5in; }
+  @page { size: letter; margin: 0.4in 0.5in; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif; font-size: 11px; color: #2C2933; line-height: 1.45; padding: 24px; max-width: 1100px; margin: 0 auto; }
-  h1 { font-size: 22px; font-weight: 900; letter-spacing: -0.03em; margin-bottom: 2px; }
-  h2 { font-size: 13px; font-weight: 800; margin: 16px 0 6px; padding-bottom: 3px; border-bottom: 2px solid #46446E; color: #46446E; }
-  h3 { font-size: 12px; font-weight: 700; margin: 14px 0 4px; color: #393640; }
-  .s-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #E8E6F0; }
-  .s-header-right { text-align: right; font-size: 10px; color: #7572B7; }
-  .s-hero { font-size: 32px; font-weight: 900; letter-spacing: -0.04em; }
-  .s-call { background: #46446E; color: #FFFFFF; border-radius: 10px; padding: 16px 18px; margin-bottom: 12px; }
-  .s-call-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: #ACAAD4; margin-bottom: 4px; }
-  .s-call-verdict { font-size: 14px; font-weight: 700; line-height: 1.4; margin-bottom: 6px; }
-  .s-call-action { font-size: 11px; color: #E3E3F1; line-height: 1.5; }
-  .s-what-matters { display: flex; gap: 16px; margin-bottom: 12px; }
-  .s-matter-item { flex: 1; background: #F4F3F8; border-radius: 8px; padding: 10px 12px; font-size: 11px; color: #535059; line-height: 1.4; }
-  .s-stats { display: flex; gap: 20px; margin: 8px 0 14px; }
-  .s-stat { text-align: center; }
-  .s-stat-val { font-size: 18px; font-weight: 800; color: #46446E; }
-  .s-stat-label { font-size: 8px; text-transform: uppercase; color: #7572B7; letter-spacing: 0.05em; }
-  .s-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-  .s-note { font-size: 10px; color: #7572B7; margin-bottom: 6px; }
-  table { width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 10px; }
-  th { text-align: left; font-weight: 700; padding: 3px 5px; border-bottom: 1px solid #D0CDE0; color: #46446E; font-size: 8px; text-transform: uppercase; letter-spacing: 0.04em; }
-  td { padding: 3px 5px; border-bottom: 1px solid #F0EEF8; }
-  tr:nth-child(even) { background: #FAFAFE; }
-  .s-pipeline { display: flex; gap: 10px; margin-bottom: 10px; }
-  .s-pipe-box { flex: 1; text-align: center; border-radius: 8px; padding: 8px 6px; }
-  .s-pipe-box--hot { background: #FFF0ED; }
-  .s-pipe-box--warm { background: #FFF8E1; }
-  .s-pipe-box--cool { background: #F0F7FF; }
-  .s-pipe-val { font-size: 15px; font-weight: 800; }
-  .s-pipe-label { font-size: 8px; color: #7572B7; }
-  .s-pipe-count { font-size: 8px; color: #999; }
-  .s-footer { margin-top: 16px; padding-top: 8px; border-top: 1px solid #E8E6F0; font-size: 9px; color: #ACAAD4; display: flex; justify-content: space-between; }
-  @media print { body { padding: 0; } .no-print { display: none; } }
+  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif; font-size: 10px; color: #1A1A2E; line-height: 1.5; padding: 32px 36px; max-width: 1080px; margin: 0 auto; background: #fff; }
+
+  /* Typography */
+  h1 { font-size: 28px; font-weight: 900; letter-spacing: -0.04em; color: #1A1A2E; margin-bottom: 0; line-height: 1.1; }
+  h2 { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #8C8AAF; margin: 22px 0 8px; padding: 0; border: none; }
+  h2::after { content: ''; display: block; width: 24px; height: 2px; background: #46446E; margin-top: 4px; }
+  h3 { font-size: 11px; font-weight: 700; margin: 12px 0 4px; color: #1A1A2E; }
+
+  /* Header */
+  .s-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #E8E6F0; }
+  .s-sub { font-size: 11px; color: #8C8AAF; margin-top: 4px; font-weight: 500; }
+  .s-header-right { text-align: right; }
+  .s-hero { font-size: 40px; font-weight: 900; letter-spacing: -0.04em; color: #1A1A2E; line-height: 1; }
+  .s-hero-label { font-size: 9px; color: #8C8AAF; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px; }
+
+  /* Market Call */
+  .s-call { background: #1A1A2E; color: #fff; border-radius: 6px; padding: 18px 22px; margin-bottom: 16px; }
+  .s-call-label { font-size: 8px; text-transform: uppercase; letter-spacing: 0.12em; color: #8C8AAF; margin-bottom: 6px; }
+  .s-call-verdict { font-size: 15px; font-weight: 700; line-height: 1.35; margin-bottom: 6px; letter-spacing: -0.01em; }
+  .s-call-action { font-size: 11px; color: #ADADC8; line-height: 1.5; }
+
+  /* What Matters */
+  .s-what-matters { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 16px; }
+  .s-matter-item { background: #F7F7FB; border-left: 3px solid #46446E; padding: 10px 12px; font-size: 11px; color: #3A3A54; line-height: 1.45; }
+
+  /* Stats */
+  .s-stats { display: flex; gap: 0; margin: 0 0 16px; border: 1px solid #E8E6F0; border-radius: 6px; overflow: hidden; }
+  .s-stat { flex: 1; text-align: center; padding: 10px 8px; border-right: 1px solid #E8E6F0; }
+  .s-stat:last-child { border-right: none; }
+  .s-stat-val { font-size: 20px; font-weight: 800; color: #1A1A2E; letter-spacing: -0.02em; }
+  .s-stat-label { font-size: 7px; text-transform: uppercase; color: #8C8AAF; letter-spacing: 0.08em; margin-top: 1px; }
+
+  /* Grid */
+  .s-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; font-size: 9.5px; margin-bottom: 6px; }
+  th { text-align: left; font-weight: 700; padding: 5px 6px 4px; border-bottom: 2px solid #1A1A2E; color: #1A1A2E; font-size: 7.5px; text-transform: uppercase; letter-spacing: 0.06em; }
+  td { padding: 4px 6px; border-bottom: 1px solid #F0EEF8; color: #3A3A54; }
+  tr:hover { background: #FAFAFF; }
+  td:first-child { font-weight: 600; color: #1A1A2E; }
+
+  /* Pipeline */
+  .s-pipeline { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .s-pipe-box { text-align: center; border-radius: 4px; padding: 12px 8px; border: 1px solid; }
+  .s-pipe-box--hot { background: #FFF8F6; border-color: #E8C4BC; }
+  .s-pipe-box--warm { background: #FFFCF0; border-color: #E8DDB0; }
+  .s-pipe-box--cool { background: #F6F8FF; border-color: #B8C4E8; }
+  .s-pipe-val { font-size: 18px; font-weight: 800; color: #1A1A2E; letter-spacing: -0.02em; }
+  .s-pipe-label { font-size: 8px; color: #8C8AAF; text-transform: uppercase; letter-spacing: 0.06em; margin-top: 2px; }
+  .s-pipe-count { font-size: 8px; color: #ADADC8; margin-top: 1px; }
+
+  /* Charts */
+  .s-chart { border: 1px solid #E8E6F0; border-radius: 4px; overflow: hidden; margin-bottom: 16px; background: #FAFAFF; }
+  .s-chart svg { display: block; width: 100%; height: auto; }
+
+  /* Analysis */
+  .s-analysis { font-size: 10.5px; line-height: 1.65; color: #3A3A54; column-count: 2; column-gap: 28px; column-rule: 1px solid #F0EEF8; }
+  .s-analysis p { margin-bottom: 8px; }
+
+  /* Footer */
+  .s-footer { margin-top: 20px; padding-top: 10px; border-top: 1px solid #E8E6F0; font-size: 8px; color: #ADADC8; display: flex; justify-content: space-between; text-transform: uppercase; letter-spacing: 0.06em; }
+  .s-cta { text-align: center; margin-top: 14px; padding: 14px; background: #F7F7FB; border-radius: 4px; font-size: 10px; color: #3A3A54; }
+  .s-cta a { color: #46446E; font-weight: 700; text-decoration: none; border-bottom: 1px solid #46446E; }
+
+  /* Print */
+  @media print { body { padding: 0; } .no-print, .s-cta { display: none; } }
   svg { max-width: 100%; height: auto; }
   .treemap-cell text { font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
 </style></head><body>
 
 <div class="s-header">
   <div>
-    <h1>${Html.escapeHtml(query.toUpperCase())}</h1>
-    <div style="font-size:11px;color:#7572B7;">${territory ? Html.escapeHtml(territory) + ' \u00b7 ' : ''}Market Focus \u00b7 ${today}</div>
+    <h1>Market Focus: ${Html.escapeHtml(query.toUpperCase())}</h1>
+    <div class="s-sub">${territory ? Html.escapeHtml(territory) + ' \u00b7 ' : ''}${today}</div>
   </div>
   <div class="s-header-right">
     <div class="s-hero">${money(total)}</div>
-    <div>trailing 12 months</div>
+    <div class="s-hero-label">Trailing 12 Months</div>
   </div>
 </div>
 
@@ -5039,7 +5073,7 @@ const App = {
     if (treemapHtml) {
       html += `
 <h2>Market Map</h2>
-<div style="margin-bottom:14px;border:1px solid #E8E6F0;border-radius:8px;overflow:hidden;background:#fff;">
+<div class="s-chart">
 ${treemapHtml}
 </div>`;
     }
@@ -5080,14 +5114,14 @@ ${subSection}
     if (sankeyHtml) {
       html += `
 <h2>Agency → Vendor Flow</h2>
-<div style="margin-bottom:14px;border:1px solid #E8E6F0;border-radius:8px;overflow:hidden;background:#fff;">
+<div class="s-chart">
 ${sankeyHtml}
 </div>`;
     }
 
     html += `
 <h2>Analysis</h2>
-<div style="font-size:11px;line-height:1.6;color:#535059;column-count:2;column-gap:20px;">
+<div class="s-analysis">
 ${prose.split('\n').filter(Boolean).map(p => '<p style="margin-bottom:6px;">' + Html.escapeHtml(p) + '</p>').join('')}
 </div>
 
@@ -5095,8 +5129,8 @@ ${prose.split('\n').filter(Boolean).map(p => '<p style="margin-bottom:6px;">' + 
   <span>Generated by Fedmo \u00b7 fedhoo.com \u00b7 Data from USASpending.gov</span>
   <span>${today}</span>
 </div>
-<div style="text-align:center;margin-top:12px;padding:12px;background:#F4F3F8;border-radius:8px;font-size:11px;color:#535059;">
-  Get weekly Market Focus reports delivered to your inbox. <a href="https://fedhoo.substack.com" target="_blank" style="color:#46446E;font-weight:700;text-decoration:underline;">Subscribe \u2192</a>
+<div class="s-cta">
+  Weekly Market Focus reports delivered to your inbox. <a href="https://fedhoo.substack.com" target="_blank">Subscribe</a>
 </div>
 
 </body></html>`;
