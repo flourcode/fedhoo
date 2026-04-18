@@ -242,6 +242,18 @@ a, button, input, select { touch-action: manipulation; }
 }
 .contract-date    { font-size: var(--text-xs); color: var(--text-quaternary); white-space: nowrap; }
 .contract-urgency { font-size: var(--text-xs); font-weight: 600; color: var(--text-quaternary); text-align: right; }
+.pipeline-tag { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 6px; display: inline-block; margin-top: 2px; }
+.pipeline-tag--short { background: var(--crit-bg); color: var(--crit-text); }
+.pipeline-tag--maturing { background: var(--warn-bg); color: var(--warn-text); }
+.pipeline-tag--renewal { background: var(--go-bg); color: var(--go-text); }
+.pipeline-reason { font-size: var(--text-xs); color: var(--text-quaternary); line-height: 1.4; margin-top: 4px; }
+.prospect-row { display: flex; align-items: baseline; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border-inner); }
+.prospect-row:last-child { border-bottom: none; }
+.prospect-rank { font-size: var(--text-xs); font-weight: 700; color: var(--text-quaternary); min-width: 18px; }
+.prospect-body { flex: 1; }
+.prospect-name { font-size: var(--text-sm); font-weight: 700; color: var(--text-primary); }
+.prospect-meta { font-size: var(--text-xs); color: var(--text-tertiary); line-height: 1.5; margin-top: 2px; }
+.prospect-amount { font-size: var(--text-sm); font-weight: 700; color: var(--text-primary); white-space: nowrap; }
 .set-aside-tag { background: var(--go-bg); color: var(--go-text); }
 .contract-meta { font-size: var(--text-xs); color: var(--text-quaternary); margin-top: 2px; }
 .contract-urgency.urgent { color: rgb(160,60,20); font-weight: 700; }
@@ -1256,6 +1268,19 @@ a, button, input, select { touch-action: manipulation; }
         <h2 class="card-title card-title--flush">Recent Awards</h2>
       </div>
       <div class="contract-list" id="recentList"></div>
+    </div>
+
+    <!-- BUYER LANDSCAPE -->
+    <div class="app-card wide result-panel hidden" id="buyerLandscapeCard">
+      <h2 class="card-title card-title--flush">Buyer Landscape</h2>
+      <p class="card-desc" id="buyerLandscapeText" style="margin-bottom:0;line-height:1.6;color:var(--text-secondary);font-size:var(--text-sm);"></p>
+    </div>
+
+    <!-- TOP PROSPECTS -->
+    <div class="app-card wide result-panel hidden" id="prospectsCard">
+      <h2 class="card-title card-title--flush">Top Prospects</h2>
+      <p class="card-desc">Ranked by near-term opportunity: expiring value, recent activity, and vendor diversity.</p>
+      <div class="contract-list" id="prospectsList"></div>
     </div>
 
     <!-- EXPIRING SOON CARD -->
@@ -2998,6 +3023,8 @@ const App = {
     const sheetAic = DOM.get('aiContentContainer'); if (sheetAic) sheetAic.innerHTML = '';
     const ql = DOM.get('sheetQuestionLabel'); if (ql) { ql.textContent = ''; ql.classList.add('hidden'); }
     DOM.hide('expiringCard');
+    DOM.hide('buyerLandscapeCard');
+    DOM.hide('prospectsCard');
     DOM.hide('recentCard');
     DOM.hide('primesCard');
     DOM.hide('bioCard');
@@ -3174,6 +3201,8 @@ const App = {
       this.renderPrimes();
       this.renderContracts();
       this.renderExpiring();
+      this.renderBuyerLandscape();
+      this.renderProspects();
       this.renderRecent();
 
       // renderBridge builds the AI payload cache — defer so treemap paints first
@@ -3334,6 +3363,8 @@ const App = {
       this.renderPrimes();
       this.renderContracts();
       this.renderExpiring();
+      this.renderBuyerLandscape();
+      this.renderProspects();
       this.renderRecent();
       // Restore subawards panel if data is available
       if (this._subawardData && this._subawardData.length) {
@@ -3372,6 +3403,8 @@ const App = {
     this.renderPrimes();
     this.renderContracts();
     this.renderExpiring();
+      this.renderBuyerLandscape();
+      this.renderProspects();
     this.renderRecent();
     DOM.hide('subawardsCard'); // subaward data is for full market, not a single agency drill
     // Keep Sankey in sync with drill state
@@ -3398,6 +3431,8 @@ const App = {
     this.renderPrimes();
     this.renderContracts();
     this.renderExpiring();
+      this.renderBuyerLandscape();
+      this.renderProspects();
     this.renderRecent();
     DOM.hide('subawardsCard');
     if (this.UI.sankeyContainer) { this.UI.sankeyContainer.innerHTML = ''; delete this.UI.sankeyContainer.dataset.rendered; if (this._chartView === 'sankey') this.renderSankey(); }
@@ -4141,11 +4176,165 @@ const App = {
     this._renderListCard(this.UI.expiringList, this.UI.expiringCard, data, c => {
       const days = Math.ceil((c._endTs - nowTs) / 86400000);
       const cls  = days <= 30 ? 'contract-urgency urgent' : days <= 60 ? 'contract-urgency warn' : 'contract-urgency';
-      // Calculate tenure — how long has this vendor held this contract
-      const tenureYears = c._startTs ? Math.round((c._endTs - c._startTs) / (365.25 * 86400000)) : 0;
-      const tenureHtml = tenureYears >= 2 ? `<span class="contract-meta">${tenureYears}yr tenure</span>` : '';
-      return this._buildContractRow(c, `<span class="${cls}">${days}d</span>${tenureHtml}`);
+      const tenureYears = c._startTs ? (c._endTs - c._startTs) / (365.25 * 86400000) : 0;
+      const tenureHtml = tenureYears >= 2 ? `<span class="contract-meta">${Math.round(tenureYears)}yr tenure</span>` : '';
+
+      // Pipeline pattern classification
+      const naicsCode = c['NAICS'] ? (typeof c['NAICS'] === 'object' ? c['NAICS'].code : c['NAICS']) : '';
+      const isSaaS = ['518210','511210'].includes(naicsCode);
+      const contractType = c['Contract Award Type'] || c['idv_type'] || '';
+      const isBPA = /BPA/i.test(contractType);
+      const isDO = /DO|delivery/i.test(contractType);
+
+      let patternTag = '', patternClass = '', patternReason = '';
+      if (tenureYears < 2) {
+        patternTag = 'Short-Term';
+        patternClass = 'pipeline-tag--short';
+        patternReason = isBPA
+          ? 'Short duration BPA call. Likely a bridge or base-only award with high probability of recompete.'
+          : 'Contract duration under 2 years. Possible bridge award or truncated funding window.';
+      } else if (isSaaS || /LICENS|SUBSCRIPTION|SAAS|HOSTING/i.test(c['Description'] || '')) {
+        patternTag = 'Renewal';
+        patternClass = 'pipeline-tag--renewal';
+        patternReason = 'Recurring software, cloud, or SaaS pattern. High probability of renewal or re-up.';
+      } else if (tenureYears >= 3.5) {
+        patternTag = 'Maturing';
+        patternClass = 'pipeline-tag--maturing';
+        patternReason = `${Math.round(tenureYears)}-year lifecycle reaching natural end. High probability of recompete.`;
+      } else {
+        patternTag = 'Maturing';
+        patternClass = 'pipeline-tag--maturing';
+        patternReason = 'Approaching end of period of performance.';
+      }
+
+      const office = c['Awarding Office'] || '';
+      const officeHtml = office ? `<div class="contract-meta">${Html.escapeHtml(office)}</div>` : '';
+      const patternHtml = `<span class="pipeline-tag ${patternClass}">${patternTag}</span>`;
+      const reasonHtml = `<div class="pipeline-reason">${Html.escapeHtml(patternReason)}</div>`;
+
+      return this._buildContractRow(c, `<span class="${cls}">${days}d</span>${tenureHtml}${patternHtml}`) + reasonHtml;
     }, 'expiring contracts', '_renderExpiringAll');
+  },
+
+  renderBuyerLandscape() {
+    const card = DOM.get('buyerLandscapeCard');
+    const textEl = DOM.get('buyerLandscapeText');
+    if (!card || !textEl) return;
+    const data = this.searchData.active;
+    if (!data.length) { card.classList.add('hidden'); return; }
+    card.classList.remove('hidden');
+
+    const nowTs = Date.now();
+    const rec90Ts = nowTs - 90 * 86400000;
+    const total = data.reduce((s, c) => s + (parseFloat(c['Award Amount']) || 0), 0);
+
+    // Top offices
+    const offices = {};
+    data.forEach(c => {
+      const o = c['Awarding Office'] || '';
+      if (o) offices[o] = (offices[o] || 0) + (parseFloat(c['Award Amount']) || 0);
+    });
+    const topOffices = Object.entries(offices).sort((a,b) => b[1] - a[1]).slice(0, 3).map(([o]) => o);
+
+    // PoP states
+    const states = {};
+    data.forEach(c => {
+      const st = c['pop_state_code'] || '';
+      if (st) states[st] = (states[st] || 0) + (parseFloat(c['Award Amount']) || 0);
+    });
+    const topStates = Object.entries(states).sort((a,b) => b[1] - a[1]).slice(0, 3)
+      .map(([st, val]) => `${st} (${Utils.money(val)})`);
+
+    // New awards count
+    const recentCount = data.filter(c => c._startTs >= rec90Ts).length;
+
+    // Vendor stats
+    const vendors = new Set(data.map(c => c['Recipient Name'] || ''));
+    const agencies = new Set(data.map(c => c['Awarding Agency'] || ''));
+
+    // Top primes
+    const vendorSpend = {};
+    data.forEach(c => {
+      const v = c['Recipient Name'] || '';
+      vendorSpend[v] = (vendorSpend[v] || 0) + (parseFloat(c['Award Amount']) || 0);
+    });
+    const topPrimes = Object.entries(vendorSpend).sort((a,b) => b[1] - a[1]).slice(0, 3).map(([v]) => Utils.titleCase(v));
+    const top5Pct = total > 0 ? Math.round(Object.entries(vendorSpend).sort((a,b) => b[1] - a[1]).slice(0, 5).reduce((s,[,v]) => s+v, 0) / total * 100) : 0;
+
+    // Build prose
+    const parts = [];
+    if (recentCount > 0) {
+      parts.push(`${recentCount} new award${recentCount !== 1 ? 's' : ''} in the last 90 days.`);
+    } else {
+      parts.push('No new awards in the last 90 days.');
+    }
+    parts.push(`Top primes by contract value include ${topPrimes.join(', ')}.`);
+    parts.push(`Purchasing spans ${Object.keys(offices).length} offices across ${Utils.cleanAgency(Array.from(agencies)[0] || '')}, ${Utils.cleanAgency(Array.from(agencies)[1] || '')}, and ${Utils.cleanAgency(Array.from(agencies)[2] || '')}.`);
+    if (topOffices.length > 0) parts.push(`Heaviest activity at ${topOffices.slice(0, 2).join(' and ')}.`);
+    if (topStates.length > 0) parts.push(`Primary PoPs are ${topStates.join(', ')}.`);
+    parts.push(`The top 5 vendors control ${top5Pct}% of total dollars${top5Pct < 60 ? ', suggesting a balanced market' : ''}.`);
+
+    textEl.textContent = parts.join(' ');
+  },
+
+  renderProspects() {
+    const card = DOM.get('prospectsCard');
+    const list = DOM.get('prospectsList');
+    if (!card || !list) return;
+    const data = this.searchData.active;
+    if (!data.length) { card.classList.add('hidden'); return; }
+    card.classList.remove('hidden');
+
+    const nowTs = Date.now();
+    const exp90Ts = nowTs + 90 * 86400000;
+    const rec90Ts = nowTs - 90 * 86400000;
+
+    // Score each agency by: expiring value (40%), recent awards (30%), vendor diversity (30%)
+    const agencyData = {};
+    data.forEach(c => {
+      const ag = c['Awarding Agency'] || '';
+      if (!ag) return;
+      const amt = parseFloat(c['Award Amount']) || 0;
+      if (!agencyData[ag]) agencyData[ag] = { total: 0, expiring: 0, recent: 0, vendors: new Set(), contracts: 0 };
+      agencyData[ag].total += amt;
+      agencyData[ag].contracts++;
+      agencyData[ag].vendors.add(c['Recipient Name'] || '');
+      if (c._endTs > nowTs && c._endTs <= exp90Ts && amt > 50000) agencyData[ag].expiring += amt;
+      if (c._startTs >= rec90Ts) agencyData[ag].recent++;
+    });
+
+    const maxExp = Math.max(...Object.values(agencyData).map(d => d.expiring), 1);
+    const maxRec = Math.max(...Object.values(agencyData).map(d => d.recent), 1);
+    const maxVen = Math.max(...Object.values(agencyData).map(d => d.vendors.size), 1);
+
+    const scored = Object.entries(agencyData).map(([ag, d]) => {
+      const expScore = (d.expiring / maxExp) * 40;
+      const recScore = (d.recent / maxRec) * 30;
+      const venScore = (d.vendors.size / maxVen) * 30;
+      return { agency: ag, ...d, score: expScore + recScore + venScore };
+    }).sort((a, b) => b.score - a.score).slice(0, 5);
+
+    list.innerHTML = scored.map((p, i) => {
+      const name = Utils.cleanAgency(p.agency);
+      let reason = '';
+      if (p.expiring > 0 && p.recent > 0) {
+        reason = `${Utils.money(p.expiring)} expiring soon and ${p.recent} recent award${p.recent > 1 ? 's' : ''}. Active and turning over.`;
+      } else if (p.expiring > 0) {
+        reason = `${Utils.money(p.expiring)} expiring in the next 90 days. Near-term recompete opportunity.`;
+      } else if (p.recent > 0) {
+        reason = `${p.recent} recent award${p.recent > 1 ? 's' : ''}. Actively buying.`;
+      } else {
+        reason = `${p.vendors.size} vendors active. Evaluates multiple providers.`;
+      }
+      return `<div class="prospect-row">
+        <span class="prospect-rank">${i + 1}</span>
+        <div class="prospect-body">
+          <div class="prospect-name">${Html.escapeHtml(name)}</div>
+          <div class="prospect-meta">${Html.escapeHtml(reason)}</div>
+        </div>
+        <span class="prospect-amount">${Utils.money(p.total)}</span>
+      </div>`;
+    }).join('');
   },
 
   renderRecent() {
@@ -5022,12 +5211,20 @@ const App = {
     const territoryLabel = sector ? ' \u00b7 ' + sector.label : '';
     const tc = s => Utils.titleCase ? Utils.titleCase(s) : s;
 
+    let channelIndex = 0;
     ranked.forEach((r, i) => {
-      // One-liner — different for each
+      // One-liner — EVERY line must be different
       if (i === 0) {
         r.oneLiner = r.expVal > 0 ? 'easiest place to get in right now; real turnover' : 'most accessible market on the board';
       } else if (r.isChannel) {
-        r.oneLiner = 'channel market, pick the right reseller';
+        channelIndex++;
+        if (channelIndex === 1) {
+          r.oneLiner = 'channel-driven, access depends on reseller';
+        } else if (channelIndex === 2) {
+          r.oneLiner = 'same channel pattern, but more concentrated';
+        } else {
+          r.oneLiner = 'also channel, smaller volume';
+        }
       } else if (r.face === 'open' && ranked[0].face === 'open') {
         r.oneLiner = r.expVal > 0 ? 'also open, contracts turning over' : 'open, but less turnover than ' + ranked[0].topic;
       } else if (r.face === 'watch' && r.isConcentrated) {
@@ -5038,8 +5235,10 @@ const App = {
         r.oneLiner = 'slower, worth watching for next cycle';
       } else if (r.total > 1e9) {
         r.oneLiner = 'big market, but locked up';
+      } else if (r.expVal > 0) {
+        r.oneLiner = 'smaller, but some turnover ahead';
       } else {
-        r.oneLiner = 'smaller, compliance-driven';
+        r.oneLiner = 'smaller, relationships already in place';
       }
     });
 
@@ -5056,34 +5255,39 @@ const App = {
         });
         if (res.ok) {
           const kw = await res.json();
+          console.log('Briefing Gemini context:', kw);
           if (kw && !kw.error) {
-            geminiContext = {
-              category: kw.summary || '',
-              positioning: kw.positioning || '',
-            };
+            // The market research prompt returns summary + positioning.
+            // Either one can serve as the context line.
+            const contextText = (kw.summary && kw.summary.length > 10) ? kw.summary
+              : (kw.positioning && kw.positioning.length > 10) ? kw.positioning
+              : '';
+            if (contextText) geminiContext = contextText;
           }
         }
       } catch(e) { /* best-effort */ }
     }
 
     // ── COMPARATIVE COPY — Mo's take is OPINION, not data recap ──
-    // The data ($X market, Y vendors) is shown in the header. Mo's take interprets it.
+    let channelMoIndex = 0;
     ranked.forEach((r, i) => {
       // Mo's take — opinion, not numbers
       if (i === 0 && r.expVal > 0) {
         r.moTake = `This one is moving. Real turnover and no dominant player. Cleanest entry point this week.`;
       } else if (i === 0) {
         r.moTake = `Most accessible of the markets you picked. No one owns it yet.`;
-      } else if (r.isChannel && ranked.filter(x => x.isChannel).length > 1) {
-        // Multiple channel markets — differentiate them
-        const otherChannel = ranked.find(x => x.isChannel && x.topic !== r.topic);
-        if (r.top3Pct > (otherChannel?.top3Pct || 0)) {
-          r.moTake = `Same channel pattern as ${otherChannel?.topic || 'the others'}, but more concentrated. Fewer resellers control the flow.`;
-        } else {
-          r.moTake = `Channel market. The contract holders matter more than the product vendor here.`;
-        }
       } else if (r.isChannel) {
-        r.moTake = `This does not move direct. If you are not aligned to the right reseller, you are not in the deal.`;
+        channelMoIndex++;
+        const topVendorName = Utils.titleCase ? Utils.titleCase(r.topVendor) : r.topVendor;
+        if (channelMoIndex === 1) {
+          r.moTake = `Channel market. The contract holders matter more than the product vendor here.`;
+        } else if (channelMoIndex === 2 && r.top3Pct >= 70) {
+          r.moTake = `Same channel dynamics but tighter. ${topVendorName} and a few VARs control most of the flow.`;
+        } else if (channelMoIndex === 2) {
+          r.moTake = `Also channel-driven. More spread out than the others, which can be easier to break into.`;
+        } else {
+          r.moTake = `Another channel market, but smaller volume. Harder to justify the effort unless it is strategic.`;
+        }
       } else if (r.face === 'open' && r.expVal > 0) {
         r.moTake = `Still open, with contracts turning over. Not as clean as ${ranked[0].topic} but worth pursuing.`;
       } else if (r.face === 'open') {
@@ -5142,8 +5346,8 @@ const App = {
     ).join('<br>');
 
     // Context line from Gemini (if available)
-    const contextLine = geminiContext?.category
-      ? `<div style="font-size:var(--text-xs);color:var(--text-tertiary);font-style:italic;margin-bottom:12px;">${Html.escapeHtml(geminiContext.category)}</div>`
+    const contextLine = geminiContext
+      ? `<div style="font-size:var(--text-xs);color:var(--text-tertiary);font-style:italic;margin-bottom:12px;">${Html.escapeHtml(geminiContext)}</div>`
       : '';
 
     let html = `
