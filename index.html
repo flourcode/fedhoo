@@ -145,7 +145,9 @@ a, button, input, select { touch-action: manipulation; }
   color: var(--text-secondary); transition: var(--transition); flex-shrink: 0;
 }
 .hdr-icon-circle:hover { background: var(--bg-hover); color: var(--text-primary); }
-.hdr-icon-spinning { animation: spin 1s linear infinite; pointer-events: none; opacity: 0.6; }
+.hdr-icon-spinning { pointer-events: none; opacity: 0.6; }
+.hdr-icon-spinning .snap-icon-default { display: none; }
+.hdr-icon-spinning .snap-icon-loading { display: block !important; animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ── CHIP TRAY — unified Recent + Also Try chips below search bar ── */
@@ -1040,9 +1042,12 @@ a, button, input, select { touch-action: manipulation; }
           <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
         </svg>
       </button>
-      <button class="hdr-icon-circle hidden" id="snapshotBtn" onclick="App.generateSnapshot()" title="Market snapshot" aria-label="Download market snapshot">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+      <button class="hdr-icon-circle hidden" id="snapshotBtn" onclick="App.generateSnapshot()" title="Market Focus report" aria-label="Generate Market Focus report">
+        <svg class="snap-icon-default" width="16" height="16" viewBox="0 0 640 640" fill="currentColor" aria-hidden="true">
+          <path d="M128 128C128 92.7 156.7 64 192 64L341.5 64C358.5 64 374.8 70.7 386.8 82.7L493.3 189.3C505.3 201.3 512 217.6 512 234.6L512 512C512 547.3 483.3 576 448 576L192 576C156.7 576 128 547.3 128 512L128 128zM336 122.5L336 216C336 229.3 346.7 240 360 240L453.5 240L336 122.5zM303 505C312.4 514.4 327.6 514.4 336.9 505L400.9 441C410.3 431.6 410.3 416.4 400.9 407.1C391.5 397.8 376.3 397.7 367 407.1L344 430.1L344 344C344 330.7 333.3 320 320 320C306.7 320 296 330.7 296 344L296 430.1L273 407.1C263.6 397.7 248.4 397.7 239.1 407.1C229.8 416.5 229.7 431.7 239.1 441L303.1 505z"/>
+        </svg>
+        <svg class="snap-icon-loading hidden" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+          <path d="M21 12a9 9 0 1 1-6.22-8.56"/>
         </svg>
       </button>
       <button class="hdr-icon-circle" id="darkToggleBtn" onclick="App.toggleDarkMode()" title="Toggle dark mode" aria-label="Toggle dark mode">
