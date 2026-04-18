@@ -4922,7 +4922,8 @@ const App = {
 <style>
 @page{size:letter;margin:.4in .5in}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;font-size:12px;color:#1d1d1f;line-height:1.47;padding:28px 32px;max-width:720px;margin:0 auto}
+html{background:#f0f0f0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;font-size:12px;color:#1d1d1f;line-height:1.47;padding:36px 44px;max-width:820px;margin:24px auto;background:#fff;border:1px solid #e0e0e0;box-shadow:0 1px 8px rgba(0,0,0,.08);min-height:100vh}
 
 .hdr{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:4px}
 .hdr-label{font-size:11px;color:#86868b}
@@ -4978,7 +4979,7 @@ td:first-child{font-weight:600;color:#1d1d1f;white-space:normal}
 .ft-logo{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:#1d1d1f;text-decoration:none}
 .ft-logo svg{width:20px;height:20px}
 .ft-right{text-align:right;font-size:8px;color:#aeaeb2}
-@media print{body{padding:0;font-size:11px}}
+@media print{html{background:#fff}body{padding:0;margin:0;border:none;box-shadow:none;max-width:none;font-size:11px}}
 svg{max-width:100%;height:auto}
 </style></head><body>
 
@@ -5070,7 +5071,7 @@ ${prose.split('\\n').filter(Boolean).map(p => '<p>' + Html.escapeHtml(p) + '</p>
 
     // ── GEMINI NEXT STEPS ──
     // Build a tight payload from the computed data — no raw contracts, just the signals
-    this.toast('Building Market Focus...', 'ok', 3000);
+    this.toast('Building Market Focus...', 'ok', 8000);
     const geminiPayload = {
       market: query,
       total_spend: money(total),
