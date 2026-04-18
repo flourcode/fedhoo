@@ -4859,32 +4859,56 @@ const App = {
       backdrop.classList.add('open');
       requestAnimationFrame(() => sheet.classList.add('open'));
     });
-    body.innerHTML = '<div style="text-align:center;padding:3rem;color:var(--text-quaternary);">Scanning markets…</div>';
+
+    // Phase 1: Show topic picker
+    const sector = this.territory && this.SECTORS[this.territory] ? this.SECTORS[this.territory] : null;
+    let candidates = [];
+    try {
+      candidates = JSON.parse(localStorage.getItem('govhoo-recent') || '[]')
+        .filter(q => q && q.length >= 2 && !/^\d{6}$/.test(q));
+    } catch(e) {}
+    if (candidates.length < 2) {
+      candidates = sector
+        ? sector.suggestions.filter(s => !/^\d{6}$/.test(s))
+        : ['Cloud', 'AI', 'Cybersecurity', 'Zero Trust', 'DevSecOps'];
+    }
+    candidates = candidates.slice(0, 8);
+
+    // Pre-check the first 4
+    body.innerHTML = `
+      <div style="margin-bottom:16px;">
+        <div style="font-size:var(--text-sm);font-weight:700;color:var(--text-primary);margin-bottom:4px;">Pick your markets</div>
+        <div style="font-size:var(--text-xs);color:var(--text-quaternary);margin-bottom:12px;">Select up to 5. Mo will scan each one.</div>
+        ${candidates.map((q, i) => `
+          <label style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border-inner);cursor:pointer;font-size:var(--text-sm);color:var(--text-primary);">
+            <input type="checkbox" class="briefing-check" value="${Html.escapeHtml(q)}" ${i < 4 ? 'checked' : ''} style="width:18px;height:18px;accent-color:var(--accent);">
+            ${Html.escapeHtml(q)}
+          </label>`).join('')}
+      </div>
+      <button class="chip-tray-item" style="font-weight:700;color:var(--accent);border-color:var(--accent);width:100%;justify-content:center;padding:12px;" onclick="App._runBriefing()">Generate briefing</button>`;
+  },
+
+  async _runBriefing() {
+    const body = DOM.get('briefingBody');
+    if (!body) return;
+    const checked = [...document.querySelectorAll('.briefing-check:checked')].map(el => el.value).slice(0, 5);
+    if (!checked.length) { body.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text-quaternary);">Select at least one market.</div>'; return; }
 
     const sector = this.territory && this.SECTORS[this.territory] ? this.SECTORS[this.territory] : null;
-    // Use the user's recent searches if they have enough history.
-    // These are the markets they actually care about, not generic defaults.
-    let topics;
-    try {
-      const history = JSON.parse(localStorage.getItem('govhoo-recent') || '[]')
-        .filter(q => q && q.length >= 2 && !/^\d{6}$/.test(q))
-        .slice(0, 5);
-      if (history.length >= 2) {
-        topics = history;
-      }
-    } catch(e) {}
-    // Fall back to territory suggestions or defaults for new users
-    if (!topics || !topics.length) {
-      topics = sector
-        ? sector.suggestions.filter(s => !/^\d{6}$/.test(s)).slice(0, 4)
-        : ['Cloud', 'AI', 'Cybersecurity', 'Zero Trust'];
-    }
+
+    // Progress indicator
+    body.innerHTML = `<div style="text-align:center;padding:2rem;color:var(--text-quaternary);" id="briefingProgress">Scanning 1 of ${checked.length}...</div>`;
+    const progress = DOM.get('briefingProgress');
 
     const results = [];
-    for (const topic of topics) {
+    for (let ti = 0; ti < checked.length; ti++) {
+      const topic = checked[ti];
+      if (progress) progress.textContent = `Scanning ${ti + 1} of ${checked.length}... ${topic}`;
       try {
         await Utils.loadMarketIntel();
         const apiQuery = Utils.normalizeQuery(topic.toUpperCase());
+
+        // Fire prime search
         const raw = await API.searchAwards(apiQuery);
         const filtered = Utils.filterActiveContracts(raw);
         const total = filtered.reduce((s, c) => s + (parseFloat(c['Award Amount']) || 0), 0);
@@ -4893,138 +4917,199 @@ const App = {
           continue;
         }
 
-        const nowTs = Date.now();
-        const exp90Ts = nowTs + 90 * 86400000;
-        const rec90Ts = nowTs - 90 * 86400000;
-        const agencies = {}, vendors = {};
-        let expVal = 0, recentCount = 0, expCount = 0;
-        filtered.forEach(c => {
-          const amt = parseFloat(c['Award Amount']) || 0;
-          const ag = c['Awarding Agency'] || '';
-          const vn = c['Recipient Name'] || '';
-          agencies[ag] = (agencies[ag] || 0) + amt;
-          if (!vendors[vn]) vendors[vn] = 0;
-          vendors[vn] += amt;
-          if (c._endTs > nowTs && c._endTs <= exp90Ts && amt > 50000) { expVal += amt; expCount++; }
-          if (c._startTs >= rec90Ts) recentCount++;
-        });
+        // Run analyzeMarket to reuse the full scoring engine
+        this.analyzeMarket(filtered);
+        const m = this.marketMetrics;
 
-        const vendorSorted = Object.entries(vendors).sort((a,b) => b[1] - a[1]);
-        const agencySorted = Object.entries(agencies).sort((a,b) => b[1] - a[1]);
+        const vendorSorted = Object.entries(m.vendors).sort((a,b) => b[1].spend - a[1].spend);
+        const agencySorted = Object.entries(m.agencies).sort((a,b) => b[1] - a[1]);
         const vendorCount = vendorSorted.length;
-        const top3Pct = total > 0 ? Math.round(vendorSorted.slice(0,3).reduce((s,[,v])=>s+v,0) / total * 100) : 0;
+        const top3Pct = total > 0 ? Math.round(vendorSorted.slice(0,3).reduce((s,[,v])=>s+v.spend,0) / total * 100) : 0;
+        const top1Pct = total > 0 ? Math.round((vendorSorted[0]?.[1].spend || 0) / total * 100) : 0;
+        const topVendor = vendorSorted[0]?.[0] || '';
         const topAgencies = agencySorted.slice(0, 3).map(([a]) => Utils.cleanAgency(a));
-        const topVendor = Utils.titleCase(vendorSorted[0]?.[0] || '');
-        const top1Pct = total > 0 ? Math.round((vendorSorted[0]?.[1] || 0) / total * 100) : 0;
-        const isActive = recentCount >= 3 || (total > 0 && expVal / total > 0.03);
-        const isConcentrated = top3Pct >= 60 || vendorCount <= 3;
+        const exp90 = m.expiring.filter(c => {
+          const endTs = c._endTs || new Date(c['End Date']).getTime();
+          return endTs > Date.now() && endTs <= Date.now() + 90 * 86400000;
+        });
+        const expVal = exp90.reduce((s, c) => s + (parseFloat(c['Award Amount']) || 0), 0);
         const expPct = total > 0 ? expVal / total : 0;
+        const recentCount = m.recentAwards ? m.recentAwards.length : 0;
+        const isActive = recentCount >= 3 || expPct > 0.03;
+        const isConcentrated = top3Pct >= 60 || vendorCount <= 3;
 
-        // Score with more granularity than the main engine — 5 tiers, not 3
-        let face, rank;
-        if (isActive && !isConcentrated && expPct > 0.02) { face = 'open'; rank = 1; }
-        else if (isActive && !isConcentrated) { face = 'open'; rank = 2; }
-        else if (isActive && isConcentrated) { face = 'watch'; rank = 3; }
-        else if (!isActive && !isConcentrated) { face = 'watch'; rank = 4; }
-        else { face = 'locked'; rank = 5; }
+        // Detect channel market
+        const KNOWN_VARS_SET = new Set([
+          'CARAHSOFT','CARAHSOFT TECHNOLOGY','GOVPLACE','FCN','THUNDERCAT','THUNDERCAT TECHNOLOGY',
+          'IMMIX','DLT','DLT SOLUTIONS','OPTIV','OPTIV FEDERAL','CDW','CDW GOVERNMENT','CDWG',
+          'SHI','SHI INTERNATIONAL','WORLD WIDE TECHNOLOGY','WWT','IRON BOW','IRON BOW TECHNOLOGIES',
+          'RED RIVER','RED RIVER TECHNOLOGY','PRESIDIO','PRESIDIO FEDERAL',
+          'PANAMERICA COMPUTERS','ANACAPA MICRO PRODUCTS','AUGUST SCHELL','AUGUST SCHELL ENTERPRISES',
+          'STANDARD-BLAZAR','GOVSMART','WILDFLOWER INTERNATIONAL','COLOSSAL CONTRACTING',
+        ]);
+        const top8 = vendorSorted.slice(0,8).map(([n]) => n.toUpperCase());
+        const isChannel = top8.filter(v => KNOWN_VARS_SET.has(v)).length >= 2;
+
+        // Vehicles
+        const vehiclesSorted = Object.entries(m.vehicles || {}).sort((a,b) => b[1].spend - a[1].spend);
+        const topVehicle = vehiclesSorted[0];
+
+        // Composite score
+        const fragScore = Math.max(0, 100 - top3Pct);
+        const actScore = Math.min(100, recentCount * 15);
+        const expScore = Math.min(100, expPct * 500);
+        const composite = Math.round(fragScore * 0.4 + actScore * 0.3 + expScore * 0.3);
+
+        let face;
+        if (isChannel) face = 'open';
+        else if (composite >= 45) face = 'open';
+        else if (composite >= 25) face = 'watch';
+        else face = 'locked';
+
+        // Fire subaward fetch in parallel with next iteration (non-blocking)
+        let subData = null;
+        try {
+          const { pscCodes, naicsCodes, keywordTerms } = Utils.parseSearchTerms(apiQuery);
+          const subFilters = { time_period: [Utils.getTrailing12Mo()[0]], award_type_codes: API.CONTRACT_TYPES };
+          const plainKw = [];
+          keywordTerms.forEach(t => { const ag = Utils.resolveAgencyAlias(t); if (!ag) plainKw.push(t); });
+          if (pscCodes.length) subFilters.psc_codes = pscCodes;
+          if (naicsCodes.length) subFilters.naics_codes = { require: naicsCodes };
+          if (plainKw.length) subFilters.keywords = plainKw;
+          if (!subFilters.keywords && !subFilters.psc_codes && !subFilters.naics_codes) subFilters.keywords = [apiQuery];
+          const subRes = await API._post('/search/spending_by_award/', {
+            subawards: true, filters: subFilters,
+            fields: ['Sub-Awardee Name','Sub-Award Amount','Prime Recipient Name'],
+            limit: 50, sort: 'Sub-Award Amount', order: 'desc'
+          });
+          const subs = (subRes.results || []);
+          if (subs.length > 0) {
+            const subTotal = subs.reduce((s, r) => s + (parseFloat(r['Sub-Award Amount']) || 0), 0);
+            const primes = {};
+            subs.forEach(s => {
+              const p = Utils.normalizeVendorName(s['Prime Recipient Name'] || 'Unknown');
+              primes[p] = (primes[p] || 0) + (parseFloat(s['Sub-Award Amount']) || 0);
+            });
+            const topPrimes = Object.entries(primes).sort((a,b) => b[1] - a[1]).slice(0, 3);
+            const topPrimePct = subTotal > 0 ? Math.round(topPrimes[0][1] / subTotal * 100) : 0;
+            // Only include if meaningful: sub value > 10% of prime or dominant prime > 70%
+            if (subTotal > total * 0.1 || topPrimePct >= 70) {
+              subData = { total: subTotal, count: subs.length, topPrime: topPrimes[0][0], topPrimePct, primeCount: topPrimes.length };
+            }
+          }
+        } catch(e) { /* subaward fetch is best-effort */ }
 
         results.push({
-          topic, total, count: filtered.length,
-          expVal, expCount, recentCount, vendorCount,
-          top3Pct, top1Pct, topVendor,
-          agencies: topAgencies,
-          face, rank,
-          isActive, isConcentrated, expPct,
+          topic, total, vendorCount, top3Pct, top1Pct, topVendor,
+          agencies: topAgencies, expVal, recentCount,
+          isActive, isConcentrated, isChannel,
+          composite, face, subData,
+          topVehicle: topVehicle ? { name: topVehicle[0], spend: topVehicle[1].spend, count: topVehicle[1].count } : null,
+          queryType: m.queryType,
         });
       } catch(e) {
         results.push({ topic, total: 0, skip: true });
       }
     }
 
-    // Sort by rank (best opportunity first)
-    results.sort((a, b) => (a.rank || 99) - (b.rank || 99));
+    // Sort by composite score descending
+    results.sort((a, b) => (b.composite || 0) - (a.composite || 0));
 
-    // Generate UNIQUE copy for each market based on its specific data
-    const generateCopy = (r, position) => {
-      if (r.skip) return null;
-
-      // One-liner for the summary — each one must be different
-      let oneLiner;
-      if (r.face === 'open' && r.expPct > 0.05) {
-        oneLiner = 'most active right now, real turnover happening';
-      } else if (r.face === 'open' && r.vendorCount >= 10) {
-        oneLiner = 'open and fragmented, good place to start';
-      } else if (r.face === 'open') {
-        oneLiner = 'room to work with here';
-      } else if (r.face === 'watch' && r.isConcentrated && r.isActive) {
-        oneLiner = 'active, but the big vendors hold most of it';
-      } else if (r.face === 'watch' && r.isActive) {
-        oneLiner = 'moving, but getting crowded';
-      } else if (r.face === 'watch') {
-        oneLiner = 'slower, worth watching for the next cycle';
-      } else if (r.isConcentrated) {
-        oneLiner = 'established, you\'re working through incumbents here';
-      } else {
-        oneLiner = 'quieter right now, plan for a longer engagement';
-      }
-
-      // Verdict — specific to this market's data, not a template
-      let verdict;
-      if (r.face === 'open' && r.expVal > 0) {
-        verdict = `${Utils.money(r.total)} market with ${Utils.money(r.expVal)} turning over in the next 90 days. ${r.vendorCount} vendors active, no one dominates.`;
-      } else if (r.face === 'open') {
-        verdict = `${Utils.money(r.total)} across ${r.agencies.length}+ agencies. Fragmented vendor base, ${r.recentCount} new awards recently.`;
-      } else if (r.face === 'watch' && r.isConcentrated) {
-        verdict = `${Utils.money(r.total)} market, but ${r.topVendor} and the top 3 hold ${r.top3Pct}%. ${r.recentCount > 0 ? 'Still active.' : 'Slowing down.'}`;
-      } else if (r.face === 'watch') {
-        verdict = `${Utils.money(r.total)} with ${r.vendorCount} vendors. Competitive but not locked up.${r.expVal > 0 ? ' ' + Utils.money(r.expVal) + ' expiring soon.' : ''}`;
-      } else {
-        verdict = `${Utils.money(r.total)} market, concentrated. ${r.topVendor} leads at ${r.top1Pct}%.${r.expVal > 0 ? ' Some turnover ahead.' : ' Not much moving.'}`;
-      }
-
-      // Approach — unique per market, references actual data
-      let approach;
-      if (r.face === 'open' && r.agencies.length >= 2) {
-        approach = `Start with ${r.agencies[0]} or ${r.agencies[1]} and get into an existing conversation.`;
-      } else if (r.face === 'open') {
-        approach = `Pick an agency and start. The barrier here is low.`;
-      } else if (r.face === 'watch' && r.isConcentrated && r.expVal > 0) {
-        approach = `Watch ${r.topVendor}'s ${r.expCount} expiring contracts. Partner route is usually faster than going direct.`;
-      } else if (r.face === 'watch' && r.isConcentrated) {
-        approach = `Don't go head on. Find the sub-tier or the adjacent requirement the incumbents aren't covering.`;
-      } else if (r.face === 'watch') {
-        approach = `Pick a lane and specialize. Broad plays get lost in this crowd.`;
-      } else if (r.expVal > 0) {
-        approach = `Look for add-ons or partner routes. ${Utils.money(r.expVal)} turning over gives you a window.`;
-      } else {
-        approach = `Build relationships now. This one takes time but the contracts are large.`;
-      }
-
-      return { oneLiner, verdict, approach };
-    };
-
+    // ── COMPARATIVE COPY ──
+    const ranked = results.filter(r => !r.skip);
     const faceIcon = f => f === 'open' ? '#icon-face-open' : f === 'watch' ? '#icon-face-watch' : '#icon-face-locked';
     const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-    const territoryLabel = sector ? ` · ${sector.label}` : '';
+    const territoryLabel = sector ? ' \u00b7 ' + sector.label : '';
+    const tc = s => Utils.titleCase ? Utils.titleCase(s) : s;
 
-    // Quick summary — each line is different
-    const quickLines = results.filter(r => !r.skip).map((r, i) => {
-      const copy = generateCopy(r, i);
-      return copy ? `<strong>${r.topic}</strong> → ${copy.oneLiner}` : '';
-    }).filter(Boolean).join('<br>');
+    ranked.forEach((r, i) => {
+      // One-liner — different for each
+      if (i === 0) {
+        r.oneLiner = r.expVal > 0 ? 'easiest place to get in right now; real turnover' : 'most accessible market on the board';
+      } else if (r.isChannel) {
+        r.oneLiner = 'channel market, pick the right reseller';
+      } else if (r.face === 'open' && ranked[0].face === 'open') {
+        r.oneLiner = r.expVal > 0 ? 'also open, contracts turning over' : 'open, but less turnover than ' + ranked[0].topic;
+      } else if (r.face === 'watch' && r.isConcentrated) {
+        r.oneLiner = 'strong spend, but more established';
+      } else if (r.face === 'watch' && r.isActive) {
+        r.oneLiner = 'active, but getting crowded';
+      } else if (r.face === 'watch') {
+        r.oneLiner = 'slower, worth watching for next cycle';
+      } else if (r.total > 1e9) {
+        r.oneLiner = 'big market, but locked up';
+      } else {
+        r.oneLiner = 'smaller, compliance-driven';
+      }
+
+      // Mo's take — includes dollar amounts, vendor count, comparative language
+      const ag1 = r.agencies[0] || '';
+      const ag2 = r.agencies[1] || '';
+      if (i === 0 && r.expVal > 0) {
+        r.moTake = `${Utils.money(r.total)} market with ${Utils.money(r.expVal)} turning over in the next 90 days. ${r.vendorCount} vendors active, no clear owner. This is the cleanest entry point this week.`;
+      } else if (i === 0) {
+        r.moTake = `${Utils.money(r.total)} across ${r.agencies.length}+ agencies. ${r.vendorCount} vendors, no one dominating. Most accessible of the markets you picked.`;
+      } else if (r.isChannel) {
+        r.moTake = `${Utils.money(r.total)} but most of it flows through resellers. The product vendors are not the contract holders.`;
+      } else if (r.face === 'open' && r.expVal > 0) {
+        r.moTake = `${Utils.money(r.total)} market with ${Utils.money(r.expVal)} expiring. Still open, but not as clean as ${ranked[0].topic}.`;
+      } else if (r.face === 'open') {
+        r.moTake = `${Utils.money(r.total)} with ${r.vendorCount} vendors. Room to work with, but less near-term turnover than ${ranked[0].topic}.`;
+      } else if (r.face === 'watch' && r.isConcentrated) {
+        r.moTake = `${Utils.money(r.total)} market but the top 3 hold ${r.top3Pct}%. You are usually working through incumbents here.`;
+      } else if (r.face === 'watch') {
+        r.moTake = `${Utils.money(r.total)} with ${r.vendorCount} vendors. More competitive than ${ranked[0].topic}. Pick your spots.`;
+      } else if (r.expVal > 0) {
+        r.moTake = `${Utils.money(r.total)} market. Established, but ${Utils.money(r.expVal)} turning over gives you a window.`;
+      } else {
+        r.moTake = `${Utils.money(r.total)} market. Slower. Relationships are in place and not much is moving.`;
+      }
+
+      // Approach — unique per market
+      if (r.isChannel) {
+        r.approach = `Get listed with the top reseller. Your product moves through them, not through the agency directly.`;
+      } else if (r.face === 'open' && r.expVal > 0 && ag1) {
+        r.approach = `Start with ${ag1}${ag2 ? ' or ' + ag2 : ''} and plug into a renewal cycle.`;
+      } else if (r.face === 'open' && ag1) {
+        r.approach = `Lead with ${ag1}. The barrier is low and they are buying.`;
+      } else if (r.face === 'watch' && r.topic.toLowerCase().includes('ai')) {
+        r.approach = `Pick a use case and attach to an existing mission need. Broad pitches get lost.`;
+      } else if (r.face === 'watch' && r.isConcentrated) {
+        r.approach = `Look for add-ons or partner routes. Going direct against the incumbents is tougher.`;
+      } else if (r.face === 'watch') {
+        r.approach = `Find the smaller task orders the big vendors are not covering.`;
+      } else {
+        r.approach = `Build relationships and wait for the next recompete wave.`;
+      }
+    });
+
+    // Build HTML
+    const quickLines = ranked.map(r =>
+      `<strong>${Html.escapeHtml(r.topic)}</strong> \u2192 ${r.oneLiner}`
+    ).join('<br>');
 
     let html = `
       <div style="margin-bottom:20px;">
         <div style="font-size:var(--text-xs);color:var(--text-quaternary);margin-bottom:8px;">${today}${territoryLabel}</div>
         <div style="font-size:var(--text-sm);font-weight:700;color:var(--text-primary);margin-bottom:8px;">If you only have a minute</div>
-        <div style="font-size:var(--text-sm);color:var(--text-secondary);line-height:1.7;">${quickLines}</div>
+        <div style="font-size:var(--text-sm);color:var(--text-secondary);line-height:1.8;">${quickLines}</div>
       </div>`;
 
-    results.forEach((r, i) => {
-      if (r.skip) return;
-      const copy = generateCopy(r, i);
-      if (!copy) return;
+    ranked.forEach((r, i) => {
       const agencyList = r.agencies.length > 0 ? r.agencies.join(', ') : '';
+
+      // Subaward line — only if meaningful
+      let subLine = '';
+      if (r.subData) {
+        subLine = `<div style="font-size:var(--text-xs);color:var(--text-tertiary);margin-bottom:4px;"><strong style="color:var(--text-secondary);">Sub activity</strong> ${Utils.money(r.subData.total)} in subcontracting. ${r.subData.topPrime} runs ${r.subData.topPrimePct}% of the sub flow.</div>`;
+      }
+
+      // Vehicle line
+      let vehicleLine = '';
+      if (r.topVehicle) {
+        vehicleLine = `<div style="font-size:var(--text-xs);color:var(--text-tertiary);margin-bottom:4px;"><strong style="color:var(--text-secondary);">Top vehicle</strong> ${Html.escapeHtml(r.topVehicle.name)} (${Utils.money(r.topVehicle.spend)}, ${r.topVehicle.count} awards)</div>`;
+      }
+
       html += `
         <div style="padding:18px 0;${i > 0 ? 'border-top:1px solid var(--border-inner);' : ''}">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
@@ -5033,36 +5118,35 @@ const App = {
             <span style="font-size:var(--text-xs);color:var(--text-quaternary);margin-left:auto;">${Utils.money(r.total)}</span>
           </div>
           <div style="font-size:var(--text-sm);color:var(--text-secondary);line-height:1.6;margin-bottom:10px;">
-            ${Html.escapeHtml(copy.verdict)}
+            <strong style="color:var(--text-secondary);">Mo's take</strong> ${Html.escapeHtml(r.moTake)}
           </div>
           ${agencyList ? `<div style="font-size:var(--text-xs);color:var(--text-tertiary);margin-bottom:4px;"><strong style="color:var(--text-secondary);">Where to look</strong> ${Html.escapeHtml(agencyList)}</div>` : ''}
+          ${subLine}
+          ${vehicleLine}
           <div style="font-size:var(--text-xs);color:var(--text-tertiary);margin-bottom:10px;">
-            <strong style="color:var(--text-secondary);">Approach</strong> ${Html.escapeHtml(copy.approach)}
+            <strong style="color:var(--text-secondary);">How to approach it</strong> ${Html.escapeHtml(r.approach)}
           </div>
-          <button class="chip-tray-item" style="font-size:var(--text-xs);" onclick="App.closeBriefing();App.runSearch('${Html.escapeHtml(r.topic)}')">View ${Html.escapeHtml(r.topic)} market →</button>
+          <button class="chip-tray-item" style="font-size:var(--text-xs);" onclick="App.closeBriefing();App.runSearch('${Html.escapeHtml(r.topic)}')">View ${Html.escapeHtml(r.topic)} market \u203a</button>
         </div>`;
     });
 
-    // Pick one — most actionable
-    const best = results.find(r => !r.skip && r.face === 'open') || results.find(r => !r.skip);
-    if (best && !best.skip) {
-      const bestCopy = best.face === 'open' && best.expVal > 0
-        ? `There's real turnover and the vendor base isn't locked up.`
-        : best.face === 'open'
-        ? `It's the most accessible market on the board right now.`
-        : `It has the most movement, even if it's not wide open.`;
+    // Pick one
+    const best = ranked[0];
+    if (best) {
+      const bestReason = best.expVal > 0
+        ? 'There is real turnover and the vendor base is not locked up.'
+        : 'It is the most accessible of these markets right now.';
       html += `
         <div style="border-top:1px solid var(--border-inner);padding:18px 0 8px;">
           <div style="font-size:var(--text-sm);font-weight:700;color:var(--text-primary);margin-bottom:4px;">If you had to pick one</div>
-          <div style="font-size:var(--text-sm);color:var(--text-secondary);line-height:1.5;">Start with ${Html.escapeHtml(best.topic)}. ${bestCopy}</div>
+          <div style="font-size:var(--text-sm);color:var(--text-secondary);line-height:1.5;">Start with ${Html.escapeHtml(best.topic)}. ${bestReason}</div>
         </div>`;
     }
 
     body.innerHTML = html;
   },
 
-  closeBriefing() {
-    const backdrop = DOM.get('briefingBackdrop');
+  closeBriefing() {    const backdrop = DOM.get('briefingBackdrop');
     const sheet = DOM.get('briefingSheet');
     if (backdrop) { backdrop.classList.remove('open'); setTimeout(() => backdrop.classList.add('hidden'), 300); }
     if (sheet) { sheet.classList.remove('open'); setTimeout(() => sheet.classList.add('hidden'), 300); }
