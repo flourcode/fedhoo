@@ -4883,6 +4883,37 @@ const App = {
     const proseEl = DOM.get('marketProse');
     const prose = proseEl?.innerText || '';
 
+    // ── GOVHOO-STYLE PROSE PARAGRAPHS ──
+    // Buyer landscape
+    const topPrimes = vendorSorted.slice(0, 3).map(([n]) => tc(n));
+    const topAgencies3 = agencySorted.slice(0, 3).map(([a]) => cleanAg(a));
+    const allOffices = {};
+    data.forEach(c => { const o = c['Awarding Office'] || ''; if (o) allOffices[o] = (allOffices[o] || 0) + (parseFloat(c['Award Amount'])||0); });
+    const topOffices2 = Object.entries(allOffices).sort((a,b) => b[1] - a[1]).slice(0, 2).map(([o]) => o);
+    const popStates2 = {};
+    data.forEach(c => { const st = c['pop_state_code'] || ''; if (st) popStates2[st] = (popStates2[st] || 0) + (parseFloat(c['Award Amount'])||0); });
+    const topPoPs2 = Object.entries(popStates2).sort((a,b) => b[1] - a[1]).slice(0, 3).map(([st, val]) => `${st} (${money(val)})`);
+
+    const buyerProse = `${recentCount > 0 ? recentCount + ' new award' + (recentCount > 1 ? 's were' : ' was') + ' issued in the last 90 days.' : 'No new awards in the last 90 days.'} Top primes by contract value include ${topPrimes.join(', ')}. Purchasing spans ${Object.keys(allOffices).length} offices across ${topAgencies3.join(', ')}. ${topOffices2.length > 0 ? 'Heaviest activity at ' + topOffices2.join(' and ') + '.' : ''} Primary PoPs are ${topPoPs2.join(', ')}.`;
+
+    // Vendor landscape
+    const vendorConcentration = top5Pct >= 80 ? 'a heavily consolidated market' : top5Pct >= 60 ? 'a concentrated market' : 'a balanced market';
+    const vendorProse = `The top 5 vendors control ${top5Pct}% of total dollars, suggesting ${vendorConcentration}. Leading incumbents include ${topPrimes.join(', ')}.`;
+
+    // Expiring pipeline
+    const exp90Total = exp90.reduce((s,c) => s + (parseFloat(c['Award Amount'])||0), 0);
+    const exp12 = data.filter(c => c._endTs > nowTs && c._endTs <= nowTs + 365 * 86400000 && (parseFloat(c['Award Amount'])||0) > 50000);
+    const exp12Total = exp12.reduce((s,c) => s + (parseFloat(c['Award Amount'])||0), 0);
+    const topExp2 = exp90.slice(0, 2).map(c => `${money(c['Award Amount'])} at ${c['Awarding Office'] || cleanAg(c['Awarding Agency'] || '')} (${tc(c['Recipient Name'] || '')})`);
+    const pipelineProse = exp90.length > 0
+      ? `${money(exp90Total)} across ${exp90.length} contracts expires in the next 90 days. Key near-term targets: ${topExp2.join(' and ')}. Over 12 months, ${money(exp12Total)} across ${exp12.length} contracts is set to expire.`
+      : 'No contracts expiring in the next 90 days.';
+
+    // Vehicle prose
+    const vehProse = vehicles.length > 0
+      ? `Primary vehicles: ${vehicles.slice(0, 3).map(([n, d]) => `${n} (${money(d.spend)}, ${d.count} award${d.count > 1 ? 's' : ''})`).join(', ')}.`
+      : '';
+
     // ── BUILD ──
     let html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>Market Focus: ${Html.escapeHtml(query)}</title>
@@ -4904,6 +4935,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;fo
 .call-action{font-size:12px;color:#6e6e73;line-height:1.45}
 
 .insight-line{font-size:11px;color:#6e6e73;margin:8px 0 2px;padding:8px 12px;background:#f5f5f7;border-radius:8px;line-height:1.45}
+.intel{font-size:11px;color:#3a3a3a;line-height:1.55;margin-bottom:14px}
+.intel p{margin-bottom:6px}
+.intel strong{color:#1d1d1f;font-weight:600}
 
 .sl{font-size:10px;font-weight:600;color:#86868b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;margin-top:14px}
 
@@ -4969,6 +5003,14 @@ ${targetCards}
 </div>
 
 <div id="nextStepsSlot"></div>
+
+<div class="sl">Market intelligence</div>
+<div class="intel">
+<p><strong>Buyer landscape.</strong> ${buyerProse}</p>
+<p><strong>Vendor landscape.</strong> ${vendorProse}</p>
+<p><strong>Expiring pipeline.</strong> ${pipelineProse}</p>
+${vehProse ? '<p><strong>Vehicles.</strong> ' + vehProse + '</p>' : ''}
+</div>
 
 <div class="g2">
 <div>
@@ -5067,27 +5109,39 @@ ${prose.split('\\n').filter(Boolean).map(p => '<p>' + Html.escapeHtml(p) + '</p>
           request_type: 'govhoo_market_research',
           company: `FEDERAL MARKET BRIEF FOR: ${query}
 
-You are a senior federal sales coach. You've spent 20 years helping sellers win government deals. You talk like a helpful mentor — calm, specific, no jargon, no filler. A seller is about to make calls. Tell them exactly what to do.
+You are a senior federal sales coach. A seller is reading a Market Focus report and needs to know what to do next. Be calm, specific, no jargon.
 
-MARKET DATA (all verified from USASpending.gov):
-- Market: ${query} (${money(total)} trailing 12 months, ${agencyCount} agencies, ${vendorCount} vendors)
-- Market call: ${verdict}
-- Action: ${action}
-${geminiPayload.is_channel ? '- CHANNEL MARKET: VARs/resellers control the contract vehicles. The product vendor rarely holds the contract directly.' : ''}
-- Top target agencies: ${geminiPayload.targets.map(t => `${t.agency} (${t.spend} total, ${t.expiring} expiring, top vendor: ${t.top_vendor}, buying office: ${t.office})`).join('; ')}
-- Nearest expiring contracts: ${geminiPayload.expiring_contracts.map(c => `${c.vendor} at ${c.agency}, ${c.value}, ${c.days} days left`).join('; ')}
-- Key contract vehicles: ${geminiPayload.vehicles}
+THE REPORT ALREADY INCLUDES (do NOT repeat any of this):
+- Market size, agency count, vendor count
+- Buyer landscape prose (offices, PoPs, vendor concentration)
+- Expiring pipeline prose (dollar amounts, top targets)
+- Three target agency cards with incumbents and buying offices
+- Six expiring contracts with vendor, agency, value, and days left
 
-Return ONLY valid JSON — no markdown, no backticks, no explanation:
+YOUR JOB: Tell the seller 4 specific things to do that the data alone cannot tell them. Focus on:
+- WHO to contact (by role: contracting officer, program manager, capture manager at a prime)
+- WHAT to say or ask (specific questions, not "inquire about opportunities")
+- WHY this week specifically (reference the urgency from expiring contracts)
+- HOW to position (sub to a prime? direct bid? partner with a VAR? get on a vehicle?)
+
+MARKET DATA:
+- Market: ${query} (${money(total)} TTM, ${agencyCount} agencies, ${vendorCount} vendors)
+- Assessment: ${verdict}
+${geminiPayload.is_channel ? '- CHANNEL MARKET: VARs control access. Product vendors rarely hold contracts directly.' : ''}
+- Top targets: ${geminiPayload.targets.map(t => `${t.agency} (${t.spend}, ${t.expiring} expiring, incumbent: ${t.top_vendor}, office: ${t.office})`).join('; ')}
+- Nearest expirations: ${geminiPayload.expiring_contracts.map(c => `${c.vendor} at ${c.agency}, ${c.value}, ${c.days}d left`).join('; ')}
+- Vehicles: ${geminiPayload.vehicles}
+
+Return ONLY valid JSON — no markdown, no backticks:
 {
   "next_steps": [
-    "First step — must reference a specific vendor, agency, dollar amount, or contract from the data above. Tell the seller WHO to contact (by role if not name), WHAT to say or ask, and WHY this specific action matters right now.",
-    "Second step — a different action targeting a different agency or vendor. Be specific about what the seller should look for or ask about.",
-    "Third step — focus on positioning or vehicle access. What does the seller need to get on or get aligned with?",
-    "Fourth step — a longer-term move. What should the seller set up now that pays off in 90-180 days?"
+    "Urgent action this week — reference a specific expiring contract, who to call, what to ask",
+    "Second priority — different agency or vendor, specific role to contact",
+    "Vehicle or positioning move — what to get on or get aligned with",
+    "90-day setup — what to start now that pays off next quarter"
   ],
-  "summary": "One sentence: what category or technology area these products/vendors belong to. Example: Enterprise virtualization and cloud infrastructure software.",
-  "positioning": "One sentence: what makes this particular market different from adjacent markets. What is the non-obvious insight?"
+  "summary": "One sentence: what category these products/vendors belong to",
+  "positioning": "One sentence: the non-obvious insight about this market that a seller would not know from the data alone"
 }`
         }),
       });
