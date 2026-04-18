@@ -4943,11 +4943,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;fo
 .context-line{font-size:10px;color:#86868b;font-style:italic;margin-bottom:1px}
 .rule{height:1px;background:#d2d2d7;margin:4px 0 10px}
 
-.call{margin-bottom:8px}
-.call-verdict{font-size:13px;font-weight:600;line-height:1.35;color:#1d1d1f;margin-bottom:3px}
-.call-action{font-size:11px;color:#6e6e73;line-height:1.4}
+.call{margin-bottom:6px}
+.call-text{font-size:12px;font-weight:500;line-height:1.4;color:#1d1d1f}
+.call-text strong{font-weight:700}
 
-.insight-line{font-size:10px;color:#6e6e73;margin:4px 0 2px;padding:6px 10px;background:#f5f5f7;border-radius:8px;line-height:1.4}
+.insight-line{font-size:9px;color:#86868b;margin:2px 0 4px;line-height:1.4;font-style:italic}
 .intel{font-size:10px;color:#3a3a3a;line-height:1.45;margin-bottom:10px}
 .intel p{margin-bottom:3px}
 .intel strong{color:#1d1d1f;font-weight:600}
@@ -4998,8 +4998,7 @@ svg{max-width:100%;height:auto}
 <div class="rule"></div>
 
 <div class="call">
-  <div class="call-verdict">${Html.escapeHtml(verdict)}</div>
-  <div class="call-action">${Html.escapeHtml(action)}</div>
+  <div class="call-text"><strong>${Html.escapeHtml(verdict)}</strong> ${Html.escapeHtml(action)}</div>
 </div>
 
 <div class="sl">Where to focus</div>
