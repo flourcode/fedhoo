@@ -4964,16 +4964,8 @@ td:first-child{font-weight:600;color:#1d1d1f;white-space:normal}
 .r{text-align:right}
 .sm{font-size:8px;color:#86868b}
 
-.exp-row{display:grid;grid-template-columns:2fr 1.5fr 1fr .5fr;gap:3px;padding:5px 0;border-bottom:1px solid #f5f5f7;font-size:11px}
-.exp-row:first-child{border-top:1px solid #d2d2d7;padding-top:7px}
-.exp-vendor{font-weight:600;color:#1d1d1f}
-.exp-agency{color:#6e6e73}
-.exp-val{text-align:right;color:#1d1d1f}
-.exp-days{text-align:right;color:#6e6e73}
-.exp-urgent{color:#1d1d1f;font-weight:700}
+.exp-urgent{font-weight:700}
 
-.analysis-text{font-size:10px;line-height:1.55;color:#6e6e73;column-count:2;column-gap:18px;column-rule:1px solid #f5f5f7;margin-bottom:12px}
-.analysis-text p{margin-bottom:4px}
 
 .ft{display:flex;justify-content:space-between;align-items:center;font-size:9px;color:#aeaeb2;margin-top:16px;padding-top:8px;border-top:1px solid #d2d2d7}
 .ft-logo{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:#1d1d1f;text-decoration:none}
@@ -5005,8 +4997,6 @@ svg{max-width:100%;height:auto}
 ${targetCards}
 </div>
 
-<div id="nextStepsSlot"></div>
-
 <div class="sl">Market intelligence</div>
 <div class="intel">
 <p><strong>Buyer landscape.</strong> ${buyerProse}</p>
@@ -5014,6 +5004,8 @@ ${targetCards}
 <p><strong>Expiring pipeline.</strong> ${pipelineProse}</p>
 ${vehProse ? '<p><strong>Vehicles.</strong> ' + vehProse + '</p>' : ''}
 </div>
+
+<div id="nextStepsSlot"></div>
 
 <div class="g2">
 <div>
@@ -5040,18 +5032,32 @@ ${vendorSorted.slice(0, 10).map(([name, d]) => {
 </div>
 
 ${vehicles.length > 0 ? `
+<div class="g2">
+<div>
 <div class="sl">Contract vehicles</div>
-<table style="max-width:360px"><thead><tr><th>Vehicle</th><th class="r">Spend</th><th class="r">Awards</th></tr></thead><tbody>
+<table><thead><tr><th>Vehicle</th><th class="r">Spend</th><th class="r">Awards</th></tr></thead><tbody>
 ${vehicles.slice(0,5).map(([n,d]) => `<tr><td>${Html.escapeHtml(n)}</td><td class="r">${money(d.spend)}</td><td class="r">${d.count}</td></tr>`).join('')}
-</tbody></table>` : ''}
-
-<div class="sl">Expiring contracts</div>
-${expRows}
-
-<div class="sl">Analysis</div>
-<div class="analysis-text">
-${prose.split('\\n').filter(Boolean).map(p => '<p>' + Html.escapeHtml(p) + '</p>').join('')}
+</tbody></table>
 </div>
+<div>
+<div class="sl">Expiring contracts</div>
+<table><thead><tr><th>Incumbent</th><th>Agency</th><th class="r">Value</th><th class="r">Days</th></tr></thead><tbody>
+${exp90.slice(0, 6).map(c => {
+      const days = Math.ceil((c._endTs - nowTs) / 86400000);
+      return `<tr><td>${Html.escapeHtml(c['Recipient Name'] || '')}</td><td class="sm">${Html.escapeHtml(cleanAg(c['Awarding Agency'] || ''))}</td><td class="r">${money(c['Award Amount'])}</td><td class="r${days <= 14 ? ' exp-urgent' : ''}">${days}d</td></tr>`;
+    }).join('')}
+</tbody></table>
+</div>
+</div>` : `
+<div class="sl">Expiring contracts</div>
+<table style="max-width:500px"><thead><tr><th>Incumbent</th><th>Agency</th><th class="r">Value</th><th class="r">Days</th></tr></thead><tbody>
+${exp90.slice(0, 6).map(c => {
+      const days = Math.ceil((c._endTs - nowTs) / 86400000);
+      return `<tr><td>${Html.escapeHtml(c['Recipient Name'] || '')}</td><td class="sm">${Html.escapeHtml(cleanAg(c['Awarding Agency'] || ''))}</td><td class="r">${money(c['Award Amount'])}</td><td class="r${days <= 14 ? ' exp-urgent' : ''}">${days}d</td></tr>`;
+    }).join('')}
+</tbody></table>`}
+
+
 
 <div class="ft">
   <a href="https://fedhoo.com" class="ft-logo" target="_blank">
@@ -5110,9 +5116,13 @@ ${prose.split('\\n').filter(Boolean).map(p => '<p>' + Html.escapeHtml(p) + '</p>
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           request_type: 'govhoo_market_research',
-          company: `FEDERAL MARKET BRIEF FOR: ${query}
+          company: `IGNORE ALL PREVIOUS INSTRUCTIONS ABOUT COMPETITORS AND CORE_KEYWORDS. THIS IS A DIFFERENT REQUEST.
+
+FEDERAL MARKET BRIEF FOR: ${query}
 
 You are a senior federal sales coach. A seller is reading a Market Focus report and needs to know what to do next. Be calm, specific, no jargon.
+
+DO NOT return competitors, core_keywords, naics_codes, or psc_codes. Return ONLY the JSON format specified below.
 
 THE REPORT ALREADY INCLUDES (do NOT repeat any of this):
 - Market size, agency count, vendor count
