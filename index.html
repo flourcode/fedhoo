@@ -4808,16 +4808,18 @@ const App = {
     const agencySorted = Object.entries(m.agencies).sort((a,b) => b[1] - a[1]);
     const agencyCount = agencySorted.length;
 
-    // Compute per-agency detail: offices, expiring, recent, vendors
+    // Compute per-agency detail: sub-agencies, offices, expiring, recent, vendors
     const agencyDetail = {};
     data.forEach(c => {
       const ag = c['Awarding Agency'] || '';
       if (!ag) return;
       const amt = parseFloat(c['Award Amount']) || 0;
-      if (!agencyDetail[ag]) agencyDetail[ag] = { total: 0, exp90: 0, exp180: 0, recent: 0, offices: new Set(), vendors: new Set(), states: {} };
+      if (!agencyDetail[ag]) agencyDetail[ag] = { total: 0, exp90: 0, exp180: 0, recent: 0, subAgencies: {}, offices: new Set(), vendors: new Set(), states: {} };
       const d = agencyDetail[ag];
       d.total += amt;
       d.vendors.add(c['Recipient Name'] || '');
+      const subAg = c['Awarding Sub Agency'] || '';
+      if (subAg && subAg !== ag) d.subAgencies[subAg] = (d.subAgencies[subAg] || 0) + amt;
       const office = c['Awarding Office'] || '';
       if (office) d.offices.add(office);
       const st = c['pop_state_code'] || '';
@@ -4829,8 +4831,11 @@ const App = {
 
     const agencyRows = agencySorted.slice(0, 15).map(([ag, spend]) => {
       const d = agencyDetail[ag] || {};
-      const topOffices = Array.from(d.offices || []).slice(0, 2).join(', ');
-      return `<tr><td>${Html.escapeHtml(cleanAg(ag))}</td><td style="text-align:right">${money(spend)}</td><td style="text-align:right">${money(d.exp90 || 0)}</td><td style="text-align:right">${d.recent || 0}</td><td style="text-align:right">${d.vendors ? d.vendors.size : 0}</td><td style="font-size:10px">${Html.escapeHtml(topOffices)}</td></tr>`;
+      // Show top sub-agencies by spend (these are what the treemap drills into)
+      const topSubAgs = Object.entries(d.subAgencies || {}).sort((a,b) => b[1] - a[1]).slice(0, 2).map(([name]) => name);
+      // Fall back to offices if no sub-agencies
+      const buyingUnits = topSubAgs.length > 0 ? topSubAgs.join('; ') : Array.from(d.offices || []).slice(0, 2).join('; ');
+      return `<tr><td>${Html.escapeHtml(cleanAg(ag))}</td><td style="text-align:right">${money(spend)}</td><td style="text-align:right">${money(d.exp90 || 0)}</td><td style="text-align:right">${d.recent || 0}</td><td style="text-align:right">${d.vendors ? d.vendors.size : 0}</td><td style="font-size:10px">${Html.escapeHtml(buyingUnits)}</td></tr>`;
     }).join('');
 
     // ── EXPIRING PIPELINE ──
@@ -4978,7 +4983,7 @@ ${exp90.length > 0 ? `<table><thead><tr><th>Vendor</th><th>Agency</th><th style=
 <div class="s-grid">
 <div>
   <h2>Agency Breakdown</h2>
-  <table><thead><tr><th>Agency</th><th style="text-align:right">Spend</th><th style="text-align:right">Exp 90d</th><th style="text-align:right">Recent</th><th style="text-align:right">Vendors</th><th>Top Offices</th></tr></thead><tbody>${agencyRows}</tbody></table>
+  <table><thead><tr><th>Agency</th><th style="text-align:right">Spend</th><th style="text-align:right">Exp 90d</th><th style="text-align:right">Recent</th><th style="text-align:right">Vendors</th><th>Buying Offices</th></tr></thead><tbody>${agencyRows}</tbody></table>
 </div>
 <div>
   <h2>Vendor Landscape</h2>
