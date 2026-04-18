@@ -5858,10 +5858,11 @@ const App = {
       const vp = _vehicleProse();
       if (vp) proseLines.push(vp);
 
-      // Buyer landscape — offices and PoPs from the data
+      // Buyer landscape — offices and PoPs
+      const _activeData = this.searchData.active || [];
       const offices = {};
       const popStates = {};
-      data.forEach(c => {
+      _activeData.forEach(c => {
         const o = c['Awarding Office'] || '';
         if (o) offices[o] = (offices[o] || 0) + (parseFloat(c['Award Amount']) || 0);
         const st = c['pop_state_code'] || '';
@@ -5882,7 +5883,7 @@ const App = {
       const nowTsP = Date.now();
       const exp90TsP = nowTsP + 90 * 86400000;
       const rec90TsP = nowTsP - 90 * 86400000;
-      data.forEach(c => {
+      _activeData.forEach(c => {
         const ag = c['Awarding Agency'] || '';
         if (!ag) return;
         const amt = parseFloat(c['Award Amount']) || 0;
