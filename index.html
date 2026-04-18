@@ -145,6 +145,19 @@ a, button, input, select { touch-action: manipulation; }
   color: var(--text-secondary); transition: var(--transition); flex-shrink: 0;
 }
 .hdr-icon-circle:hover { background: var(--bg-hover); color: var(--text-primary); }
+/* Competitive Position View */
+.competitive-view { margin:12px 0 4px;padding:14px 16px;background:var(--bg-hover);border-radius:12px;border:1px solid var(--border); }
+.comp-header { font-size:11px;font-weight:700;color:var(--text-primary);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px; }
+.comp-self { font-size:12px;color:var(--text-secondary);margin-bottom:10px;line-height:1.45; }
+.comp-self-name { font-weight:700;color:var(--text-primary); }
+.comp-table { margin-bottom:6px; }
+.comp-row { display:grid;grid-template-columns:2fr 1fr .5fr 2fr;gap:4px;padding:4px 0;border-bottom:1px solid var(--border);font-size:11px;align-items:center; }
+.comp-name { font-weight:600;color:var(--text-primary); }
+.comp-spend { text-align:right;color:var(--text-primary); }
+.comp-share { text-align:right;color:var(--text-muted); }
+.comp-agencies { color:var(--text-muted);font-size:10px; }
+.comp-absent { font-size:10px;color:var(--text-muted);margin-top:4px; }
+
 /* Seller Context */
 .seller-context { display:flex;align-items:flex-start;gap:10px;padding:14px 16px;margin:12px 0 4px;background:var(--bg-hover);border-radius:12px;border:1px solid var(--border); }
 .seller-context-face { flex-shrink:0;margin-top:1px; }
@@ -1183,6 +1196,9 @@ a, button, input, select { touch-action: manipulation; }
           </div>
         </div>
       </div>
+
+      <!-- Competitive Position View -->
+      <div class="competitive-view hidden" id="competitiveView"></div>
 
       <!-- Breadcrumb — shown when drilled in -->
       <div class="hidden" id="bubbleBreadcrumb">
@@ -6153,6 +6169,98 @@ ${gemData.next_steps.map((step, i) => `<div class="ns-item"><span class="ns-num"
     // Show FAB
     const fab = DOM.get('artiFab');
     if (fab) fab.classList.remove('hidden');
+
+    // ── COMPETITIVE VIEW ──
+    // If seller intent was used, cross-reference competitors against the current vendor data
+    this._renderCompetitiveView();
+  },
+
+  _renderCompetitiveView() {
+    const container = DOM.get('competitiveView');
+    if (!container) return;
+
+    const competitors = this._sellerCompetitors;
+    const product = this._sellerProduct || this._sellerLens;
+    if (!competitors || !competitors.length || !product || !this.marketMetrics) {
+      container.classList.add('hidden');
+      return;
+    }
+
+    const m = this.marketMetrics;
+    const vendors = m.vendors || {};
+    const total = m.total || 0;
+    const money = Utils.money;
+
+    // Cross-reference: which competitors appear in this market's vendor data?
+    const compData = competitors.map(comp => {
+      const upper = comp.toUpperCase();
+      // Try exact match first, then partial match
+      let match = null;
+      let matchSpend = 0;
+      let matchAgencies = [];
+      for (const [vendorName, vData] of Object.entries(vendors)) {
+        const vUpper = vendorName.toUpperCase();
+        if (vUpper === upper || vUpper.includes(upper) || upper.includes(vUpper)) {
+          match = vendorName;
+          matchSpend = vData.spend;
+          matchAgencies = Array.from(vData.agencies).slice(0, 2).map(Utils.cleanAgency);
+          break;
+        }
+      }
+      return {
+        name: comp,
+        inMarket: !!match,
+        vendorName: match,
+        spend: matchSpend,
+        share: total > 0 ? Math.round(matchSpend / total * 100) : 0,
+        agencies: matchAgencies,
+      };
+    }).sort((a, b) => b.spend - a.spend);
+
+    const inMarket = compData.filter(c => c.inMarket);
+    const notInMarket = compData.filter(c => !c.inMarket);
+
+    // Also check if the seller's own product is in the data
+    const selfUpper = product.toUpperCase();
+    let selfPresence = null;
+    for (const [vendorName, vData] of Object.entries(vendors)) {
+      const vUpper = vendorName.toUpperCase();
+      if (vUpper.includes(selfUpper) || selfUpper.includes(vUpper)) {
+        selfPresence = { name: vendorName, spend: vData.spend, share: total > 0 ? Math.round(vData.spend / total * 100) : 0, agencies: Array.from(vData.agencies).slice(0, 2).map(Utils.cleanAgency) };
+        break;
+      }
+    }
+
+    let html = '<div class="comp-header">Competitive Position</div>';
+
+    // Seller's own presence
+    if (selfPresence) {
+      html += `<div class="comp-self"><span class="comp-self-name">${Html.escapeHtml(product)}</span> has <strong>${money(selfPresence.spend)}</strong> (${selfPresence.share}%) in this market at ${Html.escapeHtml(selfPresence.agencies.join(', '))}.</div>`;
+    } else {
+      html += `<div class="comp-self"><span class="comp-self-name">${Html.escapeHtml(product)}</span> has no direct federal contracts in this market. Your path is through partners or vehicles.</div>`;
+    }
+
+    // Competitors in market
+    if (inMarket.length > 0) {
+      html += '<div class="comp-table">';
+      inMarket.forEach(c => {
+        html += `<div class="comp-row">
+          <span class="comp-name">${Html.escapeHtml(c.name)}</span>
+          <span class="comp-spend">${money(c.spend)}</span>
+          <span class="comp-share">${c.share}%</span>
+          <span class="comp-agencies">${Html.escapeHtml(c.agencies.join(', '))}</span>
+        </div>`;
+      });
+      html += '</div>';
+    }
+
+    // Competitors NOT in market
+    if (notInMarket.length > 0) {
+      html += `<div class="comp-absent">Not in this market: ${notInMarket.map(c => Html.escapeHtml(c.name)).join(', ')}</div>`;
+    }
+
+    container.innerHTML = html;
+    container.classList.remove('hidden');
   },
 
   init() {
