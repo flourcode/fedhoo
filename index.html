@@ -4773,7 +4773,7 @@ const App = {
 
   // ── WEEKLY BRIEFING ────────────────────────────────────────────
   // ── MARKET SNAPSHOT ─────────────────────────────────────────────
-  generateSnapshot() {
+  async generateSnapshot() {
     if (!this.searchData.loaded || !this.marketMetrics) {
       this.toast('Run a search first.', 'warning');
       return;
@@ -4930,6 +4930,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;fo
 .sm{font-size:10px;color:#86868b}
 .analysis-text{font-size:12px;line-height:1.6;color:#6e6e73;column-count:2;column-gap:24px;column-rule:1px solid #f5f5f7}
 .analysis-text p{margin-bottom:6px}
+.next-steps{margin-bottom:20px}
+.ns-item{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid #f5f5f7}
+.ns-item:last-child{border-bottom:none}
+.ns-num{font-size:14px;font-weight:700;color:#d2d2d7;min-width:20px;line-height:1.5}
+.ns-text{font-size:13px;color:#1d1d1f;line-height:1.5}
+.context-line{font-size:12px;color:#86868b;margin-bottom:4px;font-style:italic}
 @media print{body{padding:0}.cta{display:none}}
 </style></head><body>
 
@@ -5000,6 +5006,93 @@ ${prose.split('\\n').filter(Boolean).map(p => '<p>' + Html.escapeHtml(p) + '</p>
 <div class="cta">Weekly Market Focus reports. <a href="https://fedhoo.substack.com">Subscribe \u2192</a></div>
 
 </body></html>`;
+
+    // ── GEMINI NEXT STEPS ──
+    // Build a tight payload from the computed data — no raw contracts, just the signals
+    this.toast('Building Market Focus...', 'ok', 3000);
+    const geminiPayload = {
+      market: query,
+      total_spend: money(total),
+      agency_count: agencyCount,
+      vendor_count: vendorCount,
+      top5_share: top5Pct + '%',
+      is_channel: targets.some(t => false), // computed below
+      expiring_90d: money(exp90.reduce((s,c) => s + (parseFloat(c['Award Amount'])||0), 0)),
+      market_call: verdict,
+      action: action,
+      targets: targets.map(t => ({
+        agency: cleanAg(t.agency),
+        spend: money(t.total),
+        expiring: t.exp90 > 0 ? money(t.exp90) : 'none',
+        top_vendor: tc(t.topVendor),
+        office: t.officeName || '',
+      })),
+      expiring_contracts: exp90.slice(0, 5).map(c => ({
+        vendor: c['Recipient Name'] || '',
+        agency: cleanAg(c['Awarding Agency'] || ''),
+        value: money(c['Award Amount']),
+        days: Math.ceil((c._endTs - nowTs) / 86400000),
+      })),
+      vehicles: vehicles.slice(0, 3).map(([n, d]) => n).join(', ') || 'none identified',
+    };
+
+    // Detect channel
+    const SNAP_VARS2 = new Set(['CARAHSOFT','GOVPLACE','FCN','THUNDERCAT','THUNDERCAT TECHNOLOGY','OPTIV','OPTIV FEDERAL','CDW','CDW GOVERNMENT','CDWG','SHI','SHI INTERNATIONAL','DLT','DLT SOLUTIONS','IRON BOW','RED RIVER','RED RIVER TECHNOLOGY','PANAMERICA COMPUTERS','ANACAPA MICRO PRODUCTS']);
+    const snapTop82 = vendorSorted.slice(0,8).map(([n]) => n.toUpperCase());
+    geminiPayload.is_channel = snapTop82.filter(v => SNAP_VARS2.has(v)).length >= 2;
+
+    let nextStepsHtml = '';
+    try {
+      const gemRes = await fetch(App.PROXY_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          request_type: 'govhoo_market_research',
+          company: `NEXT STEPS BRIEFING FOR: ${query}
+
+You are a federal sales coach writing 4 specific next steps for a seller entering this market. You have this data:
+
+Market: ${query} (${money(total)} trailing 12 months)
+Market call: ${verdict}
+${geminiPayload.is_channel ? 'This is a CHANNEL MARKET — VARs/resellers control access.' : ''}
+Top target agencies: ${geminiPayload.targets.map(t => `${t.agency} (${t.spend}, ${t.expiring} expiring, top vendor: ${t.top_vendor}, office: ${t.office})`).join('; ')}
+Nearest expiring contracts: ${geminiPayload.expiring_contracts.map(c => `${c.vendor} at ${c.agency}, ${c.value}, ${c.days} days`).join('; ')}
+Key vehicles: ${geminiPayload.vehicles}
+
+Return ONLY valid JSON — no markdown, no backticks:
+{
+  "next_steps": [
+    "Step 1 — specific action with a specific name, agency, or contract referenced",
+    "Step 2 — different action",
+    "Step 3 — different action",
+    "Step 4 — different action"
+  ],
+  "summary": "One sentence describing what category these products/vendors are in",
+  "positioning": "One sentence on what makes this market unique"
+}`
+        }),
+      });
+      if (gemRes.ok) {
+        const gemData = await gemRes.json();
+        if (gemData && gemData.next_steps && Array.isArray(gemData.next_steps)) {
+          nextStepsHtml = `
+<div class="section-label" style="margin-top:24px">Next steps</div>
+<div class="next-steps">
+${gemData.next_steps.map((step, i) => `<div class="ns-item"><span class="ns-num">${i + 1}</span><span class="ns-text">${Html.escapeHtml(step)}</span></div>`).join('')}
+</div>`;
+          // Also inject the context line if we got one
+          if (gemData.summary && gemData.summary.length > 10) {
+            const contextHtml = `<div class="context-line">${Html.escapeHtml(gemData.summary)}</div>`;
+            html = html.replace('</div>\n<div class="rule">', `</div>\n${contextHtml}\n<div class="rule">`);
+          }
+        }
+      }
+    } catch(e) { /* Gemini is best-effort */ }
+
+    // Inject next steps before the analysis section
+    if (nextStepsHtml) {
+      html = html.replace('<div class="section-label" style="margin-top:20px">Analysis</div>', nextStepsHtml + '\n<div class="section-label" style="margin-top:20px">Analysis</div>');
+    }
 
     const w = window.open('', '_blank');
     if (w) {
