@@ -145,6 +145,8 @@ a, button, input, select { touch-action: manipulation; }
   color: var(--text-secondary); transition: var(--transition); flex-shrink: 0;
 }
 .hdr-icon-circle:hover { background: var(--bg-hover); color: var(--text-primary); }
+.hdr-icon-spinning { animation: spin 1s linear infinite; pointer-events: none; opacity: 0.6; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* ── CHIP TRAY — unified Recent + Also Try chips below search bar ── */
 
@@ -4779,6 +4781,14 @@ const App = {
       return;
     }
 
+    // Show loading state on button
+    const snapBtn = DOM.get('snapshotBtn');
+    if (snapBtn) {
+      snapBtn.disabled = true;
+      snapBtn.classList.add('hdr-icon-spinning');
+    }
+    this.toast('Building Market Focus report...', 'ok', 10000);
+
     // ── SNAPSHOT ──
     const money = Utils.money;
     const cleanAg = Utils.cleanAgency;
@@ -5076,8 +5086,6 @@ ${exp90.slice(0, 6).map(c => {
 </body></html>`;
 
     // ── GEMINI NEXT STEPS ──
-    // Build a tight payload from the computed data — no raw contracts, just the signals
-    this.toast('Building Market Focus...', 'ok', 8000);
     const geminiPayload = {
       market: query,
       total_spend: money(total),
@@ -5186,6 +5194,12 @@ ${gemData.next_steps.map((step, i) => `<div class="ns-item"><span class="ns-num"
       html = html.replace('<div id="nextStepsSlot"></div>', nextStepsHtml);
     } else {
       html = html.replace('<div id="nextStepsSlot"></div>', '');
+    }
+
+    // Reset button state
+    if (snapBtn) {
+      snapBtn.disabled = false;
+      snapBtn.classList.remove('hdr-icon-spinning');
     }
 
     const w = window.open('', '_blank');
