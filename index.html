@@ -242,18 +242,6 @@ a, button, input, select { touch-action: manipulation; }
 }
 .contract-date    { font-size: var(--text-xs); color: var(--text-quaternary); white-space: nowrap; }
 .contract-urgency { font-size: var(--text-xs); font-weight: 600; color: var(--text-quaternary); text-align: right; }
-.pipeline-tag { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 6px; display: inline-block; margin-top: 2px; }
-.pipeline-tag--short { background: var(--crit-bg); color: var(--crit-text); }
-.pipeline-tag--maturing { background: var(--warn-bg); color: var(--warn-text); }
-.pipeline-tag--renewal { background: var(--go-bg); color: var(--go-text); }
-.pipeline-reason { font-size: var(--text-xs); color: var(--text-quaternary); line-height: 1.4; margin-top: 4px; }
-.prospect-row { display: flex; align-items: baseline; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border-inner); }
-.prospect-row:last-child { border-bottom: none; }
-.prospect-rank { font-size: var(--text-xs); font-weight: 700; color: var(--text-quaternary); min-width: 18px; }
-.prospect-body { flex: 1; }
-.prospect-name { font-size: var(--text-sm); font-weight: 700; color: var(--text-primary); }
-.prospect-meta { font-size: var(--text-xs); color: var(--text-tertiary); line-height: 1.5; margin-top: 2px; }
-.prospect-amount { font-size: var(--text-sm); font-weight: 700; color: var(--text-primary); white-space: nowrap; }
 .set-aside-tag { background: var(--go-bg); color: var(--go-text); }
 .contract-meta { font-size: var(--text-xs); color: var(--text-quaternary); margin-top: 2px; }
 .contract-urgency.urgent { color: rgb(160,60,20); font-weight: 700; }
@@ -1268,19 +1256,6 @@ a, button, input, select { touch-action: manipulation; }
         <h2 class="card-title card-title--flush">Recent Awards</h2>
       </div>
       <div class="contract-list" id="recentList"></div>
-    </div>
-
-    <!-- BUYER LANDSCAPE -->
-    <div class="app-card wide result-panel hidden" id="buyerLandscapeCard">
-      <h2 class="card-title card-title--flush">Buyer Landscape</h2>
-      <p class="card-desc" id="buyerLandscapeText" style="margin-bottom:0;line-height:1.6;color:var(--text-secondary);font-size:var(--text-sm);"></p>
-    </div>
-
-    <!-- TOP PROSPECTS -->
-    <div class="app-card wide result-panel hidden" id="prospectsCard">
-      <h2 class="card-title card-title--flush">Top Prospects</h2>
-      <p class="card-desc">Ranked by near-term opportunity: expiring value, recent activity, and vendor diversity.</p>
-      <div class="contract-list" id="prospectsList"></div>
     </div>
 
     <!-- EXPIRING SOON CARD -->
@@ -3023,8 +2998,6 @@ const App = {
     const sheetAic = DOM.get('aiContentContainer'); if (sheetAic) sheetAic.innerHTML = '';
     const ql = DOM.get('sheetQuestionLabel'); if (ql) { ql.textContent = ''; ql.classList.add('hidden'); }
     DOM.hide('expiringCard');
-    DOM.hide('buyerLandscapeCard');
-    DOM.hide('prospectsCard');
     DOM.hide('recentCard');
     DOM.hide('primesCard');
     DOM.hide('bioCard');
@@ -3201,8 +3174,6 @@ const App = {
       this.renderPrimes();
       this.renderContracts();
       this.renderExpiring();
-      this.renderBuyerLandscape();
-      this.renderProspects();
       this.renderRecent();
 
       // renderBridge builds the AI payload cache — defer so treemap paints first
@@ -3363,8 +3334,6 @@ const App = {
       this.renderPrimes();
       this.renderContracts();
       this.renderExpiring();
-      this.renderBuyerLandscape();
-      this.renderProspects();
       this.renderRecent();
       // Restore subawards panel if data is available
       if (this._subawardData && this._subawardData.length) {
@@ -3403,8 +3372,6 @@ const App = {
     this.renderPrimes();
     this.renderContracts();
     this.renderExpiring();
-      this.renderBuyerLandscape();
-      this.renderProspects();
     this.renderRecent();
     DOM.hide('subawardsCard'); // subaward data is for full market, not a single agency drill
     // Keep Sankey in sync with drill state
@@ -3431,8 +3398,6 @@ const App = {
     this.renderPrimes();
     this.renderContracts();
     this.renderExpiring();
-      this.renderBuyerLandscape();
-      this.renderProspects();
     this.renderRecent();
     DOM.hide('subawardsCard');
     if (this.UI.sankeyContainer) { this.UI.sankeyContainer.innerHTML = ''; delete this.UI.sankeyContainer.dataset.rendered; if (this._chartView === 'sankey') this.renderSankey(); }
@@ -4178,163 +4143,8 @@ const App = {
       const cls  = days <= 30 ? 'contract-urgency urgent' : days <= 60 ? 'contract-urgency warn' : 'contract-urgency';
       const tenureYears = c._startTs ? (c._endTs - c._startTs) / (365.25 * 86400000) : 0;
       const tenureHtml = tenureYears >= 2 ? `<span class="contract-meta">${Math.round(tenureYears)}yr tenure</span>` : '';
-
-      // Pipeline pattern classification
-      const naicsCode = c['NAICS'] ? (typeof c['NAICS'] === 'object' ? c['NAICS'].code : c['NAICS']) : '';
-      const isSaaS = ['518210','511210'].includes(naicsCode);
-      const contractType = c['Contract Award Type'] || c['idv_type'] || '';
-      const isBPA = /BPA/i.test(contractType);
-      const isDO = /DO|delivery/i.test(contractType);
-
-      let patternTag = '', patternClass = '', patternReason = '';
-      if (tenureYears < 2) {
-        patternTag = 'Short-Term';
-        patternClass = 'pipeline-tag--short';
-        patternReason = isBPA
-          ? 'Short duration BPA call. Likely a bridge or base-only award with high probability of recompete.'
-          : 'Contract duration under 2 years. Possible bridge award or truncated funding window.';
-      } else if (isSaaS || /LICENS|SUBSCRIPTION|SAAS|HOSTING/i.test(c['Description'] || '')) {
-        patternTag = 'Renewal';
-        patternClass = 'pipeline-tag--renewal';
-        patternReason = 'Recurring software, cloud, or SaaS pattern. High probability of renewal or re-up.';
-      } else if (tenureYears >= 3.5) {
-        patternTag = 'Maturing';
-        patternClass = 'pipeline-tag--maturing';
-        patternReason = `${Math.round(tenureYears)}-year lifecycle reaching natural end. High probability of recompete.`;
-      } else {
-        patternTag = 'Maturing';
-        patternClass = 'pipeline-tag--maturing';
-        patternReason = 'Approaching end of period of performance.';
-      }
-
-      const office = c['Awarding Office'] || '';
-      const officeHtml = office ? `<div class="contract-meta">${Html.escapeHtml(office)}</div>` : '';
-      const patternHtml = `<span class="pipeline-tag ${patternClass}">${patternTag}</span>`;
-      const reasonHtml = `<div class="pipeline-reason">${Html.escapeHtml(patternReason)}</div>`;
-
-      return this._buildContractRow(c, `<span class="${cls}">${days}d</span>${tenureHtml}${patternHtml}`) + reasonHtml;
+      return this._buildContractRow(c, `<span class="${cls}">${days}d</span>${tenureHtml}`);
     }, 'expiring contracts', '_renderExpiringAll');
-  },
-
-  renderBuyerLandscape() {
-    const card = DOM.get('buyerLandscapeCard');
-    const textEl = DOM.get('buyerLandscapeText');
-    if (!card || !textEl) return;
-    const data = this.searchData.active;
-    if (!data.length) { card.classList.add('hidden'); return; }
-    card.classList.remove('hidden');
-
-    const nowTs = Date.now();
-    const rec90Ts = nowTs - 90 * 86400000;
-    const total = data.reduce((s, c) => s + (parseFloat(c['Award Amount']) || 0), 0);
-
-    // Top offices
-    const offices = {};
-    data.forEach(c => {
-      const o = c['Awarding Office'] || '';
-      if (o) offices[o] = (offices[o] || 0) + (parseFloat(c['Award Amount']) || 0);
-    });
-    const topOffices = Object.entries(offices).sort((a,b) => b[1] - a[1]).slice(0, 3).map(([o]) => o);
-
-    // PoP states
-    const states = {};
-    data.forEach(c => {
-      const st = c['pop_state_code'] || '';
-      if (st) states[st] = (states[st] || 0) + (parseFloat(c['Award Amount']) || 0);
-    });
-    const topStates = Object.entries(states).sort((a,b) => b[1] - a[1]).slice(0, 3)
-      .map(([st, val]) => `${st} (${Utils.money(val)})`);
-
-    // New awards count
-    const recentCount = data.filter(c => c._startTs >= rec90Ts).length;
-
-    // Vendor stats
-    const vendors = new Set(data.map(c => c['Recipient Name'] || ''));
-    const agencies = new Set(data.map(c => c['Awarding Agency'] || ''));
-
-    // Top primes
-    const vendorSpend = {};
-    data.forEach(c => {
-      const v = c['Recipient Name'] || '';
-      vendorSpend[v] = (vendorSpend[v] || 0) + (parseFloat(c['Award Amount']) || 0);
-    });
-    const topPrimes = Object.entries(vendorSpend).sort((a,b) => b[1] - a[1]).slice(0, 3).map(([v]) => Utils.titleCase(v));
-    const top5Pct = total > 0 ? Math.round(Object.entries(vendorSpend).sort((a,b) => b[1] - a[1]).slice(0, 5).reduce((s,[,v]) => s+v, 0) / total * 100) : 0;
-
-    // Build prose
-    const parts = [];
-    if (recentCount > 0) {
-      parts.push(`${recentCount} new award${recentCount !== 1 ? 's' : ''} in the last 90 days.`);
-    } else {
-      parts.push('No new awards in the last 90 days.');
-    }
-    parts.push(`Top primes by contract value include ${topPrimes.join(', ')}.`);
-    parts.push(`Purchasing spans ${Object.keys(offices).length} offices across ${Utils.cleanAgency(Array.from(agencies)[0] || '')}, ${Utils.cleanAgency(Array.from(agencies)[1] || '')}, and ${Utils.cleanAgency(Array.from(agencies)[2] || '')}.`);
-    if (topOffices.length > 0) parts.push(`Heaviest activity at ${topOffices.slice(0, 2).join(' and ')}.`);
-    if (topStates.length > 0) parts.push(`Primary PoPs are ${topStates.join(', ')}.`);
-    parts.push(`The top 5 vendors control ${top5Pct}% of total dollars${top5Pct < 60 ? ', suggesting a balanced market' : ''}.`);
-
-    textEl.textContent = parts.join(' ');
-  },
-
-  renderProspects() {
-    const card = DOM.get('prospectsCard');
-    const list = DOM.get('prospectsList');
-    if (!card || !list) return;
-    const data = this.searchData.active;
-    if (!data.length) { card.classList.add('hidden'); return; }
-    card.classList.remove('hidden');
-
-    const nowTs = Date.now();
-    const exp90Ts = nowTs + 90 * 86400000;
-    const rec90Ts = nowTs - 90 * 86400000;
-
-    // Score each agency by: expiring value (40%), recent awards (30%), vendor diversity (30%)
-    const agencyData = {};
-    data.forEach(c => {
-      const ag = c['Awarding Agency'] || '';
-      if (!ag) return;
-      const amt = parseFloat(c['Award Amount']) || 0;
-      if (!agencyData[ag]) agencyData[ag] = { total: 0, expiring: 0, recent: 0, vendors: new Set(), contracts: 0 };
-      agencyData[ag].total += amt;
-      agencyData[ag].contracts++;
-      agencyData[ag].vendors.add(c['Recipient Name'] || '');
-      if (c._endTs > nowTs && c._endTs <= exp90Ts && amt > 50000) agencyData[ag].expiring += amt;
-      if (c._startTs >= rec90Ts) agencyData[ag].recent++;
-    });
-
-    const maxExp = Math.max(...Object.values(agencyData).map(d => d.expiring), 1);
-    const maxRec = Math.max(...Object.values(agencyData).map(d => d.recent), 1);
-    const maxVen = Math.max(...Object.values(agencyData).map(d => d.vendors.size), 1);
-
-    const scored = Object.entries(agencyData).map(([ag, d]) => {
-      const expScore = (d.expiring / maxExp) * 40;
-      const recScore = (d.recent / maxRec) * 30;
-      const venScore = (d.vendors.size / maxVen) * 30;
-      return { agency: ag, ...d, score: expScore + recScore + venScore };
-    }).sort((a, b) => b.score - a.score).slice(0, 5);
-
-    list.innerHTML = scored.map((p, i) => {
-      const name = Utils.cleanAgency(p.agency);
-      let reason = '';
-      if (p.expiring > 0 && p.recent > 0) {
-        reason = `${Utils.money(p.expiring)} expiring soon and ${p.recent} recent award${p.recent > 1 ? 's' : ''}. Active and turning over.`;
-      } else if (p.expiring > 0) {
-        reason = `${Utils.money(p.expiring)} expiring in the next 90 days. Near-term recompete opportunity.`;
-      } else if (p.recent > 0) {
-        reason = `${p.recent} recent award${p.recent > 1 ? 's' : ''}. Actively buying.`;
-      } else {
-        reason = `${p.vendors.size} vendors active. Evaluates multiple providers.`;
-      }
-      return `<div class="prospect-row">
-        <span class="prospect-rank">${i + 1}</span>
-        <div class="prospect-body">
-          <div class="prospect-name">${Html.escapeHtml(name)}</div>
-          <div class="prospect-meta">${Html.escapeHtml(reason)}</div>
-        </div>
-        <span class="prospect-amount">${Utils.money(p.total)}</span>
-      </div>`;
-    }).join('');
   },
 
   renderRecent() {
@@ -4343,26 +4153,11 @@ const App = {
     const data = this.searchData.active
       .filter(c => c._startTs >= cutoffTs && c._startTs <= nowTs)
       .sort((a, b) => b._startTs - a._startTs);
-
-    // Build a set of vendor→agency pairings from ALL contracts (not just recent)
-    // to detect when a recent award represents a NEW relationship
-    const existingPairings = new Set();
-    (this.searchData.active || []).forEach(c => {
-      if (c._startTs < cutoffTs) { // only count pre-existing (non-recent) contracts
-        const key = `${(c['Recipient Name']||'').toUpperCase()}|${(c['Awarding Agency']||'').toUpperCase()}`;
-        existingPairings.add(key);
-      }
-    });
-
     this._renderListCard(this.UI.recentList, this.UI.recentCard, data, c => {
       const d = Math.floor((nowTs - c._startTs) / 86400000);
       const ago = d === 0 ? 'Today' : d === 1 ? 'Yesterday'
         : d <= 7 ? `${d}d ago` : d <= 30 ? `${Math.ceil(d/7)}w ago` : `${Math.floor(d/30)}mo ago`;
-      // Check if this is a new vendor-agency pairing
-      const pairKey = `${(c['Recipient Name']||'').toUpperCase()}|${(c['Awarding Agency']||'').toUpperCase()}`;
-      const isNew = !existingPairings.has(pairKey);
-      const newTag = isNew ? `<span class="vehicle-tag" style="background:var(--go-bg);color:var(--go-text);">New</span>` : '';
-      return this._buildContractRow(c, `<span class="contract-date">${ago}</span>${newTag}`);
+      return this._buildContractRow(c, `<span class="contract-date">${ago}</span>`);
     }, 'recent awards', '_renderRecentAll');
   },
 
@@ -6062,6 +5857,51 @@ const App = {
       // Vehicle intelligence
       const vp = _vehicleProse();
       if (vp) proseLines.push(vp);
+
+      // Buyer landscape — offices and PoPs from the data
+      const offices = {};
+      const popStates = {};
+      data.forEach(c => {
+        const o = c['Awarding Office'] || '';
+        if (o) offices[o] = (offices[o] || 0) + (parseFloat(c['Award Amount']) || 0);
+        const st = c['pop_state_code'] || '';
+        if (st) popStates[st] = (popStates[st] || 0) + (parseFloat(c['Award Amount']) || 0);
+      });
+      const topOffices = Object.entries(offices).sort((a,b) => b[1] - a[1]).slice(0, 2).map(([o]) => o);
+      const topPoPs = Object.entries(popStates).sort((a,b) => b[1] - a[1]).slice(0, 3)
+        .map(([st, val]) => `${st} (${Utils.money(val)})`);
+      if (topOffices.length > 0 || topPoPs.length > 0) {
+        let landscapeLine = `Purchasing spans ${Object.keys(offices).length} offices.`;
+        if (topOffices.length > 0) landscapeLine += ` Heaviest activity at ${topOffices.join(' and ')}.`;
+        if (topPoPs.length > 0) landscapeLine += ` Primary locations are ${topPoPs.join(', ')}.`;
+        proseLines.push(landscapeLine);
+      }
+
+      // Top prospects — scored agencies with near-term opportunity
+      const agencyProspects = {};
+      const nowTsP = Date.now();
+      const exp90TsP = nowTsP + 90 * 86400000;
+      const rec90TsP = nowTsP - 90 * 86400000;
+      data.forEach(c => {
+        const ag = c['Awarding Agency'] || '';
+        if (!ag) return;
+        const amt = parseFloat(c['Award Amount']) || 0;
+        if (!agencyProspects[ag]) agencyProspects[ag] = { exp: 0, recent: 0 };
+        if (c._endTs > nowTsP && c._endTs <= exp90TsP && amt > 50000) agencyProspects[ag].exp += amt;
+        if (c._startTs >= rec90TsP) agencyProspects[ag].recent++;
+      });
+      const prospectList = Object.entries(agencyProspects)
+        .filter(([, d]) => d.exp > 0 || d.recent > 0)
+        .sort((a, b) => (b[1].exp + b[1].recent * 1e6) - (a[1].exp + a[1].recent * 1e6))
+        .slice(0, 3);
+      if (prospectList.length > 0) {
+        const prospectNames = prospectList.map(([ag, d]) => {
+          const name = Utils.cleanAgency(ag);
+          if (d.exp > 0) return `${name} (${Utils.money(d.exp)} expiring)`;
+          return `${name} (${d.recent} recent award${d.recent > 1 ? 's' : ''})`;
+        });
+        proseLines.push(`Top near-term targets: ${prospectNames.join(', ')}. These agencies have the most active pipelines right now.`);
+      }
 
       // Action
       if (faceLabel === 'Channel Market') {
