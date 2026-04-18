@@ -4936,6 +4936,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;fo
 .ns-num{font-size:14px;font-weight:700;color:#d2d2d7;min-width:20px;line-height:1.5}
 .ns-text{font-size:13px;color:#1d1d1f;line-height:1.5}
 .context-line{font-size:12px;color:#86868b;margin-bottom:4px;font-style:italic}
+.insight-line{font-size:12px;color:#6e6e73;margin:8px 0 4px;padding:10px 14px;background:#f5f5f7;border-radius:8px;line-height:1.5}
 @media print{body{padding:0}.cta{display:none}}
 </style></head><body>
 
@@ -5048,27 +5049,29 @@ ${prose.split('\\n').filter(Boolean).map(p => '<p>' + Html.escapeHtml(p) + '</p>
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           request_type: 'govhoo_market_research',
-          company: `NEXT STEPS BRIEFING FOR: ${query}
+          company: `FEDERAL MARKET BRIEF FOR: ${query}
 
-You are a federal sales coach writing 4 specific next steps for a seller entering this market. You have this data:
+You are a senior federal sales coach. You've spent 20 years helping sellers win government deals. You talk like a helpful mentor — calm, specific, no jargon, no filler. A seller is about to make calls. Tell them exactly what to do.
 
-Market: ${query} (${money(total)} trailing 12 months)
-Market call: ${verdict}
-${geminiPayload.is_channel ? 'This is a CHANNEL MARKET — VARs/resellers control access.' : ''}
-Top target agencies: ${geminiPayload.targets.map(t => `${t.agency} (${t.spend}, ${t.expiring} expiring, top vendor: ${t.top_vendor}, office: ${t.office})`).join('; ')}
-Nearest expiring contracts: ${geminiPayload.expiring_contracts.map(c => `${c.vendor} at ${c.agency}, ${c.value}, ${c.days} days`).join('; ')}
-Key vehicles: ${geminiPayload.vehicles}
+MARKET DATA (all verified from USASpending.gov):
+- Market: ${query} (${money(total)} trailing 12 months, ${agencyCount} agencies, ${vendorCount} vendors)
+- Market call: ${verdict}
+- Action: ${action}
+${geminiPayload.is_channel ? '- CHANNEL MARKET: VARs/resellers control the contract vehicles. The product vendor rarely holds the contract directly.' : ''}
+- Top target agencies: ${geminiPayload.targets.map(t => `${t.agency} (${t.spend} total, ${t.expiring} expiring, top vendor: ${t.top_vendor}, buying office: ${t.office})`).join('; ')}
+- Nearest expiring contracts: ${geminiPayload.expiring_contracts.map(c => `${c.vendor} at ${c.agency}, ${c.value}, ${c.days} days left`).join('; ')}
+- Key contract vehicles: ${geminiPayload.vehicles}
 
-Return ONLY valid JSON — no markdown, no backticks:
+Return ONLY valid JSON — no markdown, no backticks, no explanation:
 {
   "next_steps": [
-    "Step 1 — specific action with a specific name, agency, or contract referenced",
-    "Step 2 — different action",
-    "Step 3 — different action",
-    "Step 4 — different action"
+    "First step — must reference a specific vendor, agency, dollar amount, or contract from the data above. Tell the seller WHO to contact (by role if not name), WHAT to say or ask, and WHY this specific action matters right now.",
+    "Second step — a different action targeting a different agency or vendor. Be specific about what the seller should look for or ask about.",
+    "Third step — focus on positioning or vehicle access. What does the seller need to get on or get aligned with?",
+    "Fourth step — a longer-term move. What should the seller set up now that pays off in 90-180 days?"
   ],
-  "summary": "One sentence describing what category these products/vendors are in",
-  "positioning": "One sentence on what makes this market unique"
+  "summary": "One sentence: what category or technology area these products/vendors belong to. Example: Enterprise virtualization and cloud infrastructure software.",
+  "positioning": "One sentence: what makes this particular market different from adjacent markets. What is the non-obvious insight?"
 }`
         }),
       });
@@ -5080,10 +5083,15 @@ Return ONLY valid JSON — no markdown, no backticks:
 <div class="next-steps">
 ${gemData.next_steps.map((step, i) => `<div class="ns-item"><span class="ns-num">${i + 1}</span><span class="ns-text">${Html.escapeHtml(step)}</span></div>`).join('')}
 </div>`;
-          // Also inject the context line if we got one
+          // Inject context line (what category this is)
           if (gemData.summary && gemData.summary.length > 10) {
             const contextHtml = `<div class="context-line">${Html.escapeHtml(gemData.summary)}</div>`;
             html = html.replace('</div>\n<div class="rule">', `</div>\n${contextHtml}\n<div class="rule">`);
+          }
+          // Inject positioning insight after market call
+          if (gemData.positioning && gemData.positioning.length > 10) {
+            const insightHtml = `<div class="insight-line">${Html.escapeHtml(gemData.positioning)}</div>`;
+            html = html.replace('</div>\n\n<div class="section-label">Where to focus', `</div>\n${insightHtml}\n\n<div class="section-label">Where to focus`);
           }
         }
       }
@@ -5091,7 +5099,7 @@ ${gemData.next_steps.map((step, i) => `<div class="ns-item"><span class="ns-num"
 
     // Inject next steps before the analysis section
     if (nextStepsHtml) {
-      html = html.replace('<div class="section-label" style="margin-top:20px">Analysis</div>', nextStepsHtml + '\n<div class="section-label" style="margin-top:20px">Analysis</div>');
+      html = html.replace('<div class="ref-grid">', nextStepsHtml + '\n<div class="ref-grid">');
     }
 
     const w = window.open('', '_blank');
