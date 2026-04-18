@@ -5041,46 +5041,99 @@ const App = {
       } else {
         r.oneLiner = 'smaller, compliance-driven';
       }
+    });
 
-      // Mo's take — includes dollar amounts, vendor count, comparative language
+    // ── GEMINI CONTEXT CALL ──
+    // One call to get cross-market framing. Best-effort — briefing works without it.
+    let geminiContext = null;
+    if (ranked.length >= 2) {
+      try {
+        const topicList = ranked.map(r => r.topic).join(', ');
+        const res = await fetch(App.PROXY_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ request_type: 'govhoo_market_research', company: topicList }),
+        });
+        if (res.ok) {
+          const kw = await res.json();
+          if (kw && !kw.error) {
+            geminiContext = {
+              category: kw.summary || '',
+              positioning: kw.positioning || '',
+            };
+          }
+        }
+      } catch(e) { /* best-effort */ }
+    }
+
+    // ── COMPARATIVE COPY — Mo's take is OPINION, not data recap ──
+    // The data ($X market, Y vendors) is shown in the header. Mo's take interprets it.
+    ranked.forEach((r, i) => {
+      // Mo's take — opinion, not numbers
+      if (i === 0 && r.expVal > 0) {
+        r.moTake = `This one is moving. Real turnover and no dominant player. Cleanest entry point this week.`;
+      } else if (i === 0) {
+        r.moTake = `Most accessible of the markets you picked. No one owns it yet.`;
+      } else if (r.isChannel && ranked.filter(x => x.isChannel).length > 1) {
+        // Multiple channel markets — differentiate them
+        const otherChannel = ranked.find(x => x.isChannel && x.topic !== r.topic);
+        if (r.top3Pct > (otherChannel?.top3Pct || 0)) {
+          r.moTake = `Same channel pattern as ${otherChannel?.topic || 'the others'}, but more concentrated. Fewer resellers control the flow.`;
+        } else {
+          r.moTake = `Channel market. The contract holders matter more than the product vendor here.`;
+        }
+      } else if (r.isChannel) {
+        r.moTake = `This does not move direct. If you are not aligned to the right reseller, you are not in the deal.`;
+      } else if (r.face === 'open' && r.expVal > 0) {
+        r.moTake = `Still open, with contracts turning over. Not as clean as ${ranked[0].topic} but worth pursuing.`;
+      } else if (r.face === 'open') {
+        r.moTake = `Room to work with, but less near-term movement than ${ranked[0].topic}.`;
+      } else if (r.face === 'watch' && r.isConcentrated) {
+        r.moTake = `Established. You are usually working through incumbents here.`;
+      } else if (r.face === 'watch') {
+        r.moTake = `More competitive than ${ranked[0].topic}. Pick your spots carefully.`;
+      } else if (r.expVal > 0) {
+        r.moTake = `Slower market, but some contracts are turning over. Worth watching.`;
+      } else {
+        r.moTake = `Most of the relationships are already in place. Not much to chase right now.`;
+      }
+    });
+
+    // Approach — each one MUST be unique. Track what we've said to avoid repeating.
+    const usedApproaches = new Set();
+    ranked.forEach((r) => {
       const ag1 = r.agencies[0] || '';
       const ag2 = r.agencies[1] || '';
-      if (i === 0 && r.expVal > 0) {
-        r.moTake = `${Utils.money(r.total)} market with ${Utils.money(r.expVal)} turning over in the next 90 days. ${r.vendorCount} vendors active, no clear owner. This is the cleanest entry point this week.`;
-      } else if (i === 0) {
-        r.moTake = `${Utils.money(r.total)} across ${r.agencies.length}+ agencies. ${r.vendorCount} vendors, no one dominating. Most accessible of the markets you picked.`;
-      } else if (r.isChannel) {
-        r.moTake = `${Utils.money(r.total)} but most of it flows through resellers. The product vendors are not the contract holders.`;
-      } else if (r.face === 'open' && r.expVal > 0) {
-        r.moTake = `${Utils.money(r.total)} market with ${Utils.money(r.expVal)} expiring. Still open, but not as clean as ${ranked[0].topic}.`;
-      } else if (r.face === 'open') {
-        r.moTake = `${Utils.money(r.total)} with ${r.vendorCount} vendors. Room to work with, but less near-term turnover than ${ranked[0].topic}.`;
-      } else if (r.face === 'watch' && r.isConcentrated) {
-        r.moTake = `${Utils.money(r.total)} market but the top 3 hold ${r.top3Pct}%. You are usually working through incumbents here.`;
-      } else if (r.face === 'watch') {
-        r.moTake = `${Utils.money(r.total)} with ${r.vendorCount} vendors. More competitive than ${ranked[0].topic}. Pick your spots.`;
-      } else if (r.expVal > 0) {
-        r.moTake = `${Utils.money(r.total)} market. Established, but ${Utils.money(r.expVal)} turning over gives you a window.`;
-      } else {
-        r.moTake = `${Utils.money(r.total)} market. Slower. Relationships are in place and not much is moving.`;
-      }
+      let approach;
 
-      // Approach — unique per market
-      if (r.isChannel) {
-        r.approach = `Get listed with the top reseller. Your product moves through them, not through the agency directly.`;
+      if (r.isChannel && r.subData && r.subData.topPrimePct >= 70) {
+        approach = `If ${r.subData.topPrime} owns the sub flow, start there. That is where decisions get made.`;
+      } else if (r.isChannel && !usedApproaches.has('reseller-align')) {
+        approach = `This does not move direct. Figure out who owns the reseller relationship first.`;
+        usedApproaches.add('reseller-align');
+      } else if (r.isChannel && !usedApproaches.has('reseller-entry')) {
+        approach = `Same channel dynamics. Find the VAR with the best vehicle coverage for your target agencies.`;
+        usedApproaches.add('reseller-entry');
+      } else if (r.isChannel) {
+        approach = `Check which reseller holds the contract at ${ag1 || 'the top agency'}. That is your entry point.`;
       } else if (r.face === 'open' && r.expVal > 0 && ag1) {
-        r.approach = `Start with ${ag1}${ag2 ? ' or ' + ag2 : ''} and plug into a renewal cycle.`;
+        approach = `Start with ${ag1}${ag2 ? ' or ' + ag2 : ''} and plug into a renewal cycle.`;
       } else if (r.face === 'open' && ag1) {
-        r.approach = `Lead with ${ag1}. The barrier is low and they are buying.`;
+        approach = `Lead with ${ag1}. The barrier is low and they are buying.`;
       } else if (r.face === 'watch' && r.topic.toLowerCase().includes('ai')) {
-        r.approach = `Pick a use case and attach to an existing mission need. Broad pitches get lost.`;
+        approach = `Pick a use case and attach to an existing mission need. Broad pitches get lost.`;
+      } else if (r.face === 'watch' && r.isConcentrated && r.expVal > 0) {
+        approach = `Look for add-ons or partner routes. ${Utils.money(r.expVal)} turning over gives you a window.`;
       } else if (r.face === 'watch' && r.isConcentrated) {
-        r.approach = `Look for add-ons or partner routes. Going direct against the incumbents is tougher.`;
+        approach = `Find the adjacent requirement the incumbents are not covering. That is usually the opening.`;
       } else if (r.face === 'watch') {
-        r.approach = `Find the smaller task orders the big vendors are not covering.`;
+        approach = `Find the smaller task orders the big vendors skip.`;
+      } else if (r.face === 'locked' && r.expVal > 0) {
+        approach = `Stay close and wait for the turnover. The contracts here are large enough to justify patience.`;
       } else {
-        r.approach = `Build relationships and wait for the next recompete wave.`;
+        approach = `Not much to chase right now. Stay close and wait for the next cycle.`;
       }
+      r.approach = approach;
     });
 
     // Build HTML
@@ -5088,10 +5141,16 @@ const App = {
       `<strong>${Html.escapeHtml(r.topic)}</strong> \u2192 ${r.oneLiner}`
     ).join('<br>');
 
+    // Context line from Gemini (if available)
+    const contextLine = geminiContext?.summary
+      ? `<div style="font-size:var(--text-xs);color:var(--text-tertiary);font-style:italic;margin-bottom:12px;">${Html.escapeHtml(geminiContext.summary)}</div>`
+      : '';
+
     let html = `
       <div style="margin-bottom:20px;">
         <div style="font-size:var(--text-xs);color:var(--text-quaternary);margin-bottom:8px;">${today}${territoryLabel}</div>
         <div style="font-size:var(--text-sm);font-weight:700;color:var(--text-primary);margin-bottom:8px;">If you only have a minute</div>
+        ${contextLine}
         <div style="font-size:var(--text-sm);color:var(--text-secondary);line-height:1.8;">${quickLines}</div>
       </div>`;
 
