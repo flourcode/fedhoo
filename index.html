@@ -4999,66 +4999,65 @@ const App = {
     let html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>Market Focus: ${Html.escapeHtml(query)}</title>
 <style>
-@page{size:letter;margin:.4in .45in}
+@page{size:letter;margin:.45in .5in}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;font-size:9px;color:#111;line-height:1.4;padding:24px 28px;max-width:1060px;margin:0 auto}
+body{font-family:'Georgia','Times New Roman',serif;font-size:9.5px;color:#3a3a3a;line-height:1.5;padding:28px 32px;max-width:1060px;margin:0 auto;background:#fff}
 
 /* Header */
-.hd{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #111;padding-bottom:6px;margin-bottom:12px}
-.hd h1{font-size:16px;font-weight:900;letter-spacing:-.03em;line-height:1.15}
-.hd-sub{font-size:8px;color:#888;margin-top:1px}
+.hd{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1px solid #c0beb8;padding-bottom:8px;margin-bottom:14px}
+.hd h1{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;font-size:15px;font-weight:800;letter-spacing:-.02em;line-height:1.2;color:#2a2a2a}
+.hd-sub{font-family:-apple-system,sans-serif;font-size:8px;color:#9a9790;margin-top:2px;letter-spacing:.02em}
 .hd-r{text-align:right}
-.hd-hero{font-size:32px;font-weight:900;letter-spacing:-.04em;line-height:1}
-.hd-label{font-size:7px;color:#999;text-transform:uppercase;letter-spacing:.08em}
+.hd-hero{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;font-size:34px;font-weight:900;letter-spacing:-.04em;line-height:1;color:#2a2a2a}
+.hd-label{font-family:-apple-system,sans-serif;font-size:7px;color:#9a9790;text-transform:uppercase;letter-spacing:.1em}
 
-/* Market Call — the decision */
-.mc{background:#111;color:#fff;padding:14px 16px;margin-bottom:10px;display:grid;grid-template-columns:1fr 240px;gap:16px;align-items:center}
-.mc-label{font-size:7px;text-transform:uppercase;letter-spacing:.12em;color:#777;margin-bottom:4px}
-.mc-verdict{font-size:13px;font-weight:700;line-height:1.3;margin-bottom:4px}
-.mc-action{font-size:9px;color:#aaa;line-height:1.4}
-.mc-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:0;text-align:center;border-left:1px solid #333;padding-left:12px}
-.mc-v{font-size:14px;font-weight:800}
-.mc-l{font-size:6px;text-transform:uppercase;color:#777;letter-spacing:.06em}
+/* Market Call */
+.mc{background:#2a2a2a;color:#f5f4f0;padding:16px 20px;margin-bottom:12px;display:grid;grid-template-columns:1fr 250px;gap:20px;align-items:center}
+.mc-label{font-family:-apple-system,sans-serif;font-size:7px;text-transform:uppercase;letter-spacing:.14em;color:#8a8880;margin-bottom:5px}
+.mc-verdict{font-family:Georgia,serif;font-size:13px;font-weight:400;line-height:1.35;margin-bottom:5px;font-style:italic}
+.mc-action{font-family:-apple-system,sans-serif;font-size:9px;color:#b0ada5;line-height:1.45}
+.mc-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:0;text-align:center;border-left:1px solid #4a4a4a;padding-left:16px}
+.mc-v{font-family:-apple-system,sans-serif;font-size:15px;font-weight:700;color:#f5f4f0}
+.mc-l{font-family:-apple-system,sans-serif;font-size:6px;text-transform:uppercase;color:#8a8880;letter-spacing:.08em;margin-top:1px}
 
 /* Section headers */
-.sh{font-size:7px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#999;margin:14px 0 5px;border-bottom:1px solid #ddd;padding-bottom:2px}
+.sh{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;font-size:7px;font-weight:600;text-transform:uppercase;letter-spacing:.14em;color:#9a9790;margin:16px 0 6px;padding-bottom:3px;border-bottom:1px solid #e8e6e0}
 
 /* Tables */
-table{width:100%;border-collapse:collapse;font-size:8.5px;margin-bottom:2px}
-th{text-align:left;font-weight:700;padding:3px 4px;border-bottom:2px solid #111;font-size:7px;text-transform:uppercase;letter-spacing:.05em}
-td{padding:2.5px 4px;border-bottom:1px solid #f0f0f0}
-td:first-child{font-weight:600}
+table{width:100%;border-collapse:collapse;font-family:-apple-system,sans-serif;font-size:8.5px;margin-bottom:4px}
+th{text-align:left;font-weight:600;padding:4px 5px 3px;border-bottom:1px solid #9a9790;font-size:7px;text-transform:uppercase;letter-spacing:.06em;color:#6a6860}
+td{padding:3.5px 5px;border-bottom:1px solid #eeedea;color:#4a4a4a}
+td:first-child{font-weight:600;color:#2a2a2a}
 .r{text-align:right}
-.sm{font-size:7.5px;color:#666}
+.sm{font-size:7.5px;color:#8a8880}
 
 /* Pipeline boxes */
-.pipe{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px}
-.pb{text-align:center;padding:8px 4px;border:1px solid #e0e0e0}
-.pb-h{border-color:#d4a;background:#fef8f6}
-.pb-w{border-color:#da4;background:#fefcf4}
-.pb-c{border-color:#48a;background:#f6f8fe}
-.pb-v{font-size:15px;font-weight:800;letter-spacing:-.02em}
-.pb-l{font-size:6px;color:#999;text-transform:uppercase;letter-spacing:.05em}
-.pb-n{font-size:7px;color:#bbb}
+.pipe{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px}
+.pb{text-align:center;padding:10px 4px;border:1px solid #e0deda;background:#fafaf8}
+.pb-h{border-left:3px solid #c4756a}
+.pb-w{border-left:3px solid #c4a86a}
+.pb-c{border-left:3px solid #6a8cc4}
+.pb-v{font-family:-apple-system,sans-serif;font-size:16px;font-weight:800;letter-spacing:-.02em;color:#2a2a2a}
+.pb-l{font-family:-apple-system,sans-serif;font-size:6.5px;color:#9a9790;text-transform:uppercase;letter-spacing:.06em;margin-top:1px}
+.pb-n{font-family:-apple-system,sans-serif;font-size:7px;color:#b0ada5}
 
 /* Layout grids */
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.g23{display:grid;grid-template-columns:2fr 1fr;gap:16px}
-.g32{display:grid;grid-template-columns:3fr 2fr;gap:16px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.g32{display:grid;grid-template-columns:3fr 2fr;gap:20px}
 
 /* Treemap */
-.tm{border:1px solid #e8e8e8;margin-bottom:10px;overflow:hidden;line-height:0}
+.tm{border:1px solid #e0deda;margin-bottom:12px;overflow:hidden;line-height:0;background:#fafaf8}
 .tm svg{display:block;width:100%;height:auto}
 
 /* Analysis */
-.an{font-size:8.5px;line-height:1.55;color:#444;column-count:2;column-gap:18px;column-rule:1px solid #f0f0f0}
-.an p{margin-bottom:4px}
+.an{font-size:9px;line-height:1.6;color:#5a5a5a;column-count:2;column-gap:22px;column-rule:1px solid #eeedea}
+.an p{margin-bottom:5px;text-indent:0}
 
 /* Footer */
-.ft{margin-top:10px;padding-top:5px;border-top:1px solid #e0e0e0;font-size:7px;color:#bbb;display:flex;justify-content:space-between;text-transform:uppercase;letter-spacing:.06em}
-.cta{text-align:center;margin-top:6px;font-size:8px;color:#666}
-.cta a{color:#111;font-weight:700;text-decoration:none;border-bottom:1px solid #111}
-@media print{body{padding:0;font-size:8px}.cta{display:none}}
+.ft{margin-top:12px;padding-top:6px;border-top:1px solid #e0deda;font-family:-apple-system,sans-serif;font-size:7px;color:#b0ada5;display:flex;justify-content:space-between;text-transform:uppercase;letter-spacing:.08em}
+.cta{text-align:center;margin-top:8px;font-family:-apple-system,sans-serif;font-size:8px;color:#8a8880}
+.cta a{color:#2a2a2a;font-weight:600;text-decoration:none;border-bottom:1px solid #c0beb8}
+@media print{body{padding:0}.cta{display:none}}
 svg{max-width:100%;height:auto}
 </style></head><body>
 
