@@ -5021,7 +5021,7 @@ ${vehProse ? '<p><strong>Vehicles.</strong> ' + vehProse + '</p>' : ''}
 <div>
 <div class="sl">Agency breakdown</div>
 <table><thead><tr><th>Agency</th><th class="r">Spend</th><th class="r">Exp 90d</th><th>Office</th></tr></thead><tbody>
-${agencySorted.slice(0, 7).map(([ag, spend]) => {
+${agencySorted.slice(0, 5).map(([ag, spend]) => {
       const d = agencyDetail[ag] || {};
       const topSub = Object.entries(d.subAgencies || {}).sort((a,b) => b[1] - a[1])[0];
       const office = topSub ? topSub[0] : '';
@@ -5032,7 +5032,7 @@ ${agencySorted.slice(0, 7).map(([ag, spend]) => {
 <div>
 <div class="sl">Vendor landscape</div>
 <table><thead><tr><th>Vendor</th><th class="r">Spend</th><th class="r">Share</th><th>Agencies</th></tr></thead><tbody>
-${vendorSorted.slice(0, 7).map(([name, d]) => {
+${vendorSorted.slice(0, 5).map(([name, d]) => {
       const pct = total > 0 ? Math.round(d.spend / total * 100) : 0;
       const ag = Array.from(d.agencies).slice(0, 2).map(cleanAg).join(', ');
       return `<tr><td>${Html.escapeHtml(name)}</td><td class="r">${money(d.spend)}</td><td class="r">${pct}%</td><td class="sm">${ag}</td></tr>`;
@@ -5052,7 +5052,7 @@ ${vehicles.slice(0,3).map(([n,d]) => `<tr><td>${Html.escapeHtml(n)}</td><td clas
 <div>
 <div class="sl">Expiring contracts</div>
 <table><thead><tr><th>Incumbent</th><th>Agency</th><th class="r">Value</th><th class="r">Days</th></tr></thead><tbody>
-${exp90.slice(0, 5).map(c => {
+${exp90.slice(0, 4).map(c => {
       const days = Math.ceil((c._endTs - nowTs) / 86400000);
       return `<tr><td>${Html.escapeHtml(c['Recipient Name'] || '')}</td><td class="sm">${Html.escapeHtml(cleanAg(c['Awarding Agency'] || ''))}</td><td class="r">${money(c['Award Amount'])}</td><td class="r${days <= 14 ? ' exp-urgent' : ''}">${days}d</td></tr>`;
     }).join('')}
@@ -5061,7 +5061,7 @@ ${exp90.slice(0, 5).map(c => {
 </div>` : `
 <div class="sl">Expiring contracts</div>
 <table style="max-width:500px"><thead><tr><th>Incumbent</th><th>Agency</th><th class="r">Value</th><th class="r">Days</th></tr></thead><tbody>
-${exp90.slice(0, 5).map(c => {
+${exp90.slice(0, 4).map(c => {
       const days = Math.ceil((c._endTs - nowTs) / 86400000);
       return `<tr><td>${Html.escapeHtml(c['Recipient Name'] || '')}</td><td class="sm">${Html.escapeHtml(cleanAg(c['Awarding Agency'] || ''))}</td><td class="r">${money(c['Award Amount'])}</td><td class="r${days <= 14 ? ' exp-urgent' : ''}">${days}d</td></tr>`;
     }).join('')}
