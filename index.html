@@ -4915,33 +4915,6 @@ const App = {
       : '';
 
 
-    // ── DECISION LAYER ──
-    // Compute the single most important action and why
-    const bestTarget = targets[0];
-    const bestTargetName = bestTarget ? cleanAg(bestTarget.agency) : '';
-    let oneMoveLine = action;
-    let whyLine = '';
-    if (bestTarget && bestTarget.exp90 > 0) {
-      oneMoveLine = `Start at ${bestTargetName}. ${money(bestTarget.exp90)} is turning over and that is where the near-term opening is.`;
-      whyLine = `${money(bestTarget.exp90)} expiring at ${bestTargetName} in the next 90 days. ${bestTarget.topVendor ? tc(bestTarget.topVendor) + ' holds the incumbent position.' : ''}`;
-    } else if (bestTarget && bestTarget.recent > 0) {
-      oneMoveLine = `Lead with ${bestTargetName}. They are actively buying and evaluating vendors.`;
-      whyLine = `${bestTarget.recent} recent award${bestTarget.recent > 1 ? 's' : ''} at ${bestTargetName}. The buying cycle is open.`;
-    } else if (bestTarget) {
-      oneMoveLine = `Start at ${bestTargetName}. Highest volume and the most vendor diversity.`;
-      whyLine = `${bestTarget.vendors.size} vendors active at ${bestTargetName}. They evaluate multiple providers.`;
-    }
-
-    // "What matters" bullets — the 4-5 sharpest facts
-    const wmBullets = [];
-    const top3Pct = total > 0 ? Math.round(vendorSorted.slice(0,3).reduce((s,[,v])=>s+v.spend,0) / total * 100) : 0;
-    wmBullets.push(`Top 3 vendors control ${top3Pct}% of spend`);
-    if (exp90Total > 0) wmBullets.push(`${money(exp90Total)} turning over in 90 days across ${exp90.length} contracts`);
-    wmBullets.push(`${Object.keys(allSubAgencies).length} buying offices across ${agencyCount} agencies`);
-    if (vehicles.length > 0) wmBullets.push(`Primary vehicle: ${vehicles[0][0]} (${money(vehicles[0][1].spend)})`);
-    if (recentCount > 0) wmBullets.push(`${recentCount} new awards in the last 90 days`);
-    else wmBullets.push('No new awards in the last 90 days');
-
 
     // ── BUILD ──
     let html = `<!DOCTYPE html>
@@ -4959,15 +4932,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;fo
 .context-line{font-size:11px;color:#86868b;font-style:italic;margin-bottom:2px}
 .rule{height:1px;background:#d2d2d7;margin:6px 0 14px}
 
-.call{margin-bottom:6px}
-.call-verdict{font-size:14px;font-weight:600;line-height:1.4;color:#1d1d1f}
-.one-move{background:#f5f5f7;border-radius:10px;padding:12px 16px;margin-bottom:14px}
-.one-move-label{font-size:9px;font-weight:600;color:#86868b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
-.one-move-text{font-size:13px;font-weight:600;color:#1d1d1f;line-height:1.4;margin-bottom:4px}
-.one-move-why{font-size:11px;color:#6e6e73;line-height:1.45}
-.wm{list-style:none;margin-bottom:14px;padding:0}
-.wm li{font-size:11px;color:#3a3a3a;padding:3px 0;padding-left:12px;position:relative;line-height:1.45}
-.wm li::before{content:"";position:absolute;left:0;top:9px;width:4px;height:4px;border-radius:50%;background:#86868b}
+.call{margin-bottom:10px}
+.call-verdict{font-size:14px;font-weight:600;line-height:1.4;color:#1d1d1f;margin-bottom:4px}
+.call-action{font-size:12px;color:#6e6e73;line-height:1.45}
 
 .insight-line{font-size:11px;color:#6e6e73;margin:8px 0 2px;padding:8px 12px;background:#f5f5f7;border-radius:8px;line-height:1.45}
 .intel{font-size:11px;color:#3a3a3a;line-height:1.55;margin-bottom:14px}
@@ -5029,12 +4996,7 @@ svg{max-width:100%;height:auto}
 
 <div class="call">
   <div class="call-verdict">${Html.escapeHtml(verdict)}</div>
-</div>
-
-<div class="one-move">
-  <div class="one-move-label">If you had to make one move</div>
-  <div class="one-move-text">${Html.escapeHtml(oneMoveLine)}</div>
-  <div class="one-move-why">${Html.escapeHtml(whyLine)}</div>
+  <div class="call-action">${Html.escapeHtml(action)}</div>
 </div>
 
 <div class="sl">Where to focus</div>
@@ -5044,10 +5006,13 @@ ${targetCards}
 
 <div id="nextStepsSlot"></div>
 
-<div class="sl">What matters</div>
-<ul class="wm">
-${wmBullets.map(b => `<li>${Html.escapeHtml(b)}</li>`).join('\n')}
-</ul>
+<div class="sl">Market intelligence</div>
+<div class="intel">
+<p><strong>Buyer landscape.</strong> ${buyerProse}</p>
+<p><strong>Vendor landscape.</strong> ${vendorProse}</p>
+<p><strong>Expiring pipeline.</strong> ${pipelineProse}</p>
+${vehProse ? '<p><strong>Vehicles.</strong> ' + vehProse + '</p>' : ''}
+</div>
 
 <div class="g2">
 <div>
@@ -5081,6 +5046,11 @@ ${vehicles.slice(0,5).map(([n,d]) => `<tr><td>${Html.escapeHtml(n)}</td><td clas
 
 <div class="sl">Expiring contracts</div>
 ${expRows}
+
+<div class="sl">Analysis</div>
+<div class="analysis-text">
+${prose.split('\\n').filter(Boolean).map(p => '<p>' + Html.escapeHtml(p) + '</p>').join('')}
+</div>
 
 <div class="ft">
   <a href="https://fedhoo.com" class="ft-logo" target="_blank">
