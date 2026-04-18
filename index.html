@@ -4887,14 +4887,14 @@ const App = {
     // Buyer landscape
     const topPrimes = vendorSorted.slice(0, 3).map(([n]) => tc(n));
     const topAgencies3 = agencySorted.slice(0, 3).map(([a]) => cleanAg(a));
-    const allOffices = {};
-    data.forEach(c => { const o = c['Awarding Office'] || ''; if (o) allOffices[o] = (allOffices[o] || 0) + (parseFloat(c['Award Amount'])||0); });
-    const topOffices2 = Object.entries(allOffices).sort((a,b) => b[1] - a[1]).slice(0, 2).map(([o]) => o);
+    const allSubAgencies = {};
+    data.forEach(c => { const o = c['Awarding Sub Agency'] || c['Awarding Office'] || ''; if (o) allSubAgencies[o] = (allSubAgencies[o] || 0) + (parseFloat(c['Award Amount'])||0); });
+    const topOffices2 = Object.entries(allSubAgencies).sort((a,b) => b[1] - a[1]).slice(0, 2).map(([o]) => o);
     const popStates2 = {};
     data.forEach(c => { const st = c['pop_state_code'] || ''; if (st) popStates2[st] = (popStates2[st] || 0) + (parseFloat(c['Award Amount'])||0); });
     const topPoPs2 = Object.entries(popStates2).sort((a,b) => b[1] - a[1]).slice(0, 3).map(([st, val]) => `${st} (${money(val)})`);
 
-    const buyerProse = `${recentCount > 0 ? recentCount + ' new award' + (recentCount > 1 ? 's were' : ' was') + ' issued in the last 90 days.' : 'No new awards in the last 90 days.'} Top primes by contract value include ${topPrimes.join(', ')}. Purchasing spans ${Object.keys(allOffices).length} offices across ${topAgencies3.join(', ')}. ${topOffices2.length > 0 ? 'Heaviest activity at ' + topOffices2.join(' and ') + '.' : ''} Primary PoPs are ${topPoPs2.join(', ')}.`;
+    const buyerProse = `${recentCount > 0 ? recentCount + ' new award' + (recentCount > 1 ? 's were' : ' was') + ' issued in the last 90 days.' : 'No new awards in the last 90 days.'} Top primes by contract value include ${topPrimes.join(', ')}. Purchasing spans ${Object.keys(allSubAgencies).length} buying offices across ${topAgencies3.join(', ')}. ${topOffices2.length > 0 ? 'Heaviest activity at ' + topOffices2.join(' and ') + '.' : ''} Primary PoPs are ${topPoPs2.join(', ')}.`;
 
     // Vendor landscape
     const vendorConcentration = top5Pct >= 80 ? 'a heavily consolidated market' : top5Pct >= 60 ? 'a concentrated market' : 'a balanced market';
@@ -5811,7 +5811,7 @@ ${gemData.next_steps.map((step, i) => `<div class="ns-item"><span class="ns-num"
       const offices = {};
       const popStates = {};
       _activeData.forEach(c => {
-        const o = c['Awarding Office'] || '';
+        const o = c['Awarding Sub Agency'] || c['Awarding Office'] || '';
         if (o) offices[o] = (offices[o] || 0) + (parseFloat(c['Award Amount']) || 0);
         const st = c['pop_state_code'] || '';
         if (st) popStates[st] = (popStates[st] || 0) + (parseFloat(c['Award Amount']) || 0);
@@ -5820,7 +5820,7 @@ ${gemData.next_steps.map((step, i) => `<div class="ns-item"><span class="ns-num"
       const topPoPs = Object.entries(popStates).sort((a,b) => b[1] - a[1]).slice(0, 3)
         .map(([st, val]) => `${st} (${Utils.money(val)})`);
       if (topOffices.length > 0 || topPoPs.length > 0) {
-        let landscapeLine = `Purchasing spans ${Object.keys(offices).length} offices.`;
+        let landscapeLine = `Purchasing spans ${Object.keys(offices).length} buying offices.`;
         if (topOffices.length > 0) landscapeLine += ` Heaviest activity at ${topOffices.join(' and ')}.`;
         if (topPoPs.length > 0) landscapeLine += ` Primary locations are ${topPoPs.join(', ')}.`;
         proseLines.push(landscapeLine);
