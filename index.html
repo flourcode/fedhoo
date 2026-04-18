@@ -146,6 +146,23 @@ a, button, input, select { touch-action: manipulation; }
 }
 .hdr-icon-circle:hover { background: var(--bg-hover); color: var(--text-primary); }
 .hdr-icon-spinning { pointer-events: none; opacity: 0.6; }
+
+/* GTM Modal */
+.gtm-backdrop { position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:9000;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s; }
+.gtm-backdrop.open { opacity:1; }
+.gtm-modal { background:var(--bg-card);border-radius:16px;width:90%;max-width:560px;max-height:85vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.15);padding:0; }
+.gtm-modal-header { display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid var(--border); }
+.gtm-modal-face { flex-shrink:0; }
+.gtm-modal-title { font-size:15px;font-weight:700;color:var(--text-primary); }
+.gtm-modal-sub { font-size:11px;color:var(--text-muted); }
+.gtm-modal-close { margin-left:auto;background:none;border:none;font-size:22px;color:var(--text-muted);cursor:pointer;padding:0 4px;line-height:1; }
+.gtm-modal-body { padding:16px 20px; }
+.gtm-label { display:block;font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:6px; }
+.gtm-input { width:100%;font-size:13px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-app);color:var(--text-primary);outline:none;margin-bottom:12px; }
+.gtm-input:focus { border-color:var(--accent); }
+.gtm-go-btn { width:100%;padding:10px;font-size:13px;font-weight:600;color:#fff;background:var(--accent);border:none;border-radius:10px;cursor:pointer; }
+.gtm-go-btn:disabled { opacity:.5;cursor:default; }
+.gtm-output { padding:0 20px 20px; }
 .hdr-icon-spinning .snap-icon-default { display: none; }
 .hdr-icon-spinning .snap-icon-loading { display: block !important; animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -1050,6 +1067,11 @@ a, button, input, select { touch-action: manipulation; }
           <path d="M21 12a9 9 0 1 1-6.22-8.56"/>
         </svg>
       </button>
+      <button class="hdr-icon-circle hidden" id="gtmBtn" onclick="App.showGtmModal()" title="GTM Plan" aria-label="Generate GTM plan">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+        </svg>
+      </button>
       <button class="hdr-icon-circle" id="darkToggleBtn" onclick="App.toggleDarkMode()" title="Toggle dark mode" aria-label="Toggle dark mode">
         <svg id="darkToggleIcon" width="16" height="16" aria-hidden="true"><use href="#icon-moon"></use></svg>
       </button>
@@ -1307,6 +1329,26 @@ a, button, input, select { touch-action: manipulation; }
 
   </div><!-- /arti-sheet-body -->
 </div><!-- /arti-sheet -->
+
+<!-- GTM PLAN MODAL -->
+<div class="gtm-backdrop hidden" id="gtmBackdrop" onclick="App.closeGtmModal()">
+  <div class="gtm-modal" onclick="event.stopPropagation()">
+    <div class="gtm-modal-header">
+      <svg class="gtm-modal-face" width="32" height="32" viewBox="0 0 40 40" aria-hidden="true"><use href="#icon-face-open"/></svg>
+      <div>
+        <div class="gtm-modal-title">Build a GTM Plan</div>
+        <div class="gtm-modal-sub">90-day go-to-market plan based on your current search</div>
+      </div>
+      <button class="gtm-modal-close" onclick="App.closeGtmModal()" aria-label="Close">&times;</button>
+    </div>
+    <div class="gtm-modal-body">
+      <label class="gtm-label" for="gtmProductInput">What do you sell?</label>
+      <input id="gtmProductInput" type="text" class="gtm-input" placeholder="e.g. endpoint security software, cloud migration services" onkeydown="if(event.key==='Enter')App.generateGtmPlan()" />
+      <button class="gtm-go-btn" id="gtmGoBtn" onclick="App.generateGtmPlan()">Build plan</button>
+    </div>
+    <div id="gtmPlanOutput" class="gtm-output"></div>
+  </div>
+</div>
 
 <footer class="site-footer">
   <div class="footer-brand">
@@ -3113,6 +3155,7 @@ const App = {
       DOM.show('resultsGrid');
         DOM.show('shareBtn');
         DOM.show('snapshotBtn');
+        DOM.show('gtmBtn');
       DOM.show('bioCard');
 
       // Render chart and panels immediately
@@ -5199,95 +5242,12 @@ ${gemData.next_steps.map((step, i) => `<div class="ns-item"><span class="ns-num"
       html = html.replace('<div id="nextStepsSlot"></div>', '');
     }
 
-    // Serialize market data for GTM plan — stored as JSON in a script tag
-    const gtmDataRaw = {
-      query, total: money(total), agencyCount, vendorCount, top5Pct,
-      isChannel: (() => { const SV = new Set(['CARAHSOFT','GOVPLACE','FCN','THUNDERCAT','THUNDERCAT TECHNOLOGY','OPTIV','OPTIV FEDERAL','CDW','CDW GOVERNMENT','CDWG','SHI','SHI INTERNATIONAL','DLT','DLT SOLUTIONS','IRON BOW','RED RIVER']); return vendorSorted.slice(0,8).filter(([n]) => SV.has(n.toUpperCase())).length >= 2; })(),
-      verdict, action,
-      targets: targets.map(t => ({ agency: cleanAg(t.agency), spend: money(t.total), expiring: t.exp90 > 0 ? money(t.exp90) : 'none', topVendor: tc(t.topVendor), office: t.officeName || '' })),
-      expiring: exp90.slice(0,5).map(c => ({ vendor: c['Recipient Name']||'', agency: cleanAg(c['Awarding Agency']||''), value: money(c['Award Amount']), days: Math.ceil((c._endTs - nowTs)/86400000) })),
-      vehicles: vehicles.slice(0,3).map(([n]) => n).join(', ') || 'none',
-      buyerProse, vendorProse, pipelineProse,
-    };
-    // Safe for embedding in HTML: escape </ to prevent closing script tag
-    const gtmData = JSON.stringify(gtmDataRaw).replace(/<\//g, '<\\/');
-
     const filename = `Market_Focus_${query.replace(/[^a-zA-Z0-9]/g, '_').replace(/_+/g, '_').substring(0, 40)}_${new Date().toISOString().slice(0,10)}.html`;
     html = html.replace('</body>', `
 <div style="text-align:center;margin-top:10px;padding:8px 0;" class="no-print">
   <button onclick="(function(){var a=document.createElement('a');a.href='data:text/html;charset=utf-8,'+encodeURIComponent(document.documentElement.outerHTML);a.download='${filename}';a.click();})()" style="font-family:-apple-system,sans-serif;font-size:11px;color:#86868b;background:none;border:1px solid #d2d2d7;border-radius:6px;padding:6px 14px;cursor:pointer;">Download HTML</button>
-  <span style="font-family:-apple-system,sans-serif;font-size:10px;color:#aeaeb2;margin-left:8px;">\\u2318P / Ctrl+P to save as PDF</span>
+  <span style="font-family:-apple-system,sans-serif;font-size:10px;color:#aeaeb2;margin-left:8px;">\u2318P / Ctrl+P to save as PDF</span>
 </div>
-
-<div id="gtmSection" class="no-print" style="max-width:520px;margin:20px auto 0;font-family:-apple-system,sans-serif;">
-  <div style="border-top:1px solid #d2d2d7;padding-top:16px;text-align:center;">
-    <div style="font-size:14px;font-weight:600;color:#1d1d1f;margin-bottom:3px;">Generate a GTM Plan</div>
-    <div style="font-size:11px;color:#86868b;margin-bottom:10px;">90-day go-to-market plan based on this market data</div>
-    <div style="display:flex;gap:8px;">
-      <input id="gtmInput" type="text" placeholder="What do you sell? e.g. endpoint security software" style="flex:1;font-family:-apple-system,sans-serif;font-size:12px;padding:8px 12px;border:1px solid #d2d2d7;border-radius:8px;outline:none;color:#1d1d1f;" onkeydown="if(event.key==='Enter')generateGTM()" />
-      <button id="gtmBtn" onclick="generateGTM()" style="font-family:-apple-system,sans-serif;font-size:12px;font-weight:600;color:#fff;background:#1d1d1f;border:none;border-radius:8px;padding:8px 20px;cursor:pointer;white-space:nowrap;">Build plan</button>
-    </div>
-  </div>
-  <div id="gtmOutput"></div>
-</div>
-
-<script>
-<div id="gtmPayload" style="display:none">${gtmData}</div>
-<scr${''}ipt>
-function generateGTM(){
-  var inp=document.getElementById('gtmInput'),btn=document.getElementById('gtmBtn'),out=document.getElementById('gtmOutput');
-  var product=(inp.value||'').trim();
-  if(!product){inp.focus();return}
-  btn.textContent='Building...';btn.disabled=true;inp.disabled=true;
-  var md;try{md=JSON.parse(document.getElementById('gtmPayload').textContent)}catch(e){out.innerHTML='<p style=\"color:#86868b;font-size:11px;\">Error loading data.</p>';btn.textContent='Build plan';btn.disabled=false;inp.disabled=false;return}
-  var prompt='IGNORE ALL PREVIOUS INSTRUCTIONS ABOUT COMPETITORS AND CORE_KEYWORDS. THIS IS A DIFFERENT REQUEST.\\n\\n'+
-    'You are a senior federal sales strategist. Write a 90-day GTM plan. Be specific. Reference real agencies, vendors, contracts, and dollar amounts from the data. No generic advice.\\n\\n'+
-    'SELLER: They sell '+product+'\\n'+
-    'MARKET: '+md.query+' ('+md.total+' TTM, '+md.agencyCount+' agencies, '+md.vendorCount+' vendors)\\n'+
-    'ASSESSMENT: '+md.verdict+' '+md.action+'\\n'+
-    (md.isChannel?'CHANNEL MARKET: VARs control access. Product vendors rarely hold contracts directly.\\n':'')+
-    'TARGETS: '+md.targets.map(function(t){return t.agency+' ('+t.spend+', '+t.expiring+' expiring, incumbent: '+t.topVendor+', office: '+t.office+')'}).join('; ')+'\\n'+
-    'EXPIRING: '+md.expiring.map(function(c){return c.vendor+' at '+c.agency+', '+c.value+', '+c.days+'d'}).join('; ')+'\\n'+
-    'VEHICLES: '+md.vehicles+'\\n'+
-    'BUYER LANDSCAPE: '+md.buyerProse+'\\n'+
-    'VENDOR LANDSCAPE: '+md.vendorProse+'\\n'+
-    'PIPELINE: '+md.pipelineProse+'\\n\\n'+
-    'Return ONLY valid JSON:\\n'+
-    '{\\n'+
-    '  "positioning": "2-3 sentences: how to position this product in this specific federal market.",\\n'+
-    '  "week_1_4": ["action 1","action 2","action 3"],\\n'+
-    '  "week_5_8": ["action 1","action 2","action 3"],\\n'+
-    '  "week_9_12": ["action 1","action 2","action 3"],\\n'+
-    '  "partners": "2-3 sentences: which specific primes or VARs to partner with, from the vendor data.",\\n'+
-    '  "risks": "2-3 sentences: what could go wrong and how to mitigate."\\n'+
-    '}';
-  fetch('https://76unm1rlj0.execute-api.us-east-1.amazonaws.com/default/grumpy2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({request_type:'govhoo_market_research',company:prompt})})
-  .then(function(r){if(!r.ok)throw new Error('API error');return r.json()})
-  .then(function(data){
-    if(!data||!data.week_1_4){out.innerHTML='<p style=\"color:#86868b;font-size:11px;\">Could not generate plan. Try again.</p>';return}
-    var e=function(s){return String(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')};
-    var h='<div style=\"border-top:1px solid #d2d2d7;padding-top:16px;margin-top:16px;\">';
-    h+='<div style=\"font-size:15px;font-weight:700;color:#1d1d1f;margin-bottom:3px;\">90-Day GTM Plan: '+e(product)+'</div>';
-    h+='<div style=\"font-size:10px;color:#86868b;margin-bottom:12px;\">'+e(md.query)+' market ('+e(md.total)+' TTM)</div>';
-    if(data.positioning)h+='<div style=\"font-size:11px;color:#6e6e73;background:#f5f5f7;border-radius:8px;padding:10px 12px;margin-bottom:12px;line-height:1.5;\">'+e(data.positioning)+'</div>';
-    function phase(title,items,sub){
-      h+='<div style=\"margin-bottom:10px;\"><div style=\"font-size:9px;font-weight:600;color:#1d1d1f;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;\">'+title+' <span style=\"font-weight:400;color:#86868b;\">'+sub+'</span></div>';
-      if(Array.isArray(items))items.forEach(function(item,i){h+='<div style=\"display:flex;gap:8px;padding:4px 0;border-bottom:1px solid #f5f5f7;font-size:11px;line-height:1.45;\"><span style=\"font-weight:700;color:#d2d2d7;min-width:14px;\">'+(i+1)+'</span><span style=\"color:#1d1d1f;\">'+e(item)+'</span></div>'});
-      h+='</div>'
-    }
-    phase('Phase 1',data.week_1_4,'Weeks 1\\u20134');
-    phase('Phase 2',data.week_5_8,'Weeks 5\\u20138');
-    phase('Phase 3',data.week_9_12,'Weeks 9\\u201312');
-    if(data.partners)h+='<div style=\"margin-bottom:8px;\"><div style=\"font-size:9px;font-weight:600;color:#1d1d1f;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;\">Partner strategy</div><div style=\"font-size:11px;color:#3a3a3a;line-height:1.5;\">'+e(data.partners)+'</div></div>';
-    if(data.risks)h+='<div style=\"margin-bottom:8px;\"><div style=\"font-size:9px;font-weight:600;color:#1d1d1f;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;\">Risks</div><div style=\"font-size:11px;color:#3a3a3a;line-height:1.5;\">'+e(data.risks)+'</div></div>';
-    h+='</div>';
-    out.innerHTML=h;
-    document.getElementById('gtmSection').scrollIntoView({behavior:'smooth'})
-  })
-  .catch(function(err){out.innerHTML='<p style=\"color:#86868b;font-size:11px;\">Error: '+err.message+'</p>'})
-  .finally(function(){btn.textContent='Build plan';btn.disabled=false;inp.disabled=false})
-}
-<\/script>
 </body>`);
 
     // Reset button state
@@ -5305,6 +5265,133 @@ function generateGTM(){
     }
   },
 
+
+  // ── GTM PLAN ─────────────────────────────────────────────────────
+  showGtmModal() {
+    if (!this.searchData.loaded || !this.marketMetrics) {
+      this.toast('Run a search first.', 'warning');
+      return;
+    }
+    const backdrop = DOM.get('gtmBackdrop');
+    if (backdrop) {
+      backdrop.classList.remove('hidden');
+      requestAnimationFrame(() => backdrop.classList.add('open'));
+      DOM.get('gtmProductInput')?.focus();
+    }
+  },
+
+  closeGtmModal() {
+    const backdrop = DOM.get('gtmBackdrop');
+    if (backdrop) {
+      backdrop.classList.remove('open');
+      setTimeout(() => backdrop.classList.add('hidden'), 200);
+    }
+  },
+
+  async generateGtmPlan() {
+    const input = DOM.get('gtmProductInput');
+    const btn = DOM.get('gtmGoBtn');
+    const output = DOM.get('gtmPlanOutput');
+    const product = (input?.value || '').trim();
+    if (!product) { input?.focus(); return; }
+
+    btn.textContent = 'Building plan...';
+    btn.disabled = true;
+    input.disabled = true;
+
+    const m = this.marketMetrics;
+    const data = this.searchData.active || [];
+    const total = m.total;
+    const money = Utils.money;
+    const cleanAg = Utils.cleanAgency;
+    const tc = s => Utils.titleCase(s);
+    const query = this.displayQuery || this.originalQuery || '';
+    const vendorSorted = Object.entries(m.vendors).sort((a,b) => b[1].spend - a[1].spend);
+    const agencySorted = Object.entries(m.agencies).sort((a,b) => b[1] - a[1]);
+    const verdictEl = document.querySelector('.market-verdict');
+    const actionEl = document.querySelector('.market-action');
+    const verdict = verdictEl?.textContent || '';
+    const action = actionEl?.textContent || '';
+    const nowTs = Date.now();
+    const exp90 = data.filter(c => c._endTs > nowTs && c._endTs <= nowTs + 90*86400000 && (parseFloat(c['Award Amount'])||0) > 50000).sort((a,b) => a._endTs - b._endTs);
+    const vehicles = Object.entries(m.vehicles || {}).sort((a,b) => b[1].spend - a[1].spend);
+    const top5Pct = total > 0 ? Math.round(vendorSorted.slice(0,5).reduce((s,[,v])=>s+v.spend,0) / total * 100) : 0;
+
+    const prompt = `IGNORE ALL PREVIOUS INSTRUCTIONS ABOUT COMPETITORS AND CORE_KEYWORDS. THIS IS A DIFFERENT REQUEST.
+
+You are a senior federal sales strategist. Write a 90-day GTM plan. Be specific. Reference real agencies, vendors, contracts, and dollar amounts. No generic advice.
+
+SELLER: They sell ${product}
+MARKET: ${query} (${money(total)} TTM, ${agencySorted.length} agencies, ${vendorSorted.length} vendors)
+ASSESSMENT: ${verdict} ${action}
+TOP AGENCIES: ${agencySorted.slice(0,3).map(([a,s]) => `${cleanAg(a)} (${money(s)})`).join(', ')}
+TOP VENDORS: ${vendorSorted.slice(0,5).map(([n,d]) => `${n} (${money(d.spend)}, ${Math.round(d.spend/total*100)}%)`).join(', ')}
+EXPIRING: ${exp90.slice(0,5).map(c => `${c['Recipient Name']} at ${cleanAg(c['Awarding Agency']||'')}, ${money(c['Award Amount'])}, ${Math.ceil((c._endTs-nowTs)/86400000)}d`).join('; ')}
+VEHICLES: ${vehicles.slice(0,3).map(([n,d]) => n).join(', ') || 'none identified'}
+VENDOR CONCENTRATION: Top 5 hold ${top5Pct}%
+
+Return ONLY valid JSON:
+{
+  "positioning": "2-3 sentences on how to position ${product} in this market.",
+  "week_1_4": ["action 1","action 2","action 3"],
+  "week_5_8": ["action 1","action 2","action 3"],
+  "week_9_12": ["action 1","action 2","action 3"],
+  "partners": "2-3 sentences on which primes or VARs to align with.",
+  "risks": "2-3 sentences on what could go wrong."
+}`;
+
+    try {
+      const res = await fetch(this.PROXY_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ request_type: 'govhoo_market_research', company: prompt })
+      });
+      if (!res.ok) throw new Error('API error');
+      const plan = await res.json();
+      console.log('GTM plan response:', plan);
+
+      if (plan && plan.week_1_4) {
+        const esc = s => Html.escapeHtml(s || '');
+        let h = '';
+
+        if (plan.positioning) {
+          h += `<div style="background:var(--bg-hover);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:12px;color:var(--text-secondary);line-height:1.5;">${esc(plan.positioning)}</div>`;
+        }
+
+        const renderPhase = (title, items, sub) => {
+          h += `<div style="margin-bottom:14px;"><div style="font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">${title} <span style="font-weight:400;">${sub}</span></div>`;
+          if (Array.isArray(items)) {
+            items.forEach((item, i) => {
+              h += `<div style="display:flex;gap:10px;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;line-height:1.5;"><span style="font-weight:700;color:var(--text-muted);min-width:16px;">${i+1}</span><span style="color:var(--text-primary);">${esc(item)}</span></div>`;
+            });
+          }
+          h += '</div>';
+        };
+
+        renderPhase('Phase 1', plan.week_1_4, 'Weeks 1\u20134 \u2014 Immediate moves');
+        renderPhase('Phase 2', plan.week_5_8, 'Weeks 5\u20138 \u2014 Position & partner');
+        renderPhase('Phase 3', plan.week_9_12, 'Weeks 9\u201312 \u2014 Pursue & close');
+
+        if (plan.partners) {
+          h += `<div style="margin-bottom:12px;"><div style="font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Partner strategy</div><div style="font-size:12px;color:var(--text-secondary);line-height:1.5;">${esc(plan.partners)}</div></div>`;
+        }
+        if (plan.risks) {
+          h += `<div style="margin-bottom:12px;"><div style="font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Risks</div><div style="font-size:12px;color:var(--text-secondary);line-height:1.5;">${esc(plan.risks)}</div></div>`;
+        }
+
+        output.innerHTML = h;
+      } else {
+        output.innerHTML = '<p style="color:var(--text-muted);font-size:12px;padding:8px 0;">Could not generate plan. Try again.</p>';
+      }
+    } catch(e) {
+      console.warn('GTM plan error:', e);
+      output.innerHTML = `<p style="color:var(--text-muted);font-size:12px;padding:8px 0;">Error: ${e.message}. Try again.</p>`;
+    }
+
+    btn.textContent = 'Build plan';
+    btn.disabled = false;
+    input.disabled = false;
+  },
 
   selectAgencySuggestion(name, boxId, selectionType) {
     const input = this.UI.searchInput;
