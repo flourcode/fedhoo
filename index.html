@@ -5132,10 +5132,10 @@ const App = {
 
     // Pick one
     const best = ranked[0];
+    const bestReason = best && best.expVal > 0
+      ? 'There is real turnover and the vendor base is not locked up.'
+      : 'It is the most accessible of these markets right now.';
     if (best) {
-      const bestReason = best.expVal > 0
-        ? 'There is real turnover and the vendor base is not locked up.'
-        : 'It is the most accessible of these markets right now.';
       html += `
         <div style="border-top:1px solid var(--border-inner);padding:18px 0 8px;">
           <div style="font-size:var(--text-sm);font-weight:700;color:var(--text-primary);margin-bottom:4px;">If you had to pick one</div>
