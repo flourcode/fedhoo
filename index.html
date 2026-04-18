@@ -4924,28 +4924,24 @@ const App = {
     const recentAwards = data.filter(c => c._startTs >= rec90Ts).sort((a,b) => b._startTs - a._startTs);
     const recentCount = recentAwards.length;
 
-    // ── COMPUTE MARKET CALL ──
+    // ── SNAPSHOT DATA PREP ──
     const bullets = [];
     if (exp90Val > 0) bullets.push(`${money(exp90Val)} expiring in 90 days`);
-    if (recentCount > 0) bullets.push(`${recentCount} new award${recentCount !== 1 ? 's' : ''} (90d)`);
+    if (recentCount > 0) bullets.push(`${recentCount} new award${recentCount !== 1 ? 's' : ''} in 90 days`);
     const SNAP_VARS = new Set(['CARAHSOFT','GOVPLACE','FCN','THUNDERCAT','THUNDERCAT TECHNOLOGY','OPTIV','OPTIV FEDERAL','CDW','CDW GOVERNMENT','CDWG','SHI','SHI INTERNATIONAL','DLT','DLT SOLUTIONS','IRON BOW','IRON BOW TECHNOLOGIES','RED RIVER','RED RIVER TECHNOLOGY','PANAMERICA COMPUTERS','ANACAPA MICRO PRODUCTS','AUGUST SCHELL','COLOSSAL CONTRACTING','GOVSMART','WILDFLOWER INTERNATIONAL']);
     const snapTop8 = vendorSorted.slice(0,8).map(([n]) => n.toUpperCase());
     const snapIsChannel = snapTop8.filter(v => SNAP_VARS.has(v)).length >= 2;
     if (snapIsChannel) {
       const topVars = snapTop8.filter(v => SNAP_VARS.has(v)).slice(0,2).map(v => tc(v.toLowerCase()));
-      bullets.push(`Channel: ${topVars.join(', ')} control access`);
+      bullets.push(`Channel market \u2014 ${topVars.join(', ')} control access`);
     } else if (top5Pct >= 60) {
       bullets.push(`Top 5 hold ${top5Pct}%`);
     } else {
       bullets.push(`${vendorCount} vendors, no dominant player`);
     }
-    const saTotal = Object.values(setAsides).reduce((s,v)=>s+v,0);
-    const saPct = total > 0 ? Math.round(saTotal / total * 100) : 0;
-    if (saPct >= 10) bullets.push(`${saPct}% set-aside`);
 
-    // One move
-    const topExpC = exp90[0];
     let oneMove = action;
+    const topExpC = exp90[0];
     if (snapIsChannel) {
       const topVar = tc(snapTop8.find(v => SNAP_VARS.has(v))?.toLowerCase() || '');
       if (topVar) oneMove = `Get aligned with ${topVar}. That is how you get into this market.`;
@@ -4955,171 +4951,181 @@ const App = {
       oneMove = `Look at ${ev} at ${ea}. ${money(parseFloat(topExpC['Award Amount'])||0)} expiring in ${Math.ceil((topExpC._endTs - nowTs)/86400000)} days.`;
     }
 
-    // Treemap — constrain height
+    // Treemap — constrain to 180px
     let treemapEmbed = '';
     if (treemapHtml) {
-      treemapEmbed = treemapHtml.replace(/<svg /, '<svg style="max-height:220px;width:100%;" ');
+      treemapEmbed = treemapHtml.replace(/<svg /, '<svg style="max-height:160px;width:100%;" ');
     }
 
-    // Limit table rows for density
-    const expRowsShort = exp90.slice(0, 6).map(c => {
+    // Combined agency table: spend + expiring + office in one
+    const agRows = agencySorted.slice(0, 10).map(([ag, spend]) => {
+      const d = agencyDetail[ag] || {};
+      const topSub = Object.entries(d.subAgencies || {}).sort((a,b) => b[1] - a[1])[0];
+      const office = topSub ? topSub[0] : Array.from(d.offices || []).values().next().value || '';
+      return `<tr><td>${Html.escapeHtml(cleanAg(ag))}</td><td class="r">${money(spend)}</td><td class="r">${d.exp90 ? money(d.exp90) : '\u2014'}</td><td class="r">${d.vendors ? d.vendors.size : ''}</td><td class="sm">${Html.escapeHtml(office)}</td></tr>`;
+    }).join('');
+
+    // Expiring contracts — top 6
+    const expTbl = exp90.slice(0, 6).map(c => {
       const days = Math.ceil((c._endTs - nowTs) / 86400000);
       const tenure = c._startTs ? Math.round((c._endTs - c._startTs) / (365.25 * 86400000)) : 0;
-      return `<tr><td>${Html.escapeHtml(c['Recipient Name'] || '')}</td><td>${Html.escapeHtml(cleanAg(c['Awarding Agency'] || ''))}</td><td style="text-align:right">${money(c['Award Amount'])}</td><td style="text-align:right">${days}d</td><td style="text-align:right">${tenure > 0 ? tenure + 'yr' : ''}</td></tr>`;
+      return `<tr><td>${Html.escapeHtml(c['Recipient Name'] || '')}</td><td>${Html.escapeHtml(cleanAg(c['Awarding Agency'] || ''))}</td><td class="r">${money(c['Award Amount'])}</td><td class="r">${days}d</td><td class="r">${tenure > 0 ? tenure + 'yr' : ''}</td></tr>`;
     }).join('');
 
-    const vendorRowsShort = vendorSorted.slice(0, 10).map(([name, d]) => {
+    // Vendor table — top 10
+    const venTbl = vendorSorted.slice(0, 10).map(([name, d]) => {
       const pct = total > 0 ? Math.round(d.spend / total * 100) : 0;
       const ag = Array.from(d.agencies).slice(0, 2).map(cleanAg).join(', ');
-      return `<tr><td>${Html.escapeHtml(name)}</td><td style="text-align:right">${money(d.spend)}</td><td style="text-align:right">${pct}%</td><td>${ag}</td></tr>`;
+      return `<tr><td>${Html.escapeHtml(name)}</td><td class="r">${money(d.spend)}</td><td class="r">${pct}%</td><td class="sm">${ag}</td></tr>`;
     }).join('');
 
-    const agencyRowsShort = agencySorted.slice(0, 10).map(([ag, spend]) => {
-      const d = agencyDetail[ag] || {};
-      const topSubAgs = Object.entries(d.subAgencies || {}).sort((a,b) => b[1] - a[1]).slice(0, 1).map(([n]) => n);
-      const office = topSubAgs[0] || Array.from(d.offices || []).values().next().value || '';
-      return `<tr><td>${Html.escapeHtml(cleanAg(ag))}</td><td style="text-align:right">${money(spend)}</td><td style="text-align:right">${money(d.exp90 || 0)}</td><td style="text-align:right">${d.vendors ? d.vendors.size : 0}</td><td style="font-size:8px">${Html.escapeHtml(office)}</td></tr>`;
+    // Vehicles — top 4
+    const vehTbl = vehicles.slice(0,4).map(([n,d]) => `<tr><td>${Html.escapeHtml(n)}</td><td class="r">${money(d.spend)}</td><td class="r">${d.count}</td></tr>`).join('');
+
+    // Set-asides — top 3
+    const saTbl = Object.entries(setAsides).sort((a,b) => b[1] - a[1]).slice(0,3).map(([sa, val]) => {
+      return `<tr><td>${Html.escapeHtml(sa)}</td><td class="r">${money(val)}</td><td class="r">${total > 0 ? Math.round(val/total*100) : 0}%</td></tr>`;
     }).join('');
 
-    // Sub summary (compact)
-    let subLine = '';
+    // Subs — top 4 primes
+    let subTbl = '';
     if (subs.length > 0) {
-      const primeMap = {};
-      subs.forEach(s => {
-        const p = Utils.normalizeVendorName(s['Prime Recipient Name'] || 'Unknown');
-        primeMap[p] = (primeMap[p] || 0) + (parseFloat(s['Sub-Award Amount']) || 0);
-      });
-      const topSubs = Object.entries(primeMap).sort((a,b) => b[1] - a[1]).slice(0, 4);
-      const subRows = topSubs.map(([p, v]) => `<tr><td>${Html.escapeHtml(p)}</td><td style="text-align:right">${money(v)}</td></tr>`).join('');
-      subLine = `<h2>Subcontracting</h2><table><thead><tr><th>Prime</th><th style="text-align:right">Sub Value</th></tr></thead><tbody>${subRows}</tbody></table>`;
+      const pm = {};
+      subs.forEach(s => { const p = Utils.normalizeVendorName(s['Prime Recipient Name']||'Unknown'); pm[p] = (pm[p]||0) + (parseFloat(s['Sub-Award Amount'])||0); });
+      subTbl = Object.entries(pm).sort((a,b) => b[1] - a[1]).slice(0,4).map(([p,v]) => `<tr><td>${Html.escapeHtml(p)}</td><td class="r">${money(v)}</td></tr>`).join('');
     }
 
-    // Vehicles + Set-asides compact
-    const vehRows = vehicles.slice(0,4).map(([n,d]) => `<tr><td>${Html.escapeHtml(n)}</td><td style="text-align:right">${money(d.spend)}</td><td style="text-align:right">${d.count}</td></tr>`).join('');
-    const saRows = Object.entries(setAsides).sort((a,b) => b[1] - a[1]).slice(0,4).map(([sa, val]) => {
-      return `<tr><td>${Html.escapeHtml(sa)}</td><td style="text-align:right">${money(val)}</td><td style="text-align:right">${total > 0 ? Math.round(val/total*100) : 0}%</td></tr>`;
-    }).join('');
-
-    // ── BUILD HTML ──
+    // ── BUILD ──
     let html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>Market Focus: ${Html.escapeHtml(query)}</title>
 <style>
-  @page { size: letter; margin: 0.35in 0.4in; }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif; font-size: 9px; color: #1A1A2E; line-height: 1.4; padding: 20px 24px; max-width: 1060px; margin: 0 auto; }
-  h1 { font-size: 20px; font-weight: 900; letter-spacing: -0.03em; line-height: 1.1; }
-  h2 { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #8C8AAF; margin: 12px 0 4px; }
-  .hdr { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 8px; border-bottom: 2px solid #1A1A2E; margin-bottom: 10px; }
-  .hdr-sub { font-size: 9px; color: #8C8AAF; margin-top: 2px; }
-  .hdr-r { text-align: right; }
-  .hero { font-size: 36px; font-weight: 900; letter-spacing: -0.04em; line-height: 1; }
-  .hero-label { font-size: 7px; color: #8C8AAF; text-transform: uppercase; letter-spacing: 0.08em; }
-  .call { background: #1A1A2E; color: #fff; padding: 12px 14px; margin-bottom: 8px; display: flex; gap: 16px; align-items: flex-start; }
-  .call-main { flex: 1; }
-  .call-label { font-size: 7px; text-transform: uppercase; letter-spacing: 0.1em; color: #8C8AAF; margin-bottom: 3px; }
-  .call-verdict { font-size: 12px; font-weight: 700; line-height: 1.3; margin-bottom: 3px; }
-  .call-action { font-size: 9px; color: #ADADC8; line-height: 1.4; }
-  .call-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; border-left: 1px solid #333; padding-left: 14px; min-width: 280px; }
-  .cs { text-align: center; }
-  .cs-val { font-size: 15px; font-weight: 800; color: #fff; }
-  .cs-label { font-size: 6px; text-transform: uppercase; color: #8C8AAF; letter-spacing: 0.06em; }
-  .kpi { display: flex; gap: 6px; margin-bottom: 8px; }
-  .kpi-item { flex: 1; border-left: 2px solid #46446E; padding: 4px 8px; font-size: 9px; color: #3A3A54; line-height: 1.35; }
-  .pipe { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 8px; }
-  .pipe-box { text-align: center; padding: 6px 4px; border: 1px solid #E8E6F0; }
-  .pipe-box--h { border-color: #E8C4BC; background: #FFFAF8; }
-  .pipe-box--w { border-color: #E8DDB0; background: #FFFDF5; }
-  .pipe-box--c { border-color: #B8C4E8; background: #F8F9FF; }
-  .pipe-val { font-size: 14px; font-weight: 800; letter-spacing: -0.02em; }
-  .pipe-label { font-size: 6px; color: #8C8AAF; text-transform: uppercase; letter-spacing: 0.06em; }
-  .pipe-n { font-size: 7px; color: #ADADC8; }
-  .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
-  table { width: 100%; border-collapse: collapse; font-size: 8.5px; margin-bottom: 4px; }
-  th { text-align: left; font-weight: 700; padding: 3px 4px 2px; border-bottom: 1.5px solid #1A1A2E; font-size: 7px; text-transform: uppercase; letter-spacing: 0.05em; color: #1A1A2E; }
-  td { padding: 2.5px 4px; border-bottom: 1px solid #F0EEF8; color: #3A3A54; }
-  td:first-child { font-weight: 600; color: #1A1A2E; }
-  .chart { border: 1px solid #E8E6F0; overflow: hidden; margin-bottom: 8px; }
-  .chart svg { display: block; width: 100%; height: auto; }
-  .analysis { font-size: 9px; line-height: 1.55; color: #3A3A54; column-count: 2; column-gap: 20px; column-rule: 1px solid #F0EEF8; margin-bottom: 8px; }
-  .analysis p { margin-bottom: 5px; }
-  .ft { padding-top: 6px; border-top: 1px solid #E8E6F0; font-size: 7px; color: #ADADC8; display: flex; justify-content: space-between; text-transform: uppercase; letter-spacing: 0.06em; }
-  .cta { text-align: center; margin-top: 8px; padding: 8px; background: #F7F7FB; font-size: 9px; color: #3A3A54; }
-  .cta a { color: #46446E; font-weight: 700; text-decoration: none; border-bottom: 1px solid #46446E; }
-  @media print { body { padding: 0; font-size: 8.5px; } .cta { display: none; } }
-  svg { max-width: 100%; height: auto; }
+@page{size:letter;margin:.4in .45in}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;font-size:9px;color:#111;line-height:1.4;padding:24px 28px;max-width:1060px;margin:0 auto}
+
+/* Header */
+.hd{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #111;padding-bottom:6px;margin-bottom:12px}
+.hd h1{font-size:16px;font-weight:900;letter-spacing:-.03em;line-height:1.15}
+.hd-sub{font-size:8px;color:#888;margin-top:1px}
+.hd-r{text-align:right}
+.hd-hero{font-size:32px;font-weight:900;letter-spacing:-.04em;line-height:1}
+.hd-label{font-size:7px;color:#999;text-transform:uppercase;letter-spacing:.08em}
+
+/* Market Call — the decision */
+.mc{background:#111;color:#fff;padding:14px 16px;margin-bottom:10px;display:grid;grid-template-columns:1fr 240px;gap:16px;align-items:center}
+.mc-label{font-size:7px;text-transform:uppercase;letter-spacing:.12em;color:#777;margin-bottom:4px}
+.mc-verdict{font-size:13px;font-weight:700;line-height:1.3;margin-bottom:4px}
+.mc-action{font-size:9px;color:#aaa;line-height:1.4}
+.mc-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:0;text-align:center;border-left:1px solid #333;padding-left:12px}
+.mc-v{font-size:14px;font-weight:800}
+.mc-l{font-size:6px;text-transform:uppercase;color:#777;letter-spacing:.06em}
+
+/* Section headers */
+.sh{font-size:7px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#999;margin:14px 0 5px;border-bottom:1px solid #ddd;padding-bottom:2px}
+
+/* Tables */
+table{width:100%;border-collapse:collapse;font-size:8.5px;margin-bottom:2px}
+th{text-align:left;font-weight:700;padding:3px 4px;border-bottom:2px solid #111;font-size:7px;text-transform:uppercase;letter-spacing:.05em}
+td{padding:2.5px 4px;border-bottom:1px solid #f0f0f0}
+td:first-child{font-weight:600}
+.r{text-align:right}
+.sm{font-size:7.5px;color:#666}
+
+/* Pipeline boxes */
+.pipe{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px}
+.pb{text-align:center;padding:8px 4px;border:1px solid #e0e0e0}
+.pb-h{border-color:#d4a;background:#fef8f6}
+.pb-w{border-color:#da4;background:#fefcf4}
+.pb-c{border-color:#48a;background:#f6f8fe}
+.pb-v{font-size:15px;font-weight:800;letter-spacing:-.02em}
+.pb-l{font-size:6px;color:#999;text-transform:uppercase;letter-spacing:.05em}
+.pb-n{font-size:7px;color:#bbb}
+
+/* Layout grids */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.g23{display:grid;grid-template-columns:2fr 1fr;gap:16px}
+.g32{display:grid;grid-template-columns:3fr 2fr;gap:16px}
+
+/* Treemap */
+.tm{border:1px solid #e8e8e8;margin-bottom:10px;overflow:hidden;line-height:0}
+.tm svg{display:block;width:100%;height:auto}
+
+/* Analysis */
+.an{font-size:8.5px;line-height:1.55;color:#444;column-count:2;column-gap:18px;column-rule:1px solid #f0f0f0}
+.an p{margin-bottom:4px}
+
+/* Footer */
+.ft{margin-top:10px;padding-top:5px;border-top:1px solid #e0e0e0;font-size:7px;color:#bbb;display:flex;justify-content:space-between;text-transform:uppercase;letter-spacing:.06em}
+.cta{text-align:center;margin-top:6px;font-size:8px;color:#666}
+.cta a{color:#111;font-weight:700;text-decoration:none;border-bottom:1px solid #111}
+@media print{body{padding:0;font-size:8px}.cta{display:none}}
+svg{max-width:100%;height:auto}
 </style></head><body>
 
-<div class="hdr">
-  <div>
-    <h1>Market Focus: ${Html.escapeHtml(query.toUpperCase())}</h1>
-    <div class="hdr-sub">${territory ? Html.escapeHtml(territory) + ' \\u00b7 ' : ''}${today}</div>
-  </div>
-  <div class="hdr-r">
-    <div class="hero">${money(total)}</div>
-    <div class="hero-label">Trailing 12 Months</div>
-  </div>
+<div class="hd">
+<div>
+  <h1>${Html.escapeHtml(query.toUpperCase())}</h1>
+  <div class="hd-sub">${territory ? Html.escapeHtml(territory) + ' \\u00b7 ' : ''}${today}</div>
+</div>
+<div class="hd-r">
+  <div class="hd-hero">${money(total)}</div>
+  <div class="hd-label">Trailing 12 months</div>
+</div>
 </div>
 
-<div class="call">
-  <div class="call-main">
-    <div class="call-label">Market Call</div>
-    <div class="call-verdict">${Html.escapeHtml(verdict)}</div>
-    <div class="call-action">${Html.escapeHtml(oneMove)}</div>
-  </div>
-  <div class="call-stats">
-    <div class="cs"><div class="cs-val">${agencyCount}</div><div class="cs-label">Agencies</div></div>
-    <div class="cs"><div class="cs-val">${vendorCount}</div><div class="cs-label">Vendors</div></div>
-    <div class="cs"><div class="cs-val">${data.length}</div><div class="cs-label">Awards</div></div>
-    <div class="cs"><div class="cs-val">${recentCount}</div><div class="cs-label">New 90d</div></div>
-    <div class="cs"><div class="cs-val">${top5Pct}%</div><div class="cs-label">Top 5</div></div>
-  </div>
+<div class="mc">
+<div>
+  <div class="mc-label">Market Call</div>
+  <div class="mc-verdict">${Html.escapeHtml(verdict)}</div>
+  <div class="mc-action">${Html.escapeHtml(oneMove)}</div>
+</div>
+<div class="mc-stats">
+  <div><div class="mc-v">${agencyCount}</div><div class="mc-l">Agencies</div></div>
+  <div><div class="mc-v">${vendorCount}</div><div class="mc-l">Vendors</div></div>
+  <div><div class="mc-v">${data.length}</div><div class="mc-l">Awards</div></div>
+  <div><div class="mc-v">${recentCount}</div><div class="mc-l">New 90d</div></div>
+  <div><div class="mc-v">${top5Pct}%</div><div class="mc-l">Top 5</div></div>
+</div>
 </div>
 
-<div class="kpi">
-  ${bullets.map(b => `<div class="kpi-item">${Html.escapeHtml(b)}</div>`).join('')}
-</div>
-
-${treemapEmbed ? `<div class="chart">${treemapEmbed}</div>` : ''}
+${treemapEmbed ? `<div class="tm">${treemapEmbed}</div>` : ''}
 
 <div class="g2">
 <div>
-  <h2>Expiring Pipeline</h2>
-  <div class="pipe">
-    <div class="pipe-box pipe-box--h"><div class="pipe-val">${money(exp90Val)}</div><div class="pipe-label">0\\u201390 days</div><div class="pipe-n">${exp90.length}</div></div>
-    <div class="pipe-box pipe-box--w"><div class="pipe-val">${money(exp180Val)}</div><div class="pipe-label">90\\u2013180</div><div class="pipe-n">${exp180.length}</div></div>
-    <div class="pipe-box pipe-box--c"><div class="pipe-val">${money(exp365Val)}</div><div class="pipe-label">180\\u2013365</div><div class="pipe-n">${exp365.length}</div></div>
-  </div>
-  ${exp90.length > 0 ? `<table><thead><tr><th>Vendor</th><th>Agency</th><th style="text-align:right">Value</th><th style="text-align:right">Days</th><th style="text-align:right">Tenure</th></tr></thead><tbody>${expRowsShort}</tbody></table>` : ''}
+<div class="sh">Expiring Pipeline</div>
+<div class="pipe">
+  <div class="pb pb-h"><div class="pb-v">${money(exp90Val)}</div><div class="pb-l">0\\u201390 days</div><div class="pb-n">${exp90.length} contracts</div></div>
+  <div class="pb pb-w"><div class="pb-v">${money(exp180Val)}</div><div class="pb-l">90\\u2013180</div><div class="pb-n">${exp180.length}</div></div>
+  <div class="pb pb-c"><div class="pb-v">${money(exp365Val)}</div><div class="pb-l">180\\u2013365</div><div class="pb-n">${exp365.length}</div></div>
+</div>
+${expTbl ? `<table><thead><tr><th>Incumbent</th><th>Agency</th><th class="r">Value</th><th class="r">Days</th><th class="r">Tenure</th></tr></thead><tbody>${expTbl}</tbody></table>` : ''}
 </div>
 <div>
-  <h2>Agency Breakdown</h2>
-  <table><thead><tr><th>Agency</th><th style="text-align:right">Spend</th><th style="text-align:right">Exp 90d</th><th style="text-align:right">Vend.</th><th>Office</th></tr></thead><tbody>${agencyRowsShort}</tbody></table>
+<div class="sh">Agency Breakdown</div>
+<table><thead><tr><th>Agency</th><th class="r">Spend</th><th class="r">Exp 90d</th><th class="r">V</th><th>Buying Office</th></tr></thead><tbody>${agRows}</tbody></table>
 </div>
 </div>
 
-<div class="${vehicles.length > 0 || saRows ? 'g3' : 'g2'}">
+<div class="g32">
 <div>
-  <h2>Vendor Landscape</h2>
-  <table><thead><tr><th>Vendor</th><th style="text-align:right">Spend</th><th style="text-align:right">Share</th><th>Agencies</th></tr></thead><tbody>${vendorRowsShort}</tbody></table>
+<div class="sh">Vendor Landscape</div>
+<table><thead><tr><th>Vendor</th><th class="r">Spend</th><th class="r">Share</th><th>Agencies</th></tr></thead><tbody>${venTbl}</tbody></table>
 </div>
 <div>
-  ${vehicles.length > 0 ? `<h2>Contract Vehicles</h2><table><thead><tr><th>Vehicle</th><th style="text-align:right">Spend</th><th style="text-align:right">Awards</th></tr></thead><tbody>${vehRows}</tbody></table>` : ''}
-  ${subLine}
-</div>
-<div>
-  ${saRows ? `<h2>Set-Asides</h2><table><thead><tr><th>Category</th><th style="text-align:right">Spend</th><th style="text-align:right">Share</th></tr></thead><tbody>${saRows}</tbody></table>` : ''}
+${vehTbl ? `<div class="sh">Vehicles</div><table><thead><tr><th>Vehicle</th><th class="r">Spend</th><th class="r">#</th></tr></thead><tbody>${vehTbl}</tbody></table>` : ''}
+${subTbl ? `<div class="sh">Subcontracting</div><table><thead><tr><th>Prime</th><th class="r">Sub Value</th></tr></thead><tbody>${subTbl}</tbody></table>` : ''}
+${saTbl ? `<div class="sh">Set-Asides</div><table><thead><tr><th>Category</th><th class="r">Spend</th><th class="r">%</th></tr></thead><tbody>${saTbl}</tbody></table>` : ''}
 </div>
 </div>
 
-<h2>Analysis</h2>
-<div class="analysis">
+<div class="sh">Analysis</div>
+<div class="an">
 ${prose.split('\\n').filter(Boolean).map(p => '<p>' + Html.escapeHtml(p) + '</p>').join('')}
 </div>
 
 <div class="ft">
-  <span>Generated by Fedmo \\u00b7 fedhoo.com \\u00b7 USASpending.gov</span>
-  <span>${today}</span>
+<span>Fedmo \\u00b7 fedhoo.com \\u00b7 USASpending.gov</span>
+<span>${today}</span>
 </div>
 <div class="cta">Weekly Market Focus reports. <a href="https://fedhoo.substack.com" target="_blank">Subscribe</a></div>
 
