@@ -6123,8 +6123,12 @@ ${gemData.next_steps.map((step, i) => `<div class="ns-item"><span class="ns-num"
     if (sellerProduct && queryType === 'keyword') {
       const productName = sellerProduct;
 
-      // Recompute channel detection in this scope
+      // Recompute channel detection and concentration in this scope
       const SELLER_VARS = new Set(['CARAHSOFT','GOVPLACE','FCN','THUNDERCAT','THUNDERCAT TECHNOLOGY','OPTIV','OPTIV FEDERAL','CDW','CDW GOVERNMENT','CDWG','SHI','SHI INTERNATIONAL','DLT','DLT SOLUTIONS','IRON BOW','IRON BOW TECHNOLOGIES','RED RIVER','RED RIVER TECHNOLOGY']);
+      const sellerTop5 = vendorSorted.slice(0, 5).map(([n]) => n.toUpperCase());
+      const sellerIsChannel = sellerTop5.filter(v => SELLER_VARS.has(v)).length >= 2;
+      const sellerTop3Pct = total > 0 ? Math.round(vendorSorted.slice(0,3).reduce((s,[,v])=>s+v.spend,0) / total * 100) : 0;
+      const sellerIsConcentrated = sellerTop3Pct >= 60 || vendorCount <= 3;
       const sellerTop5 = vendorSorted.slice(0, 5).map(([n]) => n.toUpperCase());
       const sellerIsChannel = sellerTop5.filter(v => SELLER_VARS.has(v)).length >= 2;
 
@@ -6149,9 +6153,9 @@ ${gemData.next_steps.map((step, i) => `<div class="ns-item"><span class="ns-num"
         action = `${productName} already holds ${productShare}% of this market. Defend expiring contracts and expand into adjacent agencies.`;
       } else if (productInMarket) {
         action = `${productName} has a footprint here (${Utils.money(productSpend)}). Build on existing agency relationships and target expiring incumbent contracts.`;
-      } else if (isConcentrated && exp90Val > 0) {
+      } else if (sellerIsConcentrated && exp90Val > 0) {
         action = `${productName} has no direct contracts here. Target the ${Utils.money(exp90Val)} in expiring work — position as an alternative to ${tc(topVendor)} through a prime or vehicle.`;
-      } else if (isConcentrated) {
+      } else if (sellerIsConcentrated) {
         action = `${productName} has no direct contracts here. Partner with ${tc(topVendor)} or sub through a prime that holds a vehicle.`;
       } else if (exp90Val > 0) {
         const topExpVendor = exp90[0] ? tc(exp90[0]['Recipient Name'] || '') : '';
