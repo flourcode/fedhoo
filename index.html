@@ -5143,7 +5143,35 @@ const App = {
         </div>`;
     }
 
+    // Copy button
+    html += `
+      <div style="border-top:1px solid var(--border-inner);padding:18px 0 4px;text-align:center;">
+        <button class="chip-tray-item" id="briefingCopyBtn" style="font-weight:700;color:var(--accent);border-color:var(--accent);padding:10px 24px;" onclick="App._copyBriefing()">Copy briefing</button>
+      </div>`;
+
+    // Store plain-text version for clipboard
+    let plain = `Mo's Weekly Briefing — ${today}${territoryLabel}\n\nIf you only have a minute\n`;
+    ranked.forEach(r => { plain += `• ${r.topic} → ${r.oneLiner}\n`; });
+    plain += '\n';
+    ranked.forEach(r => {
+      plain += `${r.topic}  ${Utils.money(r.total)}\n`;
+      plain += `Mo's take: ${r.moTake}\n`;
+      if (r.agencies.length) plain += `Where to look: ${r.agencies.join(', ')}\n`;
+      if (r.subData) plain += `Sub activity: ${Utils.money(r.subData.total)} in subcontracting. ${r.subData.topPrime} runs ${r.subData.topPrimePct}% of the sub flow.\n`;
+      if (r.topVehicle) plain += `Top vehicle: ${r.topVehicle.name} (${Utils.money(r.topVehicle.spend)}, ${r.topVehicle.count} awards)\n`;
+      plain += `How to approach it: ${r.approach}\n\n`;
+    });
+    if (best) plain += `If you had to pick one\nStart with ${best.topic}. ${bestReason}\n`;
+    this._briefingPlainText = plain;
+
     body.innerHTML = html;
+  },
+
+  _copyBriefing() {
+    const text = this._briefingPlainText || '';
+    if (!text) return;
+    const btn = DOM.get('briefingCopyBtn');
+    Utils.copyAndAnimate(text, btn, 'Copied!');
   },
 
   closeBriefing() {    const backdrop = DOM.get('briefingBackdrop');
