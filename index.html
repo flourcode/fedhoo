@@ -6129,8 +6129,6 @@ ${gemData.next_steps.map((step, i) => `<div class="ns-item"><span class="ns-num"
       const sellerIsChannel = sellerTop5.filter(v => SELLER_VARS.has(v)).length >= 2;
       const sellerTop3Pct = total > 0 ? Math.round(vendorSorted.slice(0,3).reduce((s,[,v])=>s+v.spend,0) / total * 100) : 0;
       const sellerIsConcentrated = sellerTop3Pct >= 60 || vendorCount <= 3;
-      const sellerTop5 = vendorSorted.slice(0, 5).map(([n]) => n.toUpperCase());
-      const sellerIsChannel = sellerTop5.filter(v => SELLER_VARS.has(v)).length >= 2;
 
       // Check if the product/company appears in the vendor data
       const productUpper = productName.toUpperCase();
