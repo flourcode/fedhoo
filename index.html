@@ -145,6 +145,19 @@ a, button, input, select { touch-action: manipulation; }
   color: var(--text-secondary); transition: var(--transition); flex-shrink: 0;
 }
 .hdr-icon-circle:hover { background: var(--bg-hover); color: var(--text-primary); }
+/* Seller Context */
+.seller-context { display:flex;align-items:flex-start;gap:10px;padding:14px 16px;margin:12px 0 4px;background:var(--bg-hover);border-radius:12px;border:1px solid var(--border); }
+.seller-context-face { flex-shrink:0;margin-top:1px; }
+.seller-context-body { flex:1;min-width:0; }
+.seller-context-prompt { font-size:12px;color:var(--text-secondary);margin-bottom:8px;line-height:1.4; }
+.seller-context-input-wrap { display:flex;gap:8px; }
+.seller-context-input { flex:1;font-size:12px;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg-app);color:var(--text-primary);outline:none; }
+.seller-context-input:focus { border-color:var(--accent); }
+.seller-context-save { font-size:11px;font-weight:600;padding:7px 14px;border:none;border-radius:8px;background:var(--accent);color:#fff;cursor:pointer;white-space:nowrap; }
+.seller-context-set { display:flex;align-items:center;gap:8px; }
+.seller-context-value { font-size:12px;font-weight:600;color:var(--text-primary); }
+.seller-context-edit { font-size:11px;color:var(--text-muted);background:none;border:none;cursor:pointer;text-decoration:underline; }
+
 .hdr-icon-spinning { pointer-events: none; opacity: 0.6; }
 
 
@@ -1153,6 +1166,22 @@ a, button, input, select { touch-action: manipulation; }
           <svg width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true" class="market-analysis-chevron"><path d="M5 6L0 0h10z" fill="currentColor"/></svg>
         </button>
         <div class="market-prose" id="marketProse" style="display:none;"></div>
+      </div>
+
+      <!-- Seller Context -->
+      <div class="seller-context" id="sellerContext">
+        <svg class="seller-context-face" width="24" height="24" viewBox="0 0 40 40" aria-hidden="true"><use href="#icon-face-open"/></svg>
+        <div class="seller-context-body" id="sellerContextBody">
+          <div class="seller-context-prompt" id="sellerContextPrompt">Tell Mo what you sell and I'll tailor every search to your market.</div>
+          <div class="seller-context-input-wrap" id="sellerContextInputWrap">
+            <input id="sellerContextInput" type="text" class="seller-context-input" placeholder="e.g. endpoint security software, cloud migration services" onkeydown="if(event.key==='Enter')App.saveSellerContext()" />
+            <button class="seller-context-save" id="sellerContextSave" onclick="App.saveSellerContext()">Save</button>
+          </div>
+          <div class="seller-context-set hidden" id="sellerContextSet">
+            <span class="seller-context-value" id="sellerContextValue"></span>
+            <button class="seller-context-edit" onclick="App.editSellerContext()" aria-label="Edit">Edit</button>
+          </div>
+        </div>
       </div>
 
       <!-- Breadcrumb — shown when drilled in -->
@@ -4650,6 +4679,9 @@ const App = {
     const cleaned = val.replace(/^i sell\s+/i, '').trim();
     if (!cleaned) { input?.focus(); return; }
     this._sellerLens = cleaned;
+    this._sellerProduct = cleaned;
+    localStorage.setItem('fedmo_seller_product', cleaned);
+    this._showSellerContextSet(cleaned);
     DOM.hide('sheetLensPrompt');
     const label = DOM.get('sheetLensLabel');
     if (label) label.textContent = cleaned;
@@ -5135,7 +5167,7 @@ ${exp90.slice(0, 4).map(c => {
 FEDERAL MARKET BRIEF FOR: ${query}
 
 You are a senior federal sales coach. A seller is reading a Market Focus report and needs to know what to do next. Be calm, specific, no jargon.
-
+${this.getSellerContext() ? `\nTHE SELLER sells: ${this.getSellerContext()}. Tailor all next steps specifically to how someone selling ${this.getSellerContext()} would approach this market.\n` : ''}
 DO NOT return competitors, core_keywords, naics_codes, or psc_codes. Return ONLY the JSON format specified below.
 
 THE REPORT ALREADY INCLUDES (do NOT repeat any of this):
@@ -5225,7 +5257,60 @@ ${gemData.next_steps.map((step, i) => `<div class="ns-item"><span class="ns-num"
   },
 
 
-    selectAgencySuggestion(name, boxId, selectionType) {
+    // ── SELLER CONTEXT ──────────────────────────────────────────────
+  _sellerProduct: null,
+
+  initSellerContext() {
+    const saved = localStorage.getItem('fedmo_seller_product');
+    if (saved) {
+      this._sellerProduct = saved;
+      this._sellerLens = saved; // Feed into Mo's existing lens system
+      this._showSellerContextSet(saved);
+    }
+  },
+
+  saveSellerContext() {
+    const input = DOM.get('sellerContextInput');
+    const val = (input?.value || '').trim().replace(/^i sell\s+/i, '').trim();
+    if (!val) { input?.focus(); return; }
+    this._sellerProduct = val;
+    this._sellerLens = val; // Sync with Mo's lens
+    localStorage.setItem('fedmo_seller_product', val);
+    this._showSellerContextSet(val);
+    // Also update Mo's sheet if it's showing the lens label
+    const label = DOM.get('sheetLensLabel');
+    if (label) label.textContent = val;
+    this.toast('Got it. Mo will tailor results to what you sell.', 'ok', 3000);
+  },
+
+  editSellerContext() {
+    const input = DOM.get('sellerContextInput');
+    const inputWrap = DOM.get('sellerContextInputWrap');
+    const setEl = DOM.get('sellerContextSet');
+    const prompt = DOM.get('sellerContextPrompt');
+    if (input) input.value = this._sellerProduct || '';
+    if (setEl) setEl.classList.add('hidden');
+    if (inputWrap) inputWrap.classList.remove('hidden');
+    if (prompt) { prompt.textContent = 'Update what you sell:'; prompt.classList.remove('hidden'); }
+    input?.focus();
+  },
+
+  _showSellerContextSet(val) {
+    const inputWrap = DOM.get('sellerContextInputWrap');
+    const setEl = DOM.get('sellerContextSet');
+    const valueEl = DOM.get('sellerContextValue');
+    const prompt = DOM.get('sellerContextPrompt');
+    if (inputWrap) inputWrap.classList.add('hidden');
+    if (prompt) prompt.textContent = 'Mo is tailoring results for:';
+    if (valueEl) valueEl.textContent = val;
+    if (setEl) setEl.classList.remove('hidden');
+  },
+
+  getSellerContext() {
+    return this._sellerProduct || '';
+  },
+
+  selectAgencySuggestion(name, boxId, selectionType) {
     const input = this.UI.searchInput;
     const box   = DOM.get(boxId);
     // For Company (recipient) selections, strip legal entity suffixes so the search
@@ -5977,6 +6062,7 @@ ${gemData.next_steps.map((step, i) => `<div class="ns-item"><span class="ns-num"
   },
 
   init() {
+    this.initSellerContext();
 
     // Cache all static DOM elements — must be first in init() so all methods can use this.UI
     this.UI = {
