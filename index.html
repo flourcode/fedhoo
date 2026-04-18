@@ -4887,68 +4887,74 @@ const App = {
     let html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>Market Focus: ${Html.escapeHtml(query)}</title>
 <style>
-@page{size:letter;margin:.6in .7in}
+@page{size:letter;margin:.4in .5in}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;font-size:13px;color:#1d1d1f;line-height:1.5;padding:36px 40px;max-width:680px;margin:0 auto}
+body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;font-size:12px;color:#1d1d1f;line-height:1.47;padding:28px 32px;max-width:720px;margin:0 auto}
 
-.hdr{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
-.hdr-label{font-size:12px;color:#86868b}
-.hdr-title{font-size:22px;font-weight:700;letter-spacing:-.02em;color:#1d1d1f}
-.hdr-val{font-size:32px;font-weight:800;letter-spacing:-.03em;color:#1d1d1f}
-.hdr-sub{font-size:11px;color:#86868b;text-align:right}
-.rule{height:1px;background:#d2d2d7;margin-bottom:20px}
+.hdr{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:4px}
+.hdr-label{font-size:11px;color:#86868b}
+.hdr-title{font-size:18px;font-weight:700;letter-spacing:-.02em;color:#1d1d1f}
+.hdr-val{font-size:28px;font-weight:800;letter-spacing:-.03em;color:#1d1d1f;line-height:1}
+.hdr-sub{font-size:10px;color:#86868b;text-align:right}
+.context-line{font-size:11px;color:#86868b;font-style:italic;margin-bottom:2px}
+.rule{height:1px;background:#d2d2d7;margin:6px 0 14px}
 
-.call{margin-bottom:24px}
-.call-verdict{font-size:16px;font-weight:600;line-height:1.4;color:#1d1d1f;margin-bottom:6px}
-.call-action{font-size:13px;color:#6e6e73;line-height:1.5}
+.call{margin-bottom:10px}
+.call-verdict{font-size:14px;font-weight:600;line-height:1.4;color:#1d1d1f;margin-bottom:4px}
+.call-action{font-size:12px;color:#6e6e73;line-height:1.45}
 
-.section-label{font-size:11px;font-weight:600;color:#86868b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+.insight-line{font-size:11px;color:#6e6e73;margin:8px 0 2px;padding:8px 12px;background:#f5f5f7;border-radius:8px;line-height:1.45}
 
-.tgt-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:28px}
-.tgt{background:#f5f5f7;border-radius:12px;padding:16px}
-.tgt-name{font-size:13px;font-weight:600;color:#1d1d1f;margin-bottom:2px}
-.tgt-val{font-size:20px;font-weight:700;letter-spacing:-.02em;color:#1d1d1f;margin-bottom:6px}
-.tgt-detail{font-size:11px;color:#6e6e73;line-height:1.45}
+.sl{font-size:10px;font-weight:600;color:#86868b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;margin-top:14px}
 
-.exp-row{display:grid;grid-template-columns:2fr 1.5fr 1fr .5fr;gap:4px;padding:8px 0;border-bottom:1px solid #f5f5f7;font-size:12px}
-.exp-row:first-child{border-top:1px solid #d2d2d7;padding-top:10px}
+.tgt-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px}
+.tgt{background:#f5f5f7;border-radius:10px;padding:10px 12px}
+.tgt-name{font-size:11px;font-weight:600;color:#1d1d1f;margin-bottom:1px}
+.tgt-val{font-size:16px;font-weight:700;letter-spacing:-.02em;color:#1d1d1f;margin-bottom:3px}
+.tgt-detail{font-size:9.5px;color:#6e6e73;line-height:1.4}
+
+.next-steps{margin-bottom:14px}
+.ns-item{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid #f5f5f7}
+.ns-item:last-child{border-bottom:none}
+.ns-num{font-size:13px;font-weight:700;color:#d2d2d7;min-width:16px;line-height:1.45}
+.ns-text{font-size:11px;color:#1d1d1f;line-height:1.5}
+
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+table{width:100%;border-collapse:collapse;font-size:9px;margin-bottom:2px}
+th{text-align:left;font-weight:600;padding:3px 4px;border-bottom:1px solid #d2d2d7;font-size:7.5px;text-transform:uppercase;letter-spacing:.05em;color:#86868b}
+td{padding:2.5px 4px;border-bottom:1px solid #f5f5f7;color:#3a3a3a}
+td:first-child{font-weight:600;color:#1d1d1f}
+.r{text-align:right}
+.sm{font-size:8px;color:#86868b}
+
+.exp-row{display:grid;grid-template-columns:2fr 1.5fr 1fr .5fr;gap:3px;padding:5px 0;border-bottom:1px solid #f5f5f7;font-size:11px}
+.exp-row:first-child{border-top:1px solid #d2d2d7;padding-top:7px}
 .exp-vendor{font-weight:600;color:#1d1d1f}
 .exp-agency{color:#6e6e73}
 .exp-val{text-align:right;color:#1d1d1f}
 .exp-days{text-align:right;color:#6e6e73}
 .exp-urgent{color:#ff3b30;font-weight:600}
 
-.ft{display:flex;justify-content:space-between;font-size:11px;color:#aeaeb2;margin-top:28px;padding-top:10px;border-top:1px solid #d2d2d7}
-.cta{text-align:center;margin-top:10px;font-size:11px;color:#86868b}
-.cta a{color:#1d1d1f;font-weight:600;text-decoration:none}
-.ref-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-.ref-tbl{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:4px}
-.ref-tbl th{text-align:left;font-weight:600;padding:4px 5px;border-bottom:1px solid #d2d2d7;font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:#86868b}
-.ref-tbl td{padding:3px 5px;border-bottom:1px solid #f5f5f7;color:#1d1d1f}
-.ref-tbl td:first-child{font-weight:600}
-.r{text-align:right}
-.sm{font-size:10px;color:#86868b}
-.analysis-text{font-size:12px;line-height:1.6;color:#6e6e73;column-count:2;column-gap:24px;column-rule:1px solid #f5f5f7}
-.analysis-text p{margin-bottom:6px}
-.next-steps{margin-bottom:20px}
-.ns-item{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid #f5f5f7}
-.ns-item:last-child{border-bottom:none}
-.ns-num{font-size:14px;font-weight:700;color:#d2d2d7;min-width:20px;line-height:1.5}
-.ns-text{font-size:13px;color:#1d1d1f;line-height:1.5}
-.context-line{font-size:12px;color:#86868b;margin-bottom:4px;font-style:italic}
-.insight-line{font-size:12px;color:#6e6e73;margin:8px 0 4px;padding:10px 14px;background:#f5f5f7;border-radius:8px;line-height:1.5}
-@media print{body{padding:0}.cta{display:none}}
+.analysis-text{font-size:10px;line-height:1.55;color:#6e6e73;column-count:2;column-gap:18px;column-rule:1px solid #f5f5f7;margin-bottom:12px}
+.analysis-text p{margin-bottom:4px}
+
+.ft{display:flex;justify-content:space-between;align-items:center;font-size:9px;color:#aeaeb2;margin-top:16px;padding-top:8px;border-top:1px solid #d2d2d7}
+.ft-logo{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:#1d1d1f;text-decoration:none}
+.ft-logo svg{width:20px;height:20px}
+.ft-right{text-align:right;font-size:8px;color:#aeaeb2}
+@media print{body{padding:0;font-size:11px}}
+svg{max-width:100%;height:auto}
 </style></head><body>
 
 <div class="hdr">
-  <div>
-    <div class="hdr-label">Market Focus \u00b7 ${today}</div>
-    <div class="hdr-title">${Html.escapeHtml(query.toUpperCase())}</div>
-  </div>
-  <div>
-    <div class="hdr-val">${money(total)}</div>
-    <div class="hdr-sub">trailing 12 months</div>
-  </div>
+<div>
+  <div class="hdr-label">Market Focus \u00b7 ${today}</div>
+  <div class="hdr-title">${Html.escapeHtml(query.toUpperCase())}</div>
+</div>
+<div>
+  <div class="hdr-val">${money(total)}</div>
+  <div class="hdr-sub">trailing 12 months</div>
+</div>
 </div>
 <div class="rule"></div>
 
@@ -4957,18 +4963,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;fo
   <div class="call-action">${Html.escapeHtml(action)}</div>
 </div>
 
-<div class="section-label">Where to focus</div>
+<div class="sl">Where to focus</div>
 <div class="tgt-grid">
 ${targetCards}
 </div>
 
-<div class="section-label">Expiring contracts</div>
-${expRows}
+<div id="nextStepsSlot"></div>
 
-<div class="ref-grid">
+<div class="g2">
 <div>
-<div class="section-label" style="margin-top:24px">Agency breakdown</div>
-<table class="ref-tbl"><thead><tr><th>Agency</th><th class="r">Spend</th><th class="r">Exp 90d</th><th>Buying office</th></tr></thead><tbody>
+<div class="sl">Agency breakdown</div>
+<table><thead><tr><th>Agency</th><th class="r">Spend</th><th class="r">Exp 90d</th><th>Office</th></tr></thead><tbody>
 ${agencySorted.slice(0, 10).map(([ag, spend]) => {
       const d = agencyDetail[ag] || {};
       const topSub = Object.entries(d.subAgencies || {}).sort((a,b) => b[1] - a[1])[0];
@@ -4978,8 +4983,8 @@ ${agencySorted.slice(0, 10).map(([ag, spend]) => {
 </tbody></table>
 </div>
 <div>
-<div class="section-label" style="margin-top:24px">Vendor landscape</div>
-<table class="ref-tbl"><thead><tr><th>Vendor</th><th class="r">Spend</th><th class="r">Share</th><th>Agencies</th></tr></thead><tbody>
+<div class="sl">Vendor landscape</div>
+<table><thead><tr><th>Vendor</th><th class="r">Spend</th><th class="r">Share</th><th>Agencies</th></tr></thead><tbody>
 ${vendorSorted.slice(0, 10).map(([name, d]) => {
       const pct = total > 0 ? Math.round(d.spend / total * 100) : 0;
       const ag = Array.from(d.agencies).slice(0, 2).map(cleanAg).join(', ');
@@ -4990,21 +4995,29 @@ ${vendorSorted.slice(0, 10).map(([name, d]) => {
 </div>
 
 ${vehicles.length > 0 ? `
-<div class="section-label" style="margin-top:20px">Contract vehicles</div>
-<table class="ref-tbl" style="max-width:400px"><thead><tr><th>Vehicle</th><th class="r">Spend</th><th class="r">Awards</th></tr></thead><tbody>
+<div class="sl">Contract vehicles</div>
+<table style="max-width:360px"><thead><tr><th>Vehicle</th><th class="r">Spend</th><th class="r">Awards</th></tr></thead><tbody>
 ${vehicles.slice(0,5).map(([n,d]) => `<tr><td>${Html.escapeHtml(n)}</td><td class="r">${money(d.spend)}</td><td class="r">${d.count}</td></tr>`).join('')}
 </tbody></table>` : ''}
 
-<div class="section-label" style="margin-top:20px">Analysis</div>
+<div class="sl">Expiring contracts</div>
+${expRows}
+
+<div class="sl">Analysis</div>
 <div class="analysis-text">
 ${prose.split('\\n').filter(Boolean).map(p => '<p>' + Html.escapeHtml(p) + '</p>').join('')}
 </div>
 
 <div class="ft">
-  <span>${agencyCount} agencies \u00b7 ${vendorCount} vendors \u00b7 ${data.length} contracts \u00b7 ${top5Pct}% top-5 share</span>
-  <span>fedhoo.com</span>
+  <a href="https://fedhoo.com" class="ft-logo" target="_blank">
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="11" fill="#46446E"/><text x="12" y="16" text-anchor="middle" font-size="12" font-weight="800" fill="#fff" font-family="-apple-system,sans-serif">f</text></svg>
+    Fedmo
+  </a>
+  <div class="ft-right">
+    Federal markets. Simplified.<br>
+    fedhoo.com \u00b7 ${today}
+  </div>
 </div>
-<div class="cta">Weekly Market Focus reports. <a href="https://fedhoo.substack.com">Subscribe \u2192</a></div>
 
 </body></html>`;
 
@@ -5079,27 +5092,29 @@ Return ONLY valid JSON — no markdown, no backticks, no explanation:
         const gemData = await gemRes.json();
         if (gemData && gemData.next_steps && Array.isArray(gemData.next_steps)) {
           nextStepsHtml = `
-<div class="section-label" style="margin-top:24px">Next steps</div>
+<div class="sl" style="margin-top:14px">Next steps</div>
 <div class="next-steps">
 ${gemData.next_steps.map((step, i) => `<div class="ns-item"><span class="ns-num">${i + 1}</span><span class="ns-text">${Html.escapeHtml(step)}</span></div>`).join('')}
 </div>`;
           // Inject context line (what category this is)
           if (gemData.summary && gemData.summary.length > 10) {
             const contextHtml = `<div class="context-line">${Html.escapeHtml(gemData.summary)}</div>`;
-            html = html.replace('</div>\n<div class="rule">', `</div>\n${contextHtml}\n<div class="rule">`);
+            html = html.replace('<div class="rule">', contextHtml + '\n<div class="rule">');
           }
           // Inject positioning insight after market call
           if (gemData.positioning && gemData.positioning.length > 10) {
             const insightHtml = `<div class="insight-line">${Html.escapeHtml(gemData.positioning)}</div>`;
-            html = html.replace('</div>\n\n<div class="section-label">Where to focus', `</div>\n${insightHtml}\n\n<div class="section-label">Where to focus`);
+            html = html.replace('<div class="sl">Where to focus', insightHtml + '\n\n<div class="sl">Where to focus');
           }
         }
       }
     } catch(e) { /* Gemini is best-effort */ }
 
-    // Inject next steps before the analysis section
+    // Inject next steps into the slot
     if (nextStepsHtml) {
-      html = html.replace('<div class="ref-grid">', nextStepsHtml + '\n<div class="ref-grid">');
+      html = html.replace('<div id="nextStepsSlot"></div>', nextStepsHtml);
+    } else {
+      html = html.replace('<div id="nextStepsSlot"></div>', '');
     }
 
     const w = window.open('', '_blank');
