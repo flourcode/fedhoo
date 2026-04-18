@@ -4779,346 +4779,225 @@ const App = {
       return;
     }
 
-    // Ensure sankey is rendered (it lazy-renders only on tab click)
-    const sankeyEl = DOM.get('sankeyContainer');
-    if (sankeyEl && !sankeyEl.dataset.rendered) {
-      this.renderSankey();
-    }
-
-    // Capture SVGs from the DOM
-    const treemapContainer = this.UI.bubbleChartContainer;
-    const treemapSvg = treemapContainer?.querySelector('svg');
-    const treemapHtml = treemapSvg ? treemapSvg.outerHTML : '';
-
-    const sankeySvg = sankeyEl?.querySelector('svg');
-    const sankeyHtml = sankeySvg ? sankeySvg.outerHTML : '';
-
-    const m = this.marketMetrics;
-    const data = this.searchData.active || [];
-    const total = m.total;
+    // ── SNAPSHOT ──
+    const money = Utils.money;
+    const cleanAg = Utils.cleanAgency;
+    const tc = s => Utils.titleCase(s);
     const query = this.displayQuery || this.originalQuery || this.currentQuery || '';
     const territory = this.territory && this.SECTORS[this.territory] ? this.SECTORS[this.territory].label : '';
     const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-    const tc = s => Utils.titleCase(s);
-    const money = Utils.money;
-    const cleanAg = Utils.cleanAgency;
+    const m = this.marketMetrics;
+    const data = this.searchData.active || [];
+    const total = m.total;
     const nowTs = Date.now();
     const exp90Ts = nowTs + 90 * 86400000;
-    const exp180Ts = nowTs + 180 * 86400000;
-    const exp365Ts = nowTs + 365 * 86400000;
-    const rec90Ts = nowTs - 90 * 86400000;
 
-    // ── VENDOR TABLE ──
+    // Verdict + action from the rendered analysis
+    const verdictEl = document.querySelector('.market-verdict');
+    const actionEl = document.querySelector('.market-action');
+    const verdict = verdictEl?.textContent || '';
+    const action = actionEl?.textContent || '';
+
+    // Vendor + agency stats
     const vendorSorted = Object.entries(m.vendors).sort((a,b) => b[1].spend - a[1].spend);
     const vendorCount = vendorSorted.length;
-    const top5Pct = total > 0 ? Math.round(vendorSorted.slice(0,5).reduce((s,[,v])=>s+v.spend,0) / total * 100) : 0;
-    const vendorRows = vendorSorted.slice(0, 15).map(([name, d]) => {
-      const pct = total > 0 ? Math.round(d.spend / total * 100) : 0;
-      const agencies = Array.from(d.agencies).slice(0, 3).map(cleanAg).join(', ');
-      return `<tr><td>${Html.escapeHtml(name)}</td><td style="text-align:right">${money(d.spend)}</td><td style="text-align:right">${pct}%</td><td style="text-align:right">${d.count}</td><td>${agencies}</td></tr>`;
-    }).join('');
-
-    // ── AGENCY TABLE ──
     const agencySorted = Object.entries(m.agencies).sort((a,b) => b[1] - a[1]);
     const agencyCount = agencySorted.length;
+    const top5Pct = total > 0 ? Math.round(vendorSorted.slice(0,5).reduce((s,[,v])=>s+v.spend,0) / total * 100) : 0;
+    const recentCount = (m.recentAwards || []).length;
 
-    // Compute per-agency detail: sub-agencies, offices, expiring, recent, vendors
+    // Expiring contracts — the chase list
+    const exp90 = data
+      .filter(c => c._endTs > nowTs && c._endTs <= exp90Ts && (parseFloat(c['Award Amount'])||0) > 50000)
+      .sort((a, b) => a._endTs - b._endTs)
+      .slice(0, 6);
+
+    // Per-agency detail for target cards
     const agencyDetail = {};
     data.forEach(c => {
       const ag = c['Awarding Agency'] || '';
       if (!ag) return;
       const amt = parseFloat(c['Award Amount']) || 0;
-      if (!agencyDetail[ag]) agencyDetail[ag] = { total: 0, exp90: 0, exp180: 0, recent: 0, subAgencies: {}, offices: new Set(), vendors: new Set(), states: {} };
+      if (!agencyDetail[ag]) agencyDetail[ag] = { total: 0, exp90: 0, vendors: new Set(), topVendor: '', topVendorSpend: 0, subAgencies: {}, recent: 0 };
       const d = agencyDetail[ag];
       d.total += amt;
-      d.vendors.add(c['Recipient Name'] || '');
-      const subAg = c['Awarding Sub Agency'] || '';
-      if (subAg && subAg !== ag) d.subAgencies[subAg] = (d.subAgencies[subAg] || 0) + amt;
-      const office = c['Awarding Office'] || '';
-      if (office) d.offices.add(office);
-      const st = c['pop_state_code'] || '';
-      if (st) d.states[st] = (d.states[st] || 0) + amt;
+      const v = c['Recipient Name'] || '';
+      d.vendors.add(v);
+      if (!d._vendorSpend) d._vendorSpend = {};
+      d._vendorSpend[v] = (d._vendorSpend[v] || 0) + amt;
+      if (d._vendorSpend[v] > d.topVendorSpend) { d.topVendor = v; d.topVendorSpend = d._vendorSpend[v]; }
+      const sub = c['Awarding Sub Agency'] || '';
+      if (sub && sub !== ag) d.subAgencies[sub] = (d.subAgencies[sub] || 0) + amt;
       if (c._endTs > nowTs && c._endTs <= exp90Ts && amt > 50000) d.exp90 += amt;
-      if (c._endTs > nowTs && c._endTs <= exp180Ts && amt > 50000) d.exp180 += amt;
+      const rec90Ts = nowTs - 90 * 86400000;
       if (c._startTs >= rec90Ts) d.recent++;
     });
 
-    const agencyRows = agencySorted.slice(0, 15).map(([ag, spend]) => {
-      const d = agencyDetail[ag] || {};
-      // Show top sub-agencies by spend (these are what the treemap drills into)
-      const topSubAgs = Object.entries(d.subAgencies || {}).sort((a,b) => b[1] - a[1]).slice(0, 2).map(([name]) => name);
-      // Fall back to offices if no sub-agencies
-      const buyingUnits = topSubAgs.length > 0 ? topSubAgs.join('; ') : Array.from(d.offices || []).slice(0, 2).join('; ');
-      return `<tr><td>${Html.escapeHtml(cleanAg(ag))}</td><td style="text-align:right">${money(spend)}</td><td style="text-align:right">${money(d.exp90 || 0)}</td><td style="text-align:right">${d.recent || 0}</td><td style="text-align:right">${d.vendors ? d.vendors.size : 0}</td><td style="font-size:10px">${Html.escapeHtml(buyingUnits)}</td></tr>`;
+    // Score and pick top 3 target agencies
+    const targets = Object.entries(agencyDetail)
+      .map(([ag, d]) => {
+        const score = (d.exp90 > 0 ? 50 : 0) + (d.recent * 10) + (d.vendors.size * 3);
+        const topOffice = Object.entries(d.subAgencies).sort((a,b) => b[1] - a[1])[0];
+        return { agency: ag, ...d, score, officeName: topOffice ? topOffice[0] : '' };
+      })
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3);
+
+    // Build target card detail lines
+    const targetCards = targets.map(t => {
+      const name = cleanAg(t.agency);
+      let detail = '';
+      if (t.exp90 > 0) {
+        detail = `${money(t.exp90)} expiring in 90 days.`;
+      } else if (t.recent > 0) {
+        detail = `${t.recent} recent award${t.recent > 1 ? 's' : ''}. Actively buying.`;
+      } else {
+        detail = `${t.vendors.size} vendors active.`;
+      }
+      if (t.topVendor) detail += ` ${tc(t.topVendor)} is the top incumbent.`;
+      if (t.officeName) detail += ` ${t.officeName}.`;
+      return `
+        <div class="tgt">
+          <div class="tgt-name">${Html.escapeHtml(name)}</div>
+          <div class="tgt-val">${money(t.total)}</div>
+          <div class="tgt-detail">${Html.escapeHtml(detail)}</div>
+        </div>`;
     }).join('');
 
-    // ── EXPIRING PIPELINE ──
-    const exp90 = data.filter(c => c._endTs > nowTs && c._endTs <= exp90Ts && (parseFloat(c['Award Amount'])||0) > 50000).sort((a,b) => a._endTs - b._endTs);
-    const exp90Val = exp90.reduce((s,c) => s + (parseFloat(c['Award Amount'])||0), 0);
-    const exp180 = data.filter(c => c._endTs > exp90Ts && c._endTs <= exp180Ts && (parseFloat(c['Award Amount'])||0) > 50000);
-    const exp180Val = exp180.reduce((s,c) => s + (parseFloat(c['Award Amount'])||0), 0);
-    const exp365 = data.filter(c => c._endTs > exp180Ts && c._endTs <= exp365Ts && (parseFloat(c['Award Amount'])||0) > 50000);
-    const exp365Val = exp365.reduce((s,c) => s + (parseFloat(c['Award Amount'])||0), 0);
-
-    const expRows = exp90.slice(0, 12).map(c => {
+    // Expiring rows
+    const expRows = exp90.map(c => {
       const days = Math.ceil((c._endTs - nowTs) / 86400000);
-      const tenure = c._startTs ? Math.round((c._endTs - c._startTs) / (365.25 * 86400000)) : 0;
-      return `<tr><td>${Html.escapeHtml(c['Recipient Name'] || '')}</td><td>${Html.escapeHtml(cleanAg(c['Awarding Agency'] || ''))}</td><td style="text-align:right">${money(c['Award Amount'])}</td><td style="text-align:right">${days}d</td><td style="text-align:right">${tenure > 0 ? tenure + 'yr' : ''}</td><td style="font-size:10px">${Html.escapeHtml((c['Description']||'').slice(0,60))}</td></tr>`;
+      return `
+        <div class="exp-row">
+          <div class="exp-vendor">${Html.escapeHtml(c['Recipient Name'] || '')}</div>
+          <div class="exp-agency">${Html.escapeHtml(cleanAg(c['Awarding Agency'] || ''))}</div>
+          <div class="exp-val">${money(c['Award Amount'])}</div>
+          <div class="exp-days${days <= 14 ? ' exp-urgent' : ''}">${days}d</div>
+        </div>`;
     }).join('');
 
-    // ── SUBAWARD DATA ──
-    const subs = this._subawardData || [];
-    const subTotal = subs.reduce((s,r) => s + (parseFloat(r['Sub-Award Amount'])||0), 0);
-    let subSection = '';
-    if (subs.length > 0) {
-      const primes = {};
-      subs.forEach(s => {
-        const p = Utils.normalizeVendorName(s['Prime Recipient Name'] || 'Unknown');
-        const sub = Utils.normalizeVendorName(s['Sub-Awardee Name'] || 'Unknown');
-        if (!primes[p]) primes[p] = { total: 0, subs: {} };
-        primes[p].total += parseFloat(s['Sub-Award Amount']) || 0;
-        primes[p].subs[sub] = (primes[p].subs[sub] || 0) + (parseFloat(s['Sub-Award Amount']) || 0);
-      });
-      const subRows = Object.entries(primes).sort((a,b) => b[1].total - a[1].total).slice(0, 8).map(([prime, d]) => {
-        const topSub = Object.entries(d.subs).sort((a,b) => b[1] - a[1])[0];
-        return `<tr><td>${Html.escapeHtml(prime)}</td><td style="text-align:right">${money(d.total)}</td><td>${topSub ? Html.escapeHtml(topSub[0]) : ''}</td><td style="text-align:right">${topSub ? money(topSub[1]) : ''}</td></tr>`;
-      }).join('');
-      subSection = `
-        <h3>Prime → Sub Relationships</h3>
-        <p class="s-note">${money(subTotal)} in subcontracting across ${Object.keys(primes).length} primes. This includes all federal subawards referencing this search.</p>
-        <table><thead><tr><th>Prime</th><th style="text-align:right">Sub Total</th><th>Top Sub</th><th style="text-align:right">Sub Value</th></tr></thead><tbody>${subRows}</tbody></table>`;
-    }
+    // Vehicles
+    const vehicles = Object.entries(m.vehicles || {}).sort((a,b) => b[1].spend - a[1].spend);
 
-    // ── VEHICLES ──
-    const vehicles = Object.entries(m.vehicles || {}).sort((a,b) => b[1].spend - a[1].spend).slice(0, 6);
-    const vehicleRows = vehicles.map(([name, d]) => `<tr><td>${Html.escapeHtml(name)}</td><td style="text-align:right">${money(d.spend)}</td><td style="text-align:right">${d.count}</td></tr>`).join('');
-
-    // ── SET-ASIDES ──
-    const setAsides = {};
-    data.forEach(c => {
-      const sa = VehicleDetector.getSetAsideLabel(c['Type of Set Aside'] || '');
-      if (sa) setAsides[sa] = (setAsides[sa] || 0) + (parseFloat(c['Award Amount']) || 0);
-    });
-    const setAsideRows = Object.entries(setAsides).sort((a,b) => b[1] - a[1]).map(([sa, val]) => {
-      const pct = total > 0 ? Math.round(val / total * 100) : 0;
-      return `<tr><td>${Html.escapeHtml(sa)}</td><td style="text-align:right">${money(val)}</td><td style="text-align:right">${pct}%</td></tr>`;
-    }).join('');
-
-    // ── POP GEOGRAPHY ──
-    const popStates = {};
-    data.forEach(c => {
-      const st = c['pop_state_code'] || '';
-      if (st) popStates[st] = (popStates[st] || 0) + (parseFloat(c['Award Amount']) || 0);
-    });
-    const topStates = Object.entries(popStates).sort((a,b) => b[1] - a[1]).slice(0, 8);
-
-    // ── MO'S VERDICT ──
-    const verdictEl = document.querySelector('.market-verdict');
-    const actionEl = document.querySelector('.market-action');
+    // Analysis prose from rendered DOM
     const proseEl = DOM.get('marketProse');
-    const verdict = verdictEl?.textContent || '';
-    const action = actionEl?.textContent || '';
     const prose = proseEl?.innerText || '';
-
-    // ── RECENT AWARDS ──
-    const recentAwards = data.filter(c => c._startTs >= rec90Ts).sort((a,b) => b._startTs - a._startTs);
-    const recentCount = recentAwards.length;
-
-    // ── SNAPSHOT DATA PREP ──
-    const bullets = [];
-    if (exp90Val > 0) bullets.push(`${money(exp90Val)} expiring in 90 days`);
-    if (recentCount > 0) bullets.push(`${recentCount} new award${recentCount !== 1 ? 's' : ''} in 90 days`);
-    const SNAP_VARS = new Set(['CARAHSOFT','GOVPLACE','FCN','THUNDERCAT','THUNDERCAT TECHNOLOGY','OPTIV','OPTIV FEDERAL','CDW','CDW GOVERNMENT','CDWG','SHI','SHI INTERNATIONAL','DLT','DLT SOLUTIONS','IRON BOW','IRON BOW TECHNOLOGIES','RED RIVER','RED RIVER TECHNOLOGY','PANAMERICA COMPUTERS','ANACAPA MICRO PRODUCTS','AUGUST SCHELL','COLOSSAL CONTRACTING','GOVSMART','WILDFLOWER INTERNATIONAL']);
-    const snapTop8 = vendorSorted.slice(0,8).map(([n]) => n.toUpperCase());
-    const snapIsChannel = snapTop8.filter(v => SNAP_VARS.has(v)).length >= 2;
-    if (snapIsChannel) {
-      const topVars = snapTop8.filter(v => SNAP_VARS.has(v)).slice(0,2).map(v => tc(v.toLowerCase()));
-      bullets.push(`Channel market \u2014 ${topVars.join(', ')} control access`);
-    } else if (top5Pct >= 60) {
-      bullets.push(`Top 5 hold ${top5Pct}%`);
-    } else {
-      bullets.push(`${vendorCount} vendors, no dominant player`);
-    }
-
-    let oneMove = action;
-    const topExpC = exp90[0];
-    if (snapIsChannel) {
-      const topVar = tc(snapTop8.find(v => SNAP_VARS.has(v))?.toLowerCase() || '');
-      if (topVar) oneMove = `Get aligned with ${topVar}. That is how you get into this market.`;
-    } else if (topExpC && exp90Val > 1e6) {
-      const ev = tc(topExpC['Recipient Name'] || '');
-      const ea = cleanAg(topExpC['Awarding Agency'] || '');
-      oneMove = `Look at ${ev} at ${ea}. ${money(parseFloat(topExpC['Award Amount'])||0)} expiring in ${Math.ceil((topExpC._endTs - nowTs)/86400000)} days.`;
-    }
-
-    // Treemap — constrain to 180px
-    let treemapEmbed = '';
-    if (treemapHtml) {
-      treemapEmbed = treemapHtml.replace(/<svg /, '<svg style="max-height:160px;width:100%;" ');
-    }
-
-    // Combined agency table: spend + expiring + office in one
-    const agRows = agencySorted.slice(0, 10).map(([ag, spend]) => {
-      const d = agencyDetail[ag] || {};
-      const topSub = Object.entries(d.subAgencies || {}).sort((a,b) => b[1] - a[1])[0];
-      const office = topSub ? topSub[0] : Array.from(d.offices || []).values().next().value || '';
-      return `<tr><td>${Html.escapeHtml(cleanAg(ag))}</td><td class="r">${money(spend)}</td><td class="r">${d.exp90 ? money(d.exp90) : '\u2014'}</td><td class="r">${d.vendors ? d.vendors.size : ''}</td><td class="sm">${Html.escapeHtml(office)}</td></tr>`;
-    }).join('');
-
-    // Expiring contracts — top 6
-    const expTbl = exp90.slice(0, 6).map(c => {
-      const days = Math.ceil((c._endTs - nowTs) / 86400000);
-      const tenure = c._startTs ? Math.round((c._endTs - c._startTs) / (365.25 * 86400000)) : 0;
-      return `<tr><td>${Html.escapeHtml(c['Recipient Name'] || '')}</td><td>${Html.escapeHtml(cleanAg(c['Awarding Agency'] || ''))}</td><td class="r">${money(c['Award Amount'])}</td><td class="r">${days}d</td><td class="r">${tenure > 0 ? tenure + 'yr' : ''}</td></tr>`;
-    }).join('');
-
-    // Vendor table — top 10
-    const venTbl = vendorSorted.slice(0, 10).map(([name, d]) => {
-      const pct = total > 0 ? Math.round(d.spend / total * 100) : 0;
-      const ag = Array.from(d.agencies).slice(0, 2).map(cleanAg).join(', ');
-      return `<tr><td>${Html.escapeHtml(name)}</td><td class="r">${money(d.spend)}</td><td class="r">${pct}%</td><td class="sm">${ag}</td></tr>`;
-    }).join('');
-
-    // Vehicles — top 4
-    const vehTbl = vehicles.slice(0,4).map(([n,d]) => `<tr><td>${Html.escapeHtml(n)}</td><td class="r">${money(d.spend)}</td><td class="r">${d.count}</td></tr>`).join('');
-
-    // Set-asides — top 3
-    const saTbl = Object.entries(setAsides).sort((a,b) => b[1] - a[1]).slice(0,3).map(([sa, val]) => {
-      return `<tr><td>${Html.escapeHtml(sa)}</td><td class="r">${money(val)}</td><td class="r">${total > 0 ? Math.round(val/total*100) : 0}%</td></tr>`;
-    }).join('');
-
-    // Subs — top 4 primes
-    let subTbl = '';
-    if (subs.length > 0) {
-      const pm = {};
-      subs.forEach(s => { const p = Utils.normalizeVendorName(s['Prime Recipient Name']||'Unknown'); pm[p] = (pm[p]||0) + (parseFloat(s['Sub-Award Amount'])||0); });
-      subTbl = Object.entries(pm).sort((a,b) => b[1] - a[1]).slice(0,4).map(([p,v]) => `<tr><td>${Html.escapeHtml(p)}</td><td class="r">${money(v)}</td></tr>`).join('');
-    }
 
     // ── BUILD ──
     let html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>Market Focus: ${Html.escapeHtml(query)}</title>
 <style>
-@page{size:letter;margin:.4in .45in}
+@page{size:letter;margin:.6in .7in}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue','Segoe UI',sans-serif;font-size:9.5px;color:#2C2A25;line-height:1.45;padding:24px 28px;max-width:1060px;margin:0 auto;background:#F8F6F1}
+body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;font-size:13px;color:#1d1d1f;line-height:1.5;padding:36px 40px;max-width:680px;margin:0 auto}
 
-.hd{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #2C2A25;padding-bottom:6px;margin-bottom:14px}
-.hd h1{font-size:15px;font-weight:800;letter-spacing:-.02em;line-height:1.15;color:#2C2A25}
-.hd-sub{font-size:8px;color:#8A8780;margin-top:2px;letter-spacing:.02em}
-.hd-r{text-align:right}
-.hd-hero{font-size:36px;font-weight:900;letter-spacing:-.04em;line-height:1;color:#2C2A25}
-.hd-label{font-size:7px;color:#8A8780;text-transform:uppercase;letter-spacing:.1em}
+.hdr{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.hdr-label{font-size:12px;color:#86868b}
+.hdr-title{font-size:22px;font-weight:700;letter-spacing:-.02em;color:#1d1d1f}
+.hdr-val{font-size:32px;font-weight:800;letter-spacing:-.03em;color:#1d1d1f}
+.hdr-sub{font-size:11px;color:#86868b;text-align:right}
+.rule{height:1px;background:#d2d2d7;margin-bottom:20px}
 
-.mc{background:#2C2A25;color:#F8F6F1;padding:14px 18px;margin-bottom:12px;display:grid;grid-template-columns:1fr 230px;gap:16px;align-items:center}
-.mc-label{font-size:7px;text-transform:uppercase;letter-spacing:.14em;color:#8A8780;margin-bottom:4px}
-.mc-verdict{font-size:13px;font-weight:600;line-height:1.35;margin-bottom:4px}
-.mc-action{font-size:9px;color:#A09E98;line-height:1.45}
-.mc-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:0;text-align:center;border-left:1px solid #4A4845;padding-left:14px}
-.mc-v{font-size:15px;font-weight:700;color:#F8F6F1}
-.mc-l{font-size:6px;text-transform:uppercase;color:#8A8780;letter-spacing:.08em;margin-top:1px}
+.call{margin-bottom:24px}
+.call-verdict{font-size:16px;font-weight:600;line-height:1.4;color:#1d1d1f;margin-bottom:6px}
+.call-action{font-size:13px;color:#6e6e73;line-height:1.5}
 
-.sh{font-size:7px;font-weight:600;text-transform:uppercase;letter-spacing:.14em;color:#8A8780;margin:14px 0 5px;border-bottom:1px solid #D8D6D0;padding-bottom:2px}
+.section-label{font-size:11px;font-weight:600;color:#86868b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
 
-table{width:100%;border-collapse:collapse;font-size:8.5px;margin-bottom:4px}
-th{text-align:left;font-weight:600;padding:3px 4px;border-bottom:1px solid #8A8780;font-size:7px;text-transform:uppercase;letter-spacing:.06em;color:#6A6860}
-td{padding:3px 4px;border-bottom:1px solid #EEEDEA;color:#4A4845}
-td:first-child{font-weight:600;color:#2C2A25}
+.tgt-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:28px}
+.tgt{background:#f5f5f7;border-radius:12px;padding:16px}
+.tgt-name{font-size:13px;font-weight:600;color:#1d1d1f;margin-bottom:2px}
+.tgt-val{font-size:20px;font-weight:700;letter-spacing:-.02em;color:#1d1d1f;margin-bottom:6px}
+.tgt-detail{font-size:11px;color:#6e6e73;line-height:1.45}
+
+.exp-row{display:grid;grid-template-columns:2fr 1.5fr 1fr .5fr;gap:4px;padding:8px 0;border-bottom:1px solid #f5f5f7;font-size:12px}
+.exp-row:first-child{border-top:1px solid #d2d2d7;padding-top:10px}
+.exp-vendor{font-weight:600;color:#1d1d1f}
+.exp-agency{color:#6e6e73}
+.exp-val{text-align:right;color:#1d1d1f}
+.exp-days{text-align:right;color:#6e6e73}
+.exp-urgent{color:#ff3b30;font-weight:600}
+
+.ft{display:flex;justify-content:space-between;font-size:11px;color:#aeaeb2;margin-top:28px;padding-top:10px;border-top:1px solid #d2d2d7}
+.cta{text-align:center;margin-top:10px;font-size:11px;color:#86868b}
+.cta a{color:#1d1d1f;font-weight:600;text-decoration:none}
+.ref-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.ref-tbl{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:4px}
+.ref-tbl th{text-align:left;font-weight:600;padding:4px 5px;border-bottom:1px solid #d2d2d7;font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:#86868b}
+.ref-tbl td{padding:3px 5px;border-bottom:1px solid #f5f5f7;color:#1d1d1f}
+.ref-tbl td:first-child{font-weight:600}
 .r{text-align:right}
-.sm{font-size:7.5px;color:#8A8780}
-.exp-urgent{color:#9E5A42;font-weight:600}
-
-.pipe{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-bottom:8px}
-.pb{background:#F0EADF;padding:8px 6px;text-align:center;border-left:2px solid transparent}
-.pb-h{border-left-color:#9E5A42}
-.pb-w{border-left-color:#9E8A42}
-.pb-c{border-left-color:#42709E}
-.pb-v{font-size:15px;font-weight:800;letter-spacing:-.02em;color:#2C2A25}
-.pb-l{font-size:6.5px;color:#8A8780;text-transform:uppercase;letter-spacing:.06em;margin-top:1px}
-.pb-n{font-size:7px;color:#A09E98}
-
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.g32{display:grid;grid-template-columns:3fr 2fr;gap:16px}
-
-.tm{border:1px solid #D8D6D0;margin-bottom:12px;overflow:hidden;line-height:0;background:#F0EADF}
-.tm svg{display:block;width:100%;height:auto}
-
-.an{font-size:9px;line-height:1.6;color:#5A5850;column-count:2;column-gap:20px;column-rule:1px solid #E8E6E0}
-.an p{margin-bottom:5px}
-
-.ft{margin-top:12px;padding-top:6px;border-top:1px solid #D8D6D0;font-size:7px;color:#A09E98;display:flex;justify-content:space-between;text-transform:uppercase;letter-spacing:.08em}
-.cta{text-align:center;margin-top:8px;font-size:8px;color:#8A8780}
-.cta a{color:#2C2A25;font-weight:600;text-decoration:none;border-bottom:1px solid #C0BEB8}
-@media print{body{padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}.cta{display:none}}
-svg{max-width:100%;height:auto}
+.sm{font-size:10px;color:#86868b}
+.analysis-text{font-size:12px;line-height:1.6;color:#6e6e73;column-count:2;column-gap:24px;column-rule:1px solid #f5f5f7}
+.analysis-text p{margin-bottom:6px}
+@media print{body{padding:0}.cta{display:none}}
 </style></head><body>
 
-<div class="hd">
-<div>
-  <h1>${Html.escapeHtml(query.toUpperCase())}</h1>
-  <div class="hd-sub">${territory ? Html.escapeHtml(territory) + ' \\u00b7 ' : ''}${today}</div>
+<div class="hdr">
+  <div>
+    <div class="hdr-label">Market Focus \u00b7 ${today}</div>
+    <div class="hdr-title">${Html.escapeHtml(query.toUpperCase())}</div>
+  </div>
+  <div>
+    <div class="hdr-val">${money(total)}</div>
+    <div class="hdr-sub">trailing 12 months</div>
+  </div>
 </div>
-<div class="hd-r">
-  <div class="hd-hero">${money(total)}</div>
-  <div class="hd-label">Trailing 12 months</div>
+<div class="rule"></div>
+
+<div class="call">
+  <div class="call-verdict">${Html.escapeHtml(verdict)}</div>
+  <div class="call-action">${Html.escapeHtml(action)}</div>
+</div>
+
+<div class="section-label">Where to focus</div>
+<div class="tgt-grid">
+${targetCards}
+</div>
+
+<div class="section-label">Expiring contracts</div>
+${expRows}
+
+<div class="ref-grid">
+<div>
+<div class="section-label" style="margin-top:24px">Agency breakdown</div>
+<table class="ref-tbl"><thead><tr><th>Agency</th><th class="r">Spend</th><th class="r">Exp 90d</th><th>Buying office</th></tr></thead><tbody>
+${agencySorted.slice(0, 10).map(([ag, spend]) => {
+      const d = agencyDetail[ag] || {};
+      const topSub = Object.entries(d.subAgencies || {}).sort((a,b) => b[1] - a[1])[0];
+      const office = topSub ? topSub[0] : '';
+      return `<tr><td>${Html.escapeHtml(cleanAg(ag))}</td><td class="r">${money(spend)}</td><td class="r">${d.exp90 ? money(d.exp90) : '\u2014'}</td><td class="sm">${Html.escapeHtml(office)}</td></tr>`;
+    }).join('')}
+</tbody></table>
+</div>
+<div>
+<div class="section-label" style="margin-top:24px">Vendor landscape</div>
+<table class="ref-tbl"><thead><tr><th>Vendor</th><th class="r">Spend</th><th class="r">Share</th><th>Agencies</th></tr></thead><tbody>
+${vendorSorted.slice(0, 10).map(([name, d]) => {
+      const pct = total > 0 ? Math.round(d.spend / total * 100) : 0;
+      const ag = Array.from(d.agencies).slice(0, 2).map(cleanAg).join(', ');
+      return `<tr><td>${Html.escapeHtml(name)}</td><td class="r">${money(d.spend)}</td><td class="r">${pct}%</td><td class="sm">${ag}</td></tr>`;
+    }).join('')}
+</tbody></table>
 </div>
 </div>
 
-<div class="mc">
-<div>
-  <div class="mc-label">Market Call</div>
-  <div class="mc-verdict">${Html.escapeHtml(verdict)}</div>
-  <div class="mc-action">${Html.escapeHtml(oneMove)}</div>
-</div>
-<div class="mc-stats">
-  <div><div class="mc-v">${agencyCount}</div><div class="mc-l">Agencies</div></div>
-  <div><div class="mc-v">${vendorCount}</div><div class="mc-l">Vendors</div></div>
-  <div><div class="mc-v">${data.length}</div><div class="mc-l">Awards</div></div>
-  <div><div class="mc-v">${recentCount}</div><div class="mc-l">New 90d</div></div>
-  <div><div class="mc-v">${top5Pct}%</div><div class="mc-l">Top 5</div></div>
-</div>
-</div>
+${vehicles.length > 0 ? `
+<div class="section-label" style="margin-top:20px">Contract vehicles</div>
+<table class="ref-tbl" style="max-width:400px"><thead><tr><th>Vehicle</th><th class="r">Spend</th><th class="r">Awards</th></tr></thead><tbody>
+${vehicles.slice(0,5).map(([n,d]) => `<tr><td>${Html.escapeHtml(n)}</td><td class="r">${money(d.spend)}</td><td class="r">${d.count}</td></tr>`).join('')}
+</tbody></table>` : ''}
 
-${treemapEmbed ? `<div class="tm">${treemapEmbed}</div>` : ''}
-
-<div class="g2">
-<div>
-<div class="sh">Expiring Pipeline</div>
-<div class="pipe">
-  <div class="pb pb-h"><div class="pb-v">${money(exp90Val)}</div><div class="pb-l">0\\u201390 days</div><div class="pb-n">${exp90.length} contracts</div></div>
-  <div class="pb pb-w"><div class="pb-v">${money(exp180Val)}</div><div class="pb-l">90\\u2013180</div><div class="pb-n">${exp180.length}</div></div>
-  <div class="pb pb-c"><div class="pb-v">${money(exp365Val)}</div><div class="pb-l">180\\u2013365</div><div class="pb-n">${exp365.length}</div></div>
-</div>
-${expTbl ? `<table><thead><tr><th>Incumbent</th><th>Agency</th><th class="r">Value</th><th class="r">Days</th><th class="r">Tenure</th></tr></thead><tbody>${expTbl}</tbody></table>` : ''}
-</div>
-<div>
-<div class="sh">Agency Breakdown</div>
-<table><thead><tr><th>Agency</th><th class="r">Spend</th><th class="r">Exp 90d</th><th class="r">V</th><th>Buying Office</th></tr></thead><tbody>${agRows}</tbody></table>
-</div>
-</div>
-
-<div class="g32">
-<div>
-<div class="sh">Vendor Landscape</div>
-<table><thead><tr><th>Vendor</th><th class="r">Spend</th><th class="r">Share</th><th>Agencies</th></tr></thead><tbody>${venTbl}</tbody></table>
-</div>
-<div>
-${vehTbl ? `<div class="sh">Vehicles</div><table><thead><tr><th>Vehicle</th><th class="r">Spend</th><th class="r">#</th></tr></thead><tbody>${vehTbl}</tbody></table>` : ''}
-${subTbl ? `<div class="sh">Subcontracting</div><table><thead><tr><th>Prime</th><th class="r">Sub Value</th></tr></thead><tbody>${subTbl}</tbody></table>` : ''}
-${saTbl ? `<div class="sh">Set-Asides</div><table><thead><tr><th>Category</th><th class="r">Spend</th><th class="r">%</th></tr></thead><tbody>${saTbl}</tbody></table>` : ''}
-</div>
-</div>
-
-<div class="sh">Analysis</div>
-<div class="an">
+<div class="section-label" style="margin-top:20px">Analysis</div>
+<div class="analysis-text">
 ${prose.split('\\n').filter(Boolean).map(p => '<p>' + Html.escapeHtml(p) + '</p>').join('')}
 </div>
 
 <div class="ft">
-<span>Fedmo \\u00b7 fedhoo.com \\u00b7 USASpending.gov</span>
-<span>${today}</span>
+  <span>${agencyCount} agencies \u00b7 ${vendorCount} vendors \u00b7 ${data.length} contracts \u00b7 ${top5Pct}% top-5 share</span>
+  <span>fedhoo.com</span>
 </div>
-<div class="cta">Weekly Market Focus reports. <a href="https://fedhoo.substack.com" target="_blank">Subscribe</a></div>
+<div class="cta">Weekly Market Focus reports. <a href="https://fedhoo.substack.com">Subscribe \u2192</a></div>
 
 </body></html>`;
 
