@@ -6123,6 +6123,11 @@ ${gemData.next_steps.map((step, i) => `<div class="ns-item"><span class="ns-num"
     if (sellerProduct && queryType === 'keyword') {
       const productName = sellerProduct;
 
+      // Recompute channel detection in this scope
+      const SELLER_VARS = new Set(['CARAHSOFT','GOVPLACE','FCN','THUNDERCAT','THUNDERCAT TECHNOLOGY','OPTIV','OPTIV FEDERAL','CDW','CDW GOVERNMENT','CDWG','SHI','SHI INTERNATIONAL','DLT','DLT SOLUTIONS','IRON BOW','IRON BOW TECHNOLOGIES','RED RIVER','RED RIVER TECHNOLOGY']);
+      const sellerTop5 = vendorSorted.slice(0, 5).map(([n]) => n.toUpperCase());
+      const sellerIsChannel = sellerTop5.filter(v => SELLER_VARS.has(v)).length >= 2;
+
       // Check if the product/company appears in the vendor data
       const productUpper = productName.toUpperCase();
       let productInMarket = false;
@@ -6137,8 +6142,8 @@ ${gemData.next_steps.map((step, i) => `<div class="ns-item"><span class="ns-num"
         }
       }
 
-      if (isChannelMarket) {
-        const topVar = top5Vendors.filter(v => KNOWN_VARS.has(v)).slice(0, 1).map(v => tc(v))[0] || 'the top VAR';
+      if (sellerIsChannel) {
+        const topVar = sellerTop5.filter(v => SELLER_VARS.has(v)).slice(0, 1).map(v => tc(v.toLowerCase()))[0] || 'the top VAR';
         action = `Get ${productName} listed with ${topVar}. They hold the vehicle and the agency relationship. Your product moves through them.`;
       } else if (productInMarket && productShare >= 10) {
         action = `${productName} already holds ${productShare}% of this market. Defend expiring contracts and expand into adjacent agencies.`;
