@@ -534,7 +534,7 @@ a, button, input, select { touch-action: manipulation; }
 .prime-signal-established { background: var(--warn-bg); color: var(--warn-text); }
 .prime-signal-emerging { background: var(--go-bg); color: var(--go-text); }
 
-/* Arti inline card — purple left-accent marks it as the intelligent layer */
+/* Mo inline card — purple left-accent marks it as the intelligent layer */
 /* Hero row: number + faces inline */
 .hero-row { display: flex; align-items: center; gap: 14px; margin-bottom: 4px; }
 .hero-row .market-hero-number { margin: 0; }
@@ -689,10 +689,10 @@ a, button, input, select { touch-action: manipulation; }
 .intel-source-note { font-size: var(--text-xs); color: var(--text-quaternary); margin-top: 10px; }
 /* Treemap context label */
 
-/* Arti brief collapse/expand */
+/* Mo brief collapse/expand */
 
 /* Seller lens prompt card */
-/* Arti lens question — subtle invitation after the brief */
+/* Mo lens question — subtle invitation after the brief */
 
 /* Lens prompt card */
 
@@ -870,7 +870,7 @@ a, button, input, select { touch-action: manipulation; }
 .strategic-read a { color: var(--accent-mid); text-decoration: underline; text-underline-offset: 2px; }
 .strategic-read code { font-size: 0.9em; background: var(--bg); border-radius: 4px; padding: 0.1em 0.35em; }
 
-/* Arti chat */
+/* Mo chat */
 .chat-history { display: flex; flex-direction: column; gap: 20px; margin-top: 24px; }
 
 
@@ -2325,7 +2325,7 @@ const Html = {
       }
     } catch (err) {
       const isTimeout = err.name === 'AbortError';
-      onError(isTimeout ? 'Arti took too long to respond. Try a more focused search.' : 'Connection lost. Please try again.');
+      onError(isTimeout ? 'Mo took too long to respond. Try a more focused search.' : 'Connection lost. Please try again.');
     }
   }
 };
@@ -3989,7 +3989,7 @@ const App = {
       const res = await fetch(this.AI_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ request_type: 'govhoo_brief', market_data: summaryPayload, objective }),
+        body: JSON.stringify({ request_type: 'govhoo_brief', market_data: summaryPayload, objective, persona: 'mo' }),
         signal: artiAbort.signal
       });
       clearTimeout(artiTimeout);
@@ -4082,7 +4082,7 @@ const App = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          request_type: 'govhoo_brief',
+          request_type: 'govhoo_brief', persona: 'mo',
           market_data: summaryPayload,
           objective
         }),
@@ -4170,7 +4170,7 @@ const App = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          request_type: 'govhoo_chat',
+          request_type: 'govhoo_chat', persona: 'mo',
           market_data: {
             query: this.currentQuery,
             contracts: this.searchData.active.slice(0, 50).map(c => ({
