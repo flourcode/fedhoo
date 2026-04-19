@@ -1731,12 +1731,17 @@ const App = {
     this.state.lastCardSpec = spec;
     this.state.lastMarketMetrics = m;
     this.state.lastQuery = query;
+    this._askMoHistory = []; // fresh conversation per new card
 
     this._track('card_render', { face: spec.verdict.face, contracts: spec.sourceCount, has_lens: !!sellerLens, has_territory: !!territory });
     this.replaceLoading(loadingId, this.buildMoTurn(spec));
   },
 
   // ── Ask Mo: stream prose against the existing card's data ───
+  // Ask-Mo conversation history per card. Reset on new search.
+  // Lambda's govhoo_chat REQUIRES history to be a non-empty array.
+  _askMoHistory: [],
+
   async runAskMo(question, loadingId) {
     const m = this.state.lastMarketMetrics;
     const spec = this.state.lastCardSpec;
@@ -1745,22 +1750,8 @@ const App = {
       return;
     }
 
-    // Build a compact payload for Mo
-    const payload = {
-      query: this.state.lastQuery,
-      total: m.total,
-      contract_count: m.contractCount,
-      top_vendors: Object.entries(m.vendors).sort((a,b) => b[1].spend - a[1].spend).slice(0, 10).map(([name, v]) => ({
-        name, spend: v.spend, count: v.count, agencies: [...v.agencies].slice(0, 3),
-      })),
-      top_agencies: Object.entries(m.agencies).sort((a,b) => b[1] - a[1]).slice(0, 5).map(([name, spend]) => ({ name, spend })),
-      expiring: (m.expiring || []).slice(0, 8).map(c => ({
-        vendor: c['Recipient Name'], agency: c['Awarding Agency'],
-        amount: parseFloat(c['Award Amount']) || 0, end_date: c['End Date'],
-        contract_id: c['Award ID'], description: (c['Description'] || '').slice(0, 200),
-      })),
-      vehicles: Object.entries(m.vehicles || {}).map(([name, d]) => ({ name, spend: d.spend, count: d.count })),
-    };
+    // Build payload in production's shape (matches what the Lambda expects)
+    const payload = this._buildAskMoPayload(m);
 
     const objective = this.state.lens
       ? `I sell ${this.state.lens}.` + (this.state.territory ? ` Market scoped to ${SECTORS[this.state.territory].label} agencies.` : '')
@@ -1773,6 +1764,17 @@ const App = {
     const lastTurn = document.querySelectorAll('.turn-mo');
     if (lastTurn.length) requestAnimationFrame(() => this.scrollToTurn(lastTurn[lastTurn.length - 1]));
 
+    // Lambda requires history to be a non-empty array. If this is the first
+    // ask-Mo turn against this card, seed it with a synthetic prior turn
+    // anchored to the verdict so Mo has continuity.
+    if (this._askMoHistory.length === 0) {
+      this._askMoHistory.push(
+        { role: 'user', content: `Give me an actionable plan in the "${this.state.lastQuery}" market.` },
+        { role: 'model', content: `${spec.verdict.text} ${spec.verdict.action}` }
+      );
+    }
+    this._askMoHistory.push({ role: 'user', content: question });
+
     try {
       const res = await fetch(AI_ENDPOINT, {
         method: 'POST',
@@ -1781,19 +1783,74 @@ const App = {
           request_type: 'govhoo_chat', persona: 'mo',
           market_data: payload,
           objective,
-          history: [],
+          history: this._askMoHistory.slice(-6),
           question,
         }),
       });
-      if (!res.ok) throw new Error(`Mo error ${res.status}`);
+      if (!res.ok) {
+        // Try to read JSON error body for a useful message
+        let errMsg = `Mo error ${res.status}`;
+        try {
+          const errBody = await res.json();
+          if (errBody && errBody.error) errMsg = errBody.error;
+        } catch(e) {}
+        throw new Error(errMsg);
+      }
       await Html.streamInto(
         proseEl, res,
-        () => { /* done */ },
-        (msg) => { if (proseEl) proseEl.textContent = msg; }
+        (fullText) => {
+          if (fullText) this._askMoHistory.push({ role: 'model', content: fullText });
+        },
+        (msg) => { if (proseEl) proseEl.innerHTML = `<span style="color:var(--text-faint);">${Html.escapeHtml(msg)}</span>`; }
       );
     } catch (err) {
-      if (proseEl) proseEl.textContent = err.message || 'Mo had trouble with that one.';
+      console.error('runAskMo error:', err);
+      if (proseEl) proseEl.innerHTML = `<span style="color:var(--text-faint);">${Html.escapeHtml(err.message || 'Mo had trouble with that one.')}</span>`;
     }
+  },
+
+  // Build the payload in the shape production's _buildArtiPayload uses.
+  // This is what the Lambda's buildChatBody / govhoo_chat handler expects.
+  _buildAskMoPayload(m) {
+    const spec = this.state.lastCardSpec;
+    const topAgencies = Object.entries(m.agencies).sort((a,b) => b[1] - a[1]).slice(0, 8)
+      .map(([name, amt]) => ({ name, amount: amt }));
+    const topVendors = Object.entries(m.vendors).sort((a,b) => b[1].spend - a[1].spend).slice(0, 8)
+      .map(([name, v]) => ({ name, amount: v.spend, count: v.count, agencies: v.agencies.size }));
+    const now = new Date();
+    const expiring = (m.expiring || []).slice(0, 8).map(c => ({
+      vendor: c['Recipient Name'],
+      agency: c['Awarding Sub Agency'] || c['Awarding Agency'],
+      amount: c['Award Amount'],
+      end_date: c['End Date'],
+      days_left: Math.ceil((new Date(c['End Date']) - now) / 86400000),
+      description: (c['Description'] || '').slice(0, 120),
+      contract_id: c['Award ID'],
+    }));
+    const top3Share = topVendors.slice(0, 3).reduce((s, v) => s + v.amount, 0) / (m.total || 1);
+    const agencyConc = topAgencies.length > 0 ? topAgencies[0].amount / (m.total || 1) : 0;
+    return {
+      query: this.state.lastQuery,
+      query_type: m.queryType || 'keyword',
+      target_vendor: m.targetVendor || null,
+      formula_verdict: spec ? spec.verdict.text : null,
+      formula_action: spec ? spec.verdict.action : null,
+      total_value: m.total,
+      contract_count: m.contractCount,
+      stats: {
+        top3_vendor_share: Math.round(top3Share * 100),
+        agency_concentration: Math.round(agencyConc * 100),
+        expiring_count: (m.expiring || []).length,
+        recent_award_count: (m.recentAwards || []).length,
+        unique_vendors: Object.keys(m.vendors).length,
+        unique_agencies: Object.keys(m.agencies).length,
+        top_vehicles: Object.entries(m.vehicles || {}).sort((a,b) => b[1].spend - a[1].spend).slice(0, 4)
+          .map(([name, d]) => ({ name, spend: d.spend, count: d.count })),
+      },
+      top_agencies: topAgencies,
+      top_vendors: topVendors,
+      expiring_soon: expiring,
+    };
   },
 
   // ── Turn builders ──────────────────────────────────────────
