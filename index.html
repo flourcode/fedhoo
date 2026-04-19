@@ -2950,11 +2950,22 @@ const App = {
     if (mobileInp) mobileInp.disabled = true;
 
     try {
+      // Clean the input — extract the product/company from the seller statement
+      let cleanedQuery = q
+        .replace(/^(i|we|my company|our team)\s+(sell|offer|provide|market|rep|represent)\s+/i, '')
+        .replace(/\s+(to|for|at|into)\s+(the\s+)?(dod|hhs|va|dhs|gsa|army|navy|air force|usaf|cms|fda|cdc|nih|usda|doe|doj|dot|ed|treasury|interior|state|commerce|osd|socom|disa|dla|federal|fed\s+\w+|government).*$/i, '')
+        .trim();
+      if (!cleanedQuery) cleanedQuery = q; // fallback to raw input
+
+      // Extract target agency if mentioned
+      const agencyMatch = q.match(/\b(?:to|for|at|into)\s+(?:the\s+)?(dod|hhs|va|dhs|gsa|army|navy|air force|usaf|cms|fda|cdc|nih|usda|doe|doj|dot|ed|treasury|interior|state|commerce|osd|socom|disa|dla|federal\s+health|fed\s+civ(?:il)?)\b/i);
+      const targetAgency = agencyMatch ? agencyMatch[1] : null;
+
       // Call Gemini to parse intent into search keywords
       const res = await fetch(this.PROXY_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ request_type: 'govhoo_market_research', company: q }),
+        body: JSON.stringify({ request_type: 'govhoo_market_research', company: cleanedQuery }),
       });
 
       if (!res.ok) throw new Error('Gemini unavailable');
@@ -2964,7 +2975,7 @@ const App = {
       console.log('Seller intent parsed:', kw);
 
       // Extract the product name for seller lens
-      const productName = kw.company || q.replace(/^(i|we|my company|our team)\s+(sell|offer|provide|market|rep|represent)\s+/i, '').replace(/\s+(to|for|at|into)\s+.*/i, '').trim();
+      const productName = kw.company || cleanedQuery;
 
       // Set seller lens — this feeds into Mo's analysis
       this._sellerLens = productName;
