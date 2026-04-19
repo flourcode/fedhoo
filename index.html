@@ -146,7 +146,7 @@ a, button, input, select { touch-action: manipulation; }
 }
 .hdr-icon-circle:hover { background: var(--bg-hover); color: var(--text-primary); }
 /* Competitive Position View */
-.competitive-view { margin:16px 0 8px;padding:16px 20px;background:var(--bg-app);border-radius:var(--radius-xs);border:1px solid var(--border); }
+.competitive-view { margin:4px 0 8px;padding:14px 16px;background:var(--bg-app);border-radius:var(--radius-xs);border:1px solid var(--border); }
 .comp-header { font-size:var(--text-xs);font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px; }
 .comp-self { font-size:var(--text-sm);color:var(--text-secondary);margin-bottom:12px;line-height:1.5;padding:12px 14px;background:var(--accent-dim);border-radius:var(--radius-xs); }
 .comp-self-name { font-weight:700;color:var(--accent); }
@@ -160,7 +160,7 @@ a, button, input, select { touch-action: manipulation; }
 .comp-absent { font-size:var(--text-xs);color:var(--text-quaternary);margin-top:8px;padding-top:8px;border-top:1px solid var(--border-inner); }
 
 /* Seller Context */
-.seller-context { display:flex;align-items:flex-start;gap:12px;padding:16px 20px;margin:16px 0 8px;background:var(--accent-dim);border-radius:var(--radius-xs);border:1px solid var(--border); }
+.seller-context { display:flex;align-items:flex-start;gap:12px;padding:14px 16px;margin:8px 0 8px;background:var(--accent-dim);border-radius:var(--radius-xs);border:1px solid var(--border); }
 .seller-context-face { flex-shrink:0;margin-top:2px; }
 .seller-context-body { flex:1;min-width:0; }
 .seller-context-prompt { font-size:var(--text-sm);color:var(--text-secondary);margin-bottom:10px;line-height:1.5; }
@@ -647,7 +647,7 @@ a, button, input, select { touch-action: manipulation; }
 }
 
 /* Analysis toggle */
-.market-analysis-wrap { margin-top: 14px; margin-bottom: 6px; }
+.market-analysis-wrap { margin-top: 8px; margin-bottom: 4px; }
 .market-analysis-toggle {
   display: inline-flex; align-items: center; gap: 5px;
   background: none; border: none; padding: 2px 0; cursor: pointer;
@@ -4584,9 +4584,9 @@ const App = {
     if (proseEl && proseLines.length > 0) {
       proseEl.innerHTML = proseLines.map(p => `<p>${p}</p>`).join('');
       const isMobile = window.innerWidth <= 640;
-      proseEl.style.display = isMobile ? 'none' : '';
-      if (analysisToggle) analysisToggle.setAttribute('aria-expanded', !isMobile);
-      if (analysisLabel) analysisLabel.textContent = isMobile ? 'See analysis' : 'Hide analysis';
+      proseEl.style.display = 'none';
+      if (analysisToggle) analysisToggle.setAttribute('aria-expanded', false);
+      if (analysisLabel) analysisLabel.textContent = 'See analysis';
       if (analysisWrap) analysisWrap.classList.remove('hidden');
     }
   },
@@ -6232,9 +6232,9 @@ ${gemData.next_steps.map((step, i) => `<div class="ns-item"><span class="ns-num"
       proseEl.innerHTML = proseLines.map(p => `<p>${p}</p>`).join('');
       // Default: expanded on desktop, collapsed on mobile
       const isMobile = window.innerWidth <= 640;
-      proseEl.style.display = isMobile ? 'none' : '';
-      if (analysisToggle) analysisToggle.setAttribute('aria-expanded', !isMobile);
-      if (analysisLabel) analysisLabel.textContent = isMobile ? 'See analysis' : 'Hide analysis';
+      proseEl.style.display = 'none';
+      if (analysisToggle) analysisToggle.setAttribute('aria-expanded', false);
+      if (analysisLabel) analysisLabel.textContent = 'See analysis';
       if (analysisWrap) analysisWrap.classList.remove('hidden');
     } else {
       if (analysisWrap) analysisWrap.classList.add('hidden');
