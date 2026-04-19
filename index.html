@@ -684,9 +684,9 @@ button { cursor: pointer; }
     <div class="greeting-hi">Hey, I'm Mo.</div>
     <div class="greeting-sub">Tell me what you sell or ask about a market. I'll show you where the money is and how to get in.</div>
     <div class="greeting-examples">
-      <button class="mo-followup" onclick="App.ask('I sell Sonatype to DoD')">I sell Sonatype to DoD</button>
-      <button class="mo-followup" onclick="App.ask(&quot;What's expiring in HHS cyber?&quot;)">What's expiring in HHS cyber?</button>
-      <button class="mo-followup" onclick="App.ask('Who owns DISA cloud?')">Who owns DISA cloud?</button>
+      <button class="mo-followup" data-ask="I sell Sonatype to DoD">I sell Sonatype to DoD</button>
+      <button class="mo-followup" data-ask="What's expiring in HHS cyber?">What's expiring in HHS cyber?</button>
+      <button class="mo-followup" data-ask="Who owns DISA cloud?">Who owns DISA cloud?</button>
     </div>
   </div>
 </div>
@@ -1564,12 +1564,21 @@ const App = {
     const savedLens = localStorage.getItem('fedmo_seller_product');
     if (savedLens) this.setLens(savedLens);
 
-    // Track View → USASpending taps (the trust loop)
+    // Delegated click handling for data-ask buttons + analytics
     document.addEventListener('click', e => {
       const link = e.target.closest('.mo-view-link');
       if (link) this._track('view_usaspending', { url: link.getAttribute('href') || '' });
-      const followup = e.target.closest('.mo-followup');
-      if (followup) this._track('ask', { source: 'followup', text: followup.textContent.trim().slice(0, 60) });
+
+      const followup = e.target.closest('.mo-followup[data-ask]');
+      if (followup) {
+        const q = followup.getAttribute('data-ask');
+        if (q) {
+          this._track('ask', { source: 'followup', text: q.slice(0, 60) });
+          this.ask(q);
+        }
+        return;
+      }
+
       const pin = e.target.closest('.mo-card-action.pinned, .mo-card-action[title="Pin"]');
       if (pin && pin.classList.contains('pinned')) this._track('pin_card');
     }, true);
@@ -1902,7 +1911,7 @@ const App = {
     if (spec.followups && spec.followups.length > 0) {
       html += `<div class="mo-followups">`;
       spec.followups.forEach(f => {
-        html += `<button class="mo-followup" onclick="App.ask(${JSON.stringify(f)})">${Html.escapeHtml(f)}</button>`;
+        html += `<button class="mo-followup" data-ask="${Html.escapeHtml(f)}">${Html.escapeHtml(f)}</button>`;
       });
       html += `</div>`;
     }
@@ -1939,7 +1948,7 @@ const App = {
     const suggestions = this.state.territory && SECTORS[this.state.territory]
       ? ['Cybersecurity', 'Cloud', 'AI', '541512']
       : ['Zero Trust', 'CMMC', 'Cybersecurity', 'NAICS 541512'];
-    let chips = suggestions.map(s => `<button class="mo-followup" onclick="App.ask(${JSON.stringify(s)})">${Html.escapeHtml(s)}</button>`).join('');
+    let chips = suggestions.map(s => `<button class="mo-followup" data-ask="${Html.escapeHtml(s)}">${Html.escapeHtml(s)}</button>`).join('');
     wrap.innerHTML = `
       <div class="turn-mo-header">
         <svg viewBox="0 0 40 40"><use href="#icon-face-watch"/></svg>
