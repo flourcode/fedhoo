@@ -145,6 +145,15 @@ a, button, input, select { touch-action: manipulation; }
   color: var(--text-secondary); transition: var(--transition); flex-shrink: 0;
 }
 .hdr-icon-circle:hover { background: var(--bg-hover); color: var(--text-primary); }
+/* Mo's Greeting */
+.mo-greeting { display:flex;flex-direction:column;align-items:center;text-align:center;padding:clamp(3rem,8vh,6rem) 1rem 2rem;max-width:480px;margin:0 auto; }
+.mo-greeting-face { margin-bottom:16px; }
+.mo-greeting-hi { font-size:var(--text-xl);font-weight:800;color:var(--text-primary);letter-spacing:-0.02em;margin-bottom:4px; }
+.mo-greeting-sub { font-size:var(--text-sm);color:var(--text-secondary);line-height:1.55;margin-bottom:24px; }
+.mo-greeting-examples { display:flex;flex-wrap:wrap;gap:8px;justify-content:center; }
+.mo-example { font-family:var(--font);font-size:var(--text-xs);padding:8px 14px;border-radius:var(--radius-xs);border:1px solid var(--border);background:var(--bg-app);color:var(--text-secondary);cursor:pointer;transition:var(--transition); }
+.mo-example:hover { background:var(--accent-dim);color:var(--accent);border-color:var(--accent); }
+
 /* Competitive Position View */
 .competitive-view { margin:4px 0 8px;padding:14px 16px;background:var(--bg-app);border-radius:var(--radius-xs);border:1px solid var(--border); }
 .comp-header { font-size:var(--text-xs);font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px; }
@@ -627,9 +636,11 @@ a, button, input, select { touch-action: manipulation; }
 
 /* Signal prose block */
 /* Verdict — colored diagnosis */
+.mo-verdict-row { display:flex;align-items:flex-start;gap:10px;margin-bottom:2px; }
+.mo-verdict-face { flex-shrink:0;margin-top:2px; }
 .market-verdict {
   font-weight: 700; font-size: var(--text-sm);
-  line-height: 1.45; margin-bottom: 6px;
+  line-height: 1.45; margin-bottom: 4px;
 }
 .market-verdict.open  { color: #3D5C3D; }
 .market-verdict.watch { color: #7A5520; }
@@ -1033,7 +1044,7 @@ a, button, input, select { touch-action: manipulation; }
         </div>
         <div class="search-bar-inner" id="searchBarInner">
         <input type="search" id="searchInput" class="search-input"
-          placeholder="Search or tell Mo what you sell…"
+          placeholder="Ask Mo anything…"
           autocomplete="off" autocorrect="off" autocapitalize="none"
           enterkeyhint="search" aria-label="Search federal contracts by company, keyword, or NAICS code">
         </div>
@@ -1096,7 +1107,7 @@ a, button, input, select { touch-action: manipulation; }
       </div>
       <div class="search-bar-inner" id="searchBarInnerMobile">
       <input type="search" id="searchInputMobile" class="search-input"
-        placeholder="Search or tell Mo what you sell…"
+        placeholder="Ask Mo anything…"
         autocomplete="off" autocorrect="off" autocapitalize="none"
         enterkeyhint="search" aria-label="Search federal contracts by company, keyword, or NAICS code">
       </div>
@@ -1145,7 +1156,21 @@ a, button, input, select { touch-action: manipulation; }
 <!-- MAIN -->
 <div class="page-wrap">
 
-  <!-- LANDING PROMPT, shown only before first search -->
+  <!-- MO'S GREETING — shown before first search -->
+  <div class="mo-greeting" id="moGreeting">
+    <svg class="mo-greeting-face" width="56" height="56" viewBox="0 0 40 40" aria-label="Mo"><use href="#icon-face-open"/></svg>
+    <div class="mo-greeting-text">
+      <div class="mo-greeting-hi">Hey, I'm Mo.</div>
+      <div class="mo-greeting-sub">Tell me what you sell or search a market — I'll show you where the money is and how to get in.</div>
+    </div>
+    <div class="mo-greeting-examples">
+      <button class="mo-example" onclick="App.processSellerIntent('I sell CrowdStrike to DoD')">I sell CrowdStrike to DoD</button>
+      <button class="mo-example" onclick="App.processSellerIntent('I sell Sonatype')">I sell Sonatype</button>
+      <button class="mo-example" onclick="App.runSearch('cybersecurity')">cybersecurity</button>
+      <button class="mo-example" onclick="App.runSearch('cloud migration')">cloud migration</button>
+    </div>
+  </div>
+
   <!-- RESULTS GRID -->
   <div class="tools-grid hidden" id="resultsGrid">
 
@@ -1169,10 +1194,14 @@ a, button, input, select { touch-action: manipulation; }
           </div>
         </div>
       </div>
-      <!-- Verdict — diagnosis, colored by score -->
-      <div class="market-verdict hidden" id="marketVerdict"></div>
-      <!-- Action — prescription, always visible, bold -->
-      <div class="market-action hidden" id="marketAction"></div>
+      <!-- Verdict — Mo's diagnosis -->
+      <div class="mo-verdict-row">
+        <svg class="mo-verdict-face" width="22" height="22" viewBox="0 0 40 40" aria-hidden="true" id="moVerdictFace"><use href="#icon-face-open"/></svg>
+        <div>
+          <div class="market-verdict hidden" id="marketVerdict"></div>
+          <div class="market-action hidden" id="marketAction"></div>
+        </div>
+      </div>
       <!-- Analysis — expandable detail, collapsed by default on mobile -->
       <div class="market-analysis-wrap hidden" id="marketAnalysisWrap">
         <button class="market-analysis-toggle" id="marketAnalysisToggle" onclick="App.toggleAnalysis()" aria-expanded="false">
@@ -2944,7 +2973,7 @@ const App = {
     const q = rawInput.trim();
 
     // Show loading state
-    this.toast('Understanding what you sell...', 'ok', 8000);
+    this.toast('Let me look into that for you...', 'ok', 8000);
     const inp = this.UI.searchInput;
     if (inp) inp.disabled = true;
     const mobileInp = DOM.get('searchInputMobile');
@@ -3038,7 +3067,7 @@ const App = {
 
     } catch(e) {
       console.warn('Seller intent error:', e);
-      this.toast('Could not parse that. Searching as keywords instead.', 'warning', 3000);
+      this.toast('Hmm, let me just search that directly.', 'warning', 3000);
       // Fallback: just search the raw input as keywords
       await this.runSearch(q, false, false);
     } finally {
@@ -3110,7 +3139,7 @@ const App = {
     const thisSearch = ++this._searchId;
 
     // Hide results while loading
-    DOM.hide('resultsGrid');
+    DOM.hide('resultsGrid'); DOM.show('moGreeting');
     DOM.hide('shareBtn');
     DOM.hide('artiFab');
     SearchPills.clear(); DOM.get('artiBridge') && DOM.hide('artiBridge');
@@ -3157,7 +3186,7 @@ const App = {
     DOM.get('tabSankey')?.classList.remove('active');
     DOM.get('dotTreemap')?.classList.add('active');
     DOM.get('dotSankey')?.classList.remove('active');
-    this.showLoader('Finding contracts and vendors', `${query}`);
+    this.showLoader('Let me pull that up', `${query}`);
 
     // Update URL — only when user-initiated, not on auto-restore from localStorage
     if (!skipUrlUpdate) try {
@@ -3214,7 +3243,7 @@ const App = {
               this.hideLoader();
               const agencies = [...new Set(retryData.map(r => r['Awarding Agency']).filter(Boolean))].slice(0,3);
               const vendors  = [...new Set(retryData.map(r => r['Recipient Name']).filter(Boolean))].slice(0,3);
-              DOM.show('resultsGrid');
+              DOM.show('resultsGrid'); DOM.hide('moGreeting');
               DOM.show('marketCard');
               if (this.UI.marketCardTitle) this.UI.marketCardTitle.textContent = '';
               if (this.UI.marketHeroNumber) this.UI.marketHeroNumber.textContent = '';
@@ -3285,7 +3314,7 @@ const App = {
       }
 
       // Show results grid
-      DOM.show('resultsGrid');
+      DOM.show('resultsGrid'); DOM.hide('moGreeting');
         DOM.show('shareBtn');
         DOM.show('snapshotBtn');
       DOM.show('bioCard');
@@ -3339,7 +3368,7 @@ const App = {
     const vp = this.UI.chartViewport;
     if (vp) vp.style.height = 'auto';
 
-    DOM.show('resultsGrid');
+    DOM.show('resultsGrid'); DOM.hide('moGreeting');
     DOM.show('marketCard');
 
     if (this.UI.marketCardTitle) this.UI.marketCardTitle.textContent = '';
@@ -3374,9 +3403,9 @@ const App = {
     const container = this.UI.bubbleChartContainer;
     if (container) container.innerHTML = `
       <div class="empty-state">
-        <svg class="arti-avatar-lg" aria-label="No results"><use href="#icon-face-locked"/></svg>
-        <h3 class="empty-title">No contracts matched "${Html.escapeHtml(query)}"${territoryNote}</h3>
-        <p class="empty-desc">Federal contracts are filed under legal entity names and technical descriptions, not brand names. Here are a few ways to find what you are looking for.</p>
+        <svg class="arti-avatar-lg" aria-label="Mo"><use href="#icon-face-locked"/></svg>
+        <h3 class="empty-title">I couldn't find contracts for "${Html.escapeHtml(query)}"${territoryNote}</h3>
+        <p class="empty-desc">Federal contracts use legal entity names and technical descriptions. Here are a few ways to find what you're looking for.</p>
         ${nameHintHtml}
         <ul class="empty-tips">
           <li><strong>Try the legal entity name.</strong> "Primer Federal" instead of "Primer.ai"</li>
@@ -4568,6 +4597,12 @@ const App = {
       scale.classList.remove('hidden');
       faceOrder.forEach(v => { const el = DOM.get(faceIds[v]); if (el) el.classList.toggle('active', v === faceClass); });
     }
+    // Update Mo's verdict face to match the score
+    const moFace = DOM.get('moVerdictFace');
+    if (moFace) {
+      const faceMap = { open: '#icon-face-open', watch: '#icon-face-watch', locked: '#icon-face-locked' };
+      moFace.querySelector('use')?.setAttribute('href', faceMap[faceClass] || '#icon-face-open');
+    }
     const lbl = DOM.get('faceLabel');
     if (lbl) { lbl.textContent = faceLabel; lbl.className = `face-label ${faceClass}`; lbl.classList.remove('hidden'); }
 
@@ -4970,7 +5005,7 @@ const App = {
       snapBtn.disabled = true;
       snapBtn.classList.add('hdr-icon-spinning');
     }
-    this.toast('Building Market Focus report...', 'ok', 10000);
+    this.toast('Putting your report together...', 'ok', 10000);
 
     // ── SNAPSHOT ──
     const money = Utils.money;
@@ -5424,7 +5459,7 @@ ${gemData.next_steps.map((step, i) => `<div class="ns-item"><span class="ns-num"
     // Also update Mo's sheet if it's showing the lens label
     const label = DOM.get('sheetLensLabel');
     if (label) label.textContent = val;
-    this.toast('Got it. Mo will tailor results to what you sell.', 'ok', 3000);
+    this.toast('Got it. I\'ll tailor everything to that.', 'ok', 3000);
   },
 
   editSellerContext() {
@@ -5445,7 +5480,7 @@ ${gemData.next_steps.map((step, i) => `<div class="ns-item"><span class="ns-num"
     const valueEl = DOM.get('sellerContextValue');
     const prompt = DOM.get('sellerContextPrompt');
     if (inputWrap) inputWrap.classList.add('hidden');
-    if (prompt) prompt.textContent = 'Tailoring results for:';
+    if (prompt) prompt.textContent = 'I\'m looking at this through your lens:';
     if (valueEl) valueEl.textContent = val;
     if (setEl) setEl.classList.remove('hidden');
   },
@@ -6206,6 +6241,12 @@ ${gemData.next_steps.map((step, i) => `<div class="ns-item"><span class="ns-num"
       scale.classList.remove('hidden');
       faceOrder.forEach(v => { const el = DOM.get(faceIds[v]); if (el) el.classList.toggle('active', v === faceClass); });
     }
+    // Update Mo's verdict face to match the score
+    const moFace = DOM.get('moVerdictFace');
+    if (moFace) {
+      const faceMap = { open: '#icon-face-open', watch: '#icon-face-watch', locked: '#icon-face-locked' };
+      moFace.querySelector('use')?.setAttribute('href', faceMap[faceClass] || '#icon-face-open');
+    }
     const lbl = DOM.get('faceLabel');
     if (lbl) { lbl.textContent = faceLabel; lbl.className = `face-label ${faceClass}`; lbl.classList.remove('hidden'); }
 
@@ -6586,7 +6627,7 @@ ${gemData.next_steps.map((step, i) => `<div class="ns-item"><span class="ns-num"
     // Safari iOS: when page resumes from background, prevent hero flash if data is loaded
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible' && App.searchData.loaded) {
-            DOM.show('resultsGrid');
+            DOM.show('resultsGrid'); DOM.hide('moGreeting');
       }
     });
 
