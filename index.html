@@ -3004,11 +3004,33 @@ const App = {
 
       if (!searchQuery) throw new Error('Could not determine search terms');
 
+      // Auto-set territory filter if the user mentioned a target agency
+      if (targetAgency) {
+        const agLower = targetAgency.toLowerCase();
+        const agencyToTerritory = {
+          'dod': 'dod', 'army': 'dod', 'navy': 'dod', 'air force': 'dod', 'usaf': 'dod',
+          'socom': 'dod', 'disa': 'dod', 'dla': 'dod', 'osd': 'dod',
+          'hhs': 'fedhealth', 'va': 'fedhealth', 'cms': 'fedhealth', 'fda': 'fedhealth',
+          'cdc': 'fedhealth', 'nih': 'fedhealth', 'federal health': 'fedhealth', 'fed health': 'fedhealth',
+          'treasury': 'fedfin', 'ed': 'fedciv', 'dhs': 'fedciv', 'gsa': 'fedciv',
+          'usda': 'fedciv', 'doe': 'fedciv', 'doj': 'fedciv', 'dot': 'fedciv',
+          'state': 'fedciv', 'commerce': 'fedciv', 'interior': 'fedciv',
+          'fed civ': 'fedciv', 'federal civ': 'fedciv', 'civilian': 'fedciv',
+        };
+        const territory = agencyToTerritory[agLower];
+        if (territory) {
+          this.setTerritory(territory);
+          this.toast(`Filtering to ${this.SECTORS[territory].label}: ${searchQuery}`, 'ok', 3000);
+        } else {
+          this.toast(`Searching for: ${searchQuery}`, 'ok', 3000);
+        }
+      } else {
+        this.toast(`Searching for: ${searchQuery}`, 'ok', 3000);
+      }
+
       // Update input to show what we're searching
       if (inp) inp.value = searchQuery;
       if (mobileInp) mobileInp.value = searchQuery;
-
-      this.toast(`Searching for: ${searchQuery}`, 'ok', 3000);
 
       // Run the search with the generated keywords
       await this.runSearch(searchQuery, false, false);
