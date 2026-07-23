@@ -13195,8 +13195,18 @@ window.LiDraft = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           request_type: 'govhoo_chat',
-          market_data: { query: A.currentQuery || '' },
-          objective: null,
+          market_data: {
+            query: A.currentQuery || '',
+            contracts: ((A.searchData && A.searchData.active) || []).slice(0, 50).map(c => ({
+              vendor: c['Recipient Name'],
+              agency: c['Awarding Agency'],
+              office: c['Awarding Sub Agency'] || c['Funding Agency'],
+              amount: c['Award Amount'],
+              end_date: c['End Date'],
+              description: c['Award Description'] || c['Contract Description'] || ''
+            }))
+          },
+          objective: (() => { try { const l = localStorage.getItem('fedhoo_seller_product'); return l ? `I sell ${l}.` : null; } catch { return null; } })(),
           history: [],
           question: 'Rewrite the following LinkedIn post draft to be punchier and more engaging. Keep EVERY number, vendor name, agency name, and URL exactly as written. Keep the [YOUR TAKE ...] placeholder line intact and on its own line. No markdown formatting, no asterisks, no headers \u2014 plain text with line breaks and the \u25B8 bullets kept. Return only the post text.\n\n---\n' + draft
         }),
@@ -13204,19 +13214,29 @@ window.LiDraft = {
       });
       clearTimeout(timeout);
       if (!res.ok || !res.body) throw new Error('HTTP ' + res.status);
+      // Backend speaks SSE: lines of `data: {"t":"chunk","text":...}` ending in {"t":"done"} or {"t":"error","msg":...}
       const reader = res.body.getReader(), dec = new TextDecoder();
-      let out = '';
-      while (true) {
+      let buf = '', out = '', finished = false;
+      while (!finished) {
         const { done, value } = await reader.read();
         if (done) break;
-        out += dec.decode(value, { stream: true });
-        ta.value = out;
+        buf += dec.decode(value, { stream: true });
+        const lines = buf.split('\n'); buf = lines.pop();
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          let msg; try { msg = JSON.parse(line.slice(6).trim()); } catch { continue; }
+          if (msg.t === 'chunk' && msg.text) { out += msg.text; ta.value = out; }
+          else if (msg.t === 'done') { finished = true; break; }
+          else if (msg.t === 'error') { throw new Error(msg.msg || 'AI error'); }
+        }
       }
-      if (!out.trim()) { ta.value = draft; throw new Error('empty'); }
-      ta.value = out.replace(/^```[a-z]*\n?|```$/g, '').trim();
+      out = out.replace(/```[a-z]*\n?|```/g, '').replace(/\*\*/g, '').trim();
+      if (!out) { throw new Error('empty response'); }
+      ta.value = out;
     } catch (err) {
       ta.value = draft;
-      A.toast && A.toast('Polish unavailable right now \u2014 your draft is untouched.', 'warning');
+      const hint = err && err.message && err.message.length < 70 && err.name !== 'AbortError' ? ` (${err.message})` : '';
+      A.toast && A.toast(`Polish unavailable right now${hint} \u2014 your draft is untouched.`, 'warning');
     } finally {
       btn.disabled = false; btn.textContent = 'Polish with AI';
       this._abort = null;
