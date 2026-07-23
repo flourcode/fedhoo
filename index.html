@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#FDFCFF" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0F0E13" media="(prefers-color-scheme: dark)">
 <meta name="color-scheme" content="light dark">
@@ -15,8 +15,7 @@
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='19' fill='%238EAF8E' stroke='%233D5C3D' stroke-width='2.2'/%3E%3Ccircle cx='15' cy='16' r='2.2' fill='%233D5C3D'/%3E%3Ccircle cx='25' cy='16' r='2.2' fill='%233D5C3D'/%3E%3Cpath d='M13 23 Q20 30 27 23' stroke='%233D5C3D' stroke-width='2.2' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <title>fedhoo — Federal Market Intelligence</title>
-<meta name="description" content="Know any federal market before the meeting starts. Who's buying, who's winning, what's expiring, in one search — or just ask Mo, plugged into USASpending and SEC EDGAR.">
-<link rel="preconnect" href="https://4gxuwrrugc4s6zqcxsos2exg5y0sjcrc.lambda-url.us-east-1.on.aws" crossorigin>
+<meta name="description" content="Know any federal market before the meeting starts. Who's buying, who's winning, what's expiring, in one search.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap" rel="stylesheet">
@@ -950,55 +949,12 @@ a, button, input, select { touch-action: manipulation; }
 }
 .offline-banner.visible { transform: translateY(0); }
 
-</style>
-
-<style id="mo-styles">
-/* ── MoCore: Mo intelligence inside fedhoo's sheet (fedhoo tokens only) ── */
-.mocore-note { font-size: 11px; color: var(--text-quaternary); margin: 8px 0 2px; }
-.mocore-note b { color: var(--accent); font-weight: 700; }
-.mocore-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-.mocore-greet { font-size: var(--text-sm, 13px); color: var(--text-secondary); line-height: 1.55; }
-.mocore-greet-title { font-weight: 800; font-size: 15px; color: var(--text-primary); margin-bottom: 6px; }
-.mocore-error { color: var(--warn-text); font-size: var(--text-sm, 13px); }
-
-/* ── LinkedIn Draft modal (fedhoo tokens — inherits dark mode) ── */
-.li-backdrop { position: fixed; inset: 0; z-index: 2590; background: rgba(20,18,28,0.45); }
-.li-modal {
-  position: fixed; z-index: 2600; left: 50%; top: 50%; transform: translate(-50%,-50%);
-  width: min(600px, calc(100vw - 24px)); max-height: min(720px, calc(100dvh - 24px));
-  display: flex; flex-direction: column;
-  background: var(--bg-app); color: var(--text-primary);
-  border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow), 0 24px 64px rgba(0,0,0,0.25);
-  padding: 18px;
-}
-.li-modal.hidden, .li-backdrop.hidden { display: none; }
-.li-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
-.li-title { font-weight: 800; font-size: 16px; letter-spacing: -0.02em; }
-.li-sub { font-size: 12px; color: var(--text-tertiary); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.li-close { border: none; background: none; color: var(--text-tertiary); font-size: 16px; cursor: pointer; padding: 2px 6px; border-radius: 8px; }
-.li-close:hover { background: var(--bg-hover); color: var(--text-primary); }
-.li-text {
-  flex: 1; min-height: 300px; resize: vertical; width: 100%;
-  font-family: var(--font); font-size: 13px; line-height: 1.55;
-  color: var(--text-primary); background: var(--bg); border: 1px solid var(--border);
-  border-radius: 12px; padding: 12px; outline: none;
-}
-.li-text:focus { border-color: var(--accent-mid); }
-.li-hint { font-size: 11px; color: var(--text-quaternary); margin: 8px 2px 10px; }
-.li-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
-.li-btn {
-  border: 1px solid var(--border); background: var(--bg); color: var(--text-primary);
-  font-size: 13px; font-weight: 700; padding: 8px 14px; border-radius: 9999px; cursor: pointer;
-  text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
-}
-.li-btn:hover { background: var(--bg-hover); }
-.li-btn[disabled] { opacity: 0.55; cursor: default; }
-.li-btn-primary { background: var(--btn-bg); border-color: var(--btn-bg); color: var(--btn-text); }
-.li-btn-primary:hover { background: var(--btn-hover); }
-
 
 /* ── Partner Fit card ── */
 .pf-sub { font-size: var(--text-xs, 12px); color: var(--text-tertiary); margin: -4px 0 12px; }
+.pf-section { font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-tertiary); margin: 14px 0 2px; }
+.pf-section:first-of-type { margin-top: 4px; }
+.pf-section-hint { font-size: 11px; color: var(--text-quaternary); font-weight: 400; text-transform: none; letter-spacing: 0; margin-left: 6px; }
 .pf-row { display: flex; gap: 12px; padding: 12px 2px; border-bottom: 1px solid var(--border-inner, var(--border)); align-items: flex-start; }
 .pf-row:last-child { border-bottom: none; }
 .pf-rank { flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; background: var(--accent-dim); color: var(--accent); font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; margin-top: 2px; }
@@ -1009,11 +965,13 @@ a, button, input, select { touch-action: manipulation; }
 .pf-score.go   { background: var(--go-bg);   color: var(--go-text); }
 .pf-score.warn { background: var(--warn-bg); color: var(--warn-text); }
 .pf-score.dim  { background: var(--chip-bg); color: var(--text-tertiary); }
+.pf-role { font-size: 9px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; padding: 2px 7px; border-radius: 9999px; border: 1px solid var(--border); color: var(--text-tertiary); }
+.pf-role.channel { border-color: var(--accent-mid, var(--accent)); color: var(--accent); }
 .pf-why { font-size: 12px; color: var(--text-secondary); margin-top: 3px; line-height: 1.45; }
 .pf-actions { display: flex; gap: 10px; margin-top: 6px; }
 .pf-link { font-size: 11px; font-weight: 700; color: var(--accent); text-decoration: none; cursor: pointer; background: none; border: none; padding: 0; }
 .pf-link:hover { text-decoration: underline; }
-.pf-note { font-size: 11px; color: var(--text-quaternary); margin-top: 10px; }
+.pf-note { font-size: 11px; color: var(--text-quaternary); margin-top: 10px; line-height: 1.5; }
 
 </style>
 </head>
@@ -1123,7 +1081,6 @@ a, button, input, select { touch-action: manipulation; }
           <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
         </svg>
       </button>
-      <button class="hdr-icon-circle hidden" id="liDraftBtn" onclick="LiDraft.open()" title="Draft LinkedIn post" aria-label="Draft LinkedIn post"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.45 20.45h-3.55v-5.57c0-1.33-.03-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12zM7.12 20.45H3.55V9h3.57v11.45z"/></svg></button>
       <button class="hdr-icon-circle hidden" id="snapshotBtn" onclick="App.generateSnapshot()" title="Market Focus report" aria-label="Generate Market Focus report">
         <svg class="snap-icon-default" width="16" height="16" viewBox="0 0 640 640" fill="currentColor" aria-hidden="true">
           <path d="M128 128C128 92.7 156.7 64 192 64L341.5 64C358.5 64 374.8 70.7 386.8 82.7L493.3 189.3C505.3 201.3 512 217.6 512 234.6L512 512C512 547.3 483.3 576 448 576L192 576C156.7 576 128 547.3 128 512L128 128zM336 122.5L336 216C336 229.3 346.7 240 360 240L453.5 240L336 122.5zM303 505C312.4 514.4 327.6 514.4 336.9 505L400.9 441C410.3 431.6 410.3 416.4 400.9 407.1C391.5 397.8 376.3 397.7 367 407.1L344 430.1L344 344C344 330.7 333.3 320 320 320C306.7 320 296 330.7 296 344L296 430.1L273 407.1C263.6 397.7 248.4 397.7 239.1 407.1C229.8 416.5 229.7 431.7 239.1 441L303.1 505z"/>
@@ -1312,13 +1269,13 @@ a, button, input, select { touch-action: manipulation; }
       <div class="contract-list" id="subawardsList"></div>
     </div>
 
-    <!-- PARTNER FIT CARD (merge v3) -->
+    <!-- PARTNER FIT CARD -->
     <div class="app-card wide result-panel hidden" id="partnerFitCard">
       <div class="card-header-row">
         <h2 class="card-title card-title--flush">Partner Fit</h2>
         <button class="export-btn" onclick="PartnerFit.exportCSV()" title="Export partner scores to CSV">Export CSV</button>
       </div>
-      <div class="pf-sub">Primes ranked by teaming potential in this market — who flows dollars to subs, holds vehicles, and has paper expiring.</div>
+      <div class="pf-sub" id="pfSub">Two ways into this market: sell through a channel holder, or team with a prime.</div>
       <div id="partnerFitList"></div>
       <div class="pf-note" id="partnerFitNote"></div>
     </div>
@@ -1432,24 +1389,6 @@ a, button, input, select { touch-action: manipulation; }
   </div>
   <div class="footer-legal">fedhoo uses Google Analytics to understand site usage and improve the product. We do not collect personal information or sell data. <a href="https://tools.google.com/dlpage/gaoptout" target="_blank" rel="noopener">Opt out using Google's Analytics Opt-out Browser Add-on</a>.</div>
 </footer>
-
-<!-- ═══════════ LINKEDIN DRAFT MODAL ═══════════ -->
-<div class="li-backdrop hidden" id="liBackdrop" onclick="LiDraft.close()"></div>
-<div class="li-modal hidden" id="liModal" role="dialog" aria-modal="true" aria-label="Draft LinkedIn post">
-  <div class="li-head">
-    <div class="li-title">Draft LinkedIn post</div>
-    <div class="li-sub" id="liSub"></div>
-    <button class="li-close" onclick="LiDraft.close()" aria-label="Close">✕</button>
-  </div>
-  <textarea id="liText" class="li-text" spellcheck="false" aria-label="Post draft"></textarea>
-  <div class="li-hint">Numbers are computed from this search. Replace the [YOUR TAKE] line with your read — that's the part only you can write.</div>
-  <div class="li-actions">
-    <button class="li-btn" id="liPolishBtn" onclick="LiDraft.polish()">Polish with AI</button>
-    <button class="li-btn" id="liCopyBtn" onclick="LiDraft.copy()">Copy</button>
-    <a class="li-btn li-btn-primary" id="liOpenBtn" href="#" target="_blank" rel="noopener" onclick="LiDraft.openLinkedIn(event)">Open LinkedIn</a>
-  </div>
-</div>
-
 
 <script>
 // ════════════════════════════════════════════════════════════
@@ -3064,15 +3003,12 @@ const App = {
     // Hide results while loading
     DOM.hide('resultsGrid');
     DOM.hide('shareBtn');
-    DOM.hide('liDraftBtn');
-    /* merged: artiFab stays visible — Mo is always available */
+    DOM.hide('artiFab');
     SearchPills.clear(); DOM.get('artiBridge') && DOM.hide('artiBridge');
     this._artiPayloadCache = null;
-    if (!window.__mocoreKeepSheet) {
-      this.closeArtiSheet();
-      const sheetAic = DOM.get('aiContentContainer'); if (sheetAic) sheetAic.innerHTML = '';
-      const ql = DOM.get('sheetQuestionLabel'); if (ql) { ql.textContent = ''; ql.classList.add('hidden'); }
-    }
+    this.closeArtiSheet();
+    const sheetAic = DOM.get('aiContentContainer'); if (sheetAic) sheetAic.innerHTML = '';
+    const ql = DOM.get('sheetQuestionLabel'); if (ql) { ql.textContent = ''; ql.classList.add('hidden'); }
     DOM.hide('expiringCard');
     DOM.hide('recentCard');
     DOM.hide('primesCard');
@@ -3094,7 +3030,7 @@ const App = {
     }
     const ais = DOM.get('artiInlineStatus'); if (ais) { ais.style.display = ''; }
     const aist = DOM.get('artiInlineStatusText'); if (aist) aist.textContent = 'Reading the data…';
-    if (!window.__mocoreKeepSheet) DOM.get('aiContentContainer').innerHTML = '';
+    DOM.get('aiContentContainer').innerHTML = '';
     DOM.hide('artiActions');
     const chatHistoryEl = DOM.get('chatHistory'); if (chatHistoryEl) { chatHistoryEl.innerHTML = ''; chatHistoryEl.classList.add('hidden'); }
     DOM.hide('chatInputWrap');
@@ -3243,7 +3179,6 @@ const App = {
       DOM.show('resultsGrid');
         DOM.show('shareBtn');
         DOM.show('snapshotBtn');
-        DOM.show('liDraftBtn');
         if (window.PartnerFit) PartnerFit.render();
       DOM.show('bioCard');
 
@@ -3282,7 +3217,7 @@ const App = {
   showEmptyState(query) {
     // Hide all result panels so old data doesn't bleed through
     document.querySelectorAll('.result-panel').forEach(el => el.classList.add('hidden'));
-    /* merged: artiFab stays visible — Mo is always available */
+    DOM.hide('artiFab');
     // Hide third tab
     DOM.get('tabSubSankey')?.classList.add('hidden');
     DOM.get('dotSubSankey')?.classList.add('hidden');
@@ -4056,7 +3991,6 @@ const App = {
   },
 
   async sendArtiChat(message, useInline = false) {
-    if (window.MoCore && message) { MoCore.ask(message); return; }  // integrated: Mo answers, dashboard renders
     const chatInputElId = 'chatInput';
     const chatSendElId  = 'chatSendBtn'; // all answers go to sheet
 
@@ -6585,465 +6519,13 @@ App.init();
 
 
 <script>
-// ═══════════ MoCore — Mo's brain, fedhoo's body ═══════════
-// Streams Mo's Lambda (raw text + <data/> tags). Prose renders in the Arti
-// sheet; the first award tag drives the real dashboard via App.runSearch;
-// extra tags become follow-up chips. One design system, one renderer.
-(function () {
-'use strict';
-const LAMBDA_URL = 'https://4gxuwrrugc4s6zqcxsos2exg5y0sjcrc.lambda-url.us-east-1.on.aws/';
-
-const TAG_RE = /<\s*data\b([^>]{1,600}?)\/>/i;
-
-function findDataTag(text) {
-  const m = TAG_RE.exec(text);
-  if (!m) return null;
-  const inside = m[1];
-  if (/\n/.test(inside)) return null;  // commentary leaked into attributes
-  const attrs = {};
-  const attrRe = /(\w+)\s*=\s*("([^">\n]*)"|'([^'>\n]*)')/g;
-  let am;
-  while ((am = attrRe.exec(inside))) attrs[am[1]] = am[3] !== undefined ? am[3] : am[4];
-  return { match: m[0], start: m.index, end: m.index + m[0].length, attrs };
-}
-
-// Detect a tag opening that NEVER closed — Mo started writing a tag but ran
-// off into prose without `/>`. We hide this fragment from displayed prose.
-// Also hides partial tag PREFIXES (just `<` at the end of a chunk) to prevent
-// flashes during character-level streaming.
-function findBrokenTagStart(text) {
-  // Try the well-formed opener first: `<data ` or `< data ` (Mo sometimes
-  // adds whitespace between the bracket and the tag name).
-  const withBracket = /<\s*data\b/i.exec(text);
-  if (withBracket && text.indexOf('/>', withBracket.index) === -1) {
-    return withBracket.index;
-  }
-  if (withBracket) return -1; // had a close, regular parser handles it
-
-  // HEADLESS opener fallback. The leading '<' might have been stripped by
-  // an earlier sanitizer (or never emitted by Mo). Detect a bare `data `
-  // followed by an attribute pattern that's distinctive enough not to
-  // false-positive on prose: `data <word>="..."` or `data <word>=...`.
-  // Common attrs: form_type, recipient, agency, company, sector, since.
-  const headless = /\bdata\s+(form_type|recipient|agency|company|sector|since|naics|psc|keywords|vehicle|min_amount|max_amount|date_after|date_before|spv_only|federal_adjacent)\s*=/i.exec(text);
-  if (headless && text.indexOf('/>', headless.index) === -1) {
-    return headless.index;
-  }
-
-  // PARTIAL OPENER PREFIX. fullText might end with characters that could
-  // be the start of a `<data` opener but we don't have enough yet to tell.
-  // Patterns: `<`, `<d`, `<da`, `<dat`, `<data` (without word boundary yet).
-  // Suppress from there to prevent a brief flash during character-level
-  // streaming. False positive risk: `<` at the end of a normal sentence
-  // ("x <"). Acceptable because the `<` would be suppressed for ONE chunk
-  // and either render correctly on next chunk (if not a tag) or get
-  // consumed (if it WAS the start of a tag).
-  const partial = /<\s*d?a?t?a?$/i.exec(text);
-  if (partial) return partial.index;
-
-  return -1;
-}
-
-
-
-const A = () => (typeof App !== 'undefined' && App) ? App : window.App;
-const esc = (s) => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-const ATTR_RE = /(\w+)\s*=\s*("([^">\n]*)"|'([^'>\n]*)')/g;
-const ALL_TAGS_RE = /<\s*data\b[^>]{1,600}?\/>/gi;
-
-function parseAttrs(inside) {
-  if (/\n/.test(inside)) return null;
-  const attrs = {}; let m; ATTR_RE.lastIndex = 0;
-  while ((m = ATTR_RE.exec(inside))) attrs[m[1]] = m[3] !== undefined ? m[3] : m[4];
-  return attrs;
-}
-const isEdgarTag = (a) => !!(a.form_type || (a.company && !a.keywords && !a.recipient && !a.agency));
-function attrsToQuery(a) {
-  return [a.keywords, a.recipient, a.company, a.agency].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
-}
-function displayText(full) {
-  let t = full.replace(ALL_TAGS_RE, '');
-  const broken = findBrokenTagStart(t);
-  if (broken >= 0) t = t.slice(0, broken);
-  return t.trim();
-}
-
-let history = [];
-let busy = false;
-
-function driveDashboard(attrs) {
-  const q = attrsToQuery(attrs);
-  const app = A();
-  if (!q || !app) return null;
-  try {
-    window.__mocoreKeepSheet = true;
-    if (app.UI && app.UI.searchInput) app.UI.searchInput.value = q;
-    app.runSearch(q);
-    setTimeout(() => { window.__mocoreKeepSheet = false; }, 800);
-    return q;
-  } catch (e) { window.__mocoreKeepSheet = false; console.warn('MoCore drive failed:', e); return null; }
-}
-
-function chipFor(attrs) {
-  if (isEdgarTag(attrs)) {
-    const co = attrs.company || attrs.recipient || '';
-    const href = 'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&company=' + encodeURIComponent(co) + '&type=' + encodeURIComponent(attrs.form_type || '') + '&dateb=&owner=include&count=20';
-    return `<a class="chip-tray-item" href="${esc(href)}" target="_blank" rel="noopener">SEC filings: ${esc(co || 'EDGAR')} ↗</a>`;
-  }
-  const q = attrsToQuery(attrs);
-  return q ? `<button class="chip-tray-item mocore-drive" data-q="${esc(q)}">Dashboard → ${esc(q)}</button>` : '';
-}
-
-async function ask(question) {
-  question = String(question || '').trim();
-  const app = A();
-  if (!question || busy || !app) return;
-  busy = true;
-
-  const chatInput = DOM.get('chatInput'), chatSend = DOM.get('chatSendBtn');
-  if (chatInput) chatInput.disabled = true;
-  if (chatSend) chatSend.disabled = true;
-
-  app.openArtiSheet();
-  const label = DOM.get('sheetQuestionLabel');
-  if (label) { label.textContent = question; label.classList.remove('hidden'); }
-  DOM.get('artiTrigger')?.classList.add('hidden');
-  DOM.show('artiActions');  // the conversation input is Mo's front door — always available
-  const box = DOM.get('aiContentContainer');
-  if (box) box.innerHTML = '<div class="arti-response-text arti-thinking" id="sheetResponseText">Thinking…</div>' +
-                           '<div class="mocore-note hidden" id="mocoreNote"></div>' +
-                           '<div class="mocore-chips" id="mocoreChips"></div>';
-  const target = DOM.get('sheetResponseText');
-  const noteEl = DOM.get('mocoreNote');
-  const chipsEl = DOM.get('mocoreChips');
-
-  // First turn carries the seller lens + current dashboard context
-  let sent = question;
-  if (!history.length) {
-    const bits = [];
-    try { const l = localStorage.getItem('fedhoo_seller_product'); if (l) bits.push(`I sell ${l}.`); } catch {}
-    if (app.currentQuery) bits.push(`My dashboard currently shows the "${app.currentQuery}" market.`);
-    if (bits.length) sent = `(${bits.join(' ')}) ${question}`;
-  }
-  history.push({ role: 'user', parts: [{ text: sent }] });
-  if (history.length > 24) history = history.slice(-24);
-
-  let fullText = '', tagsFired = 0, firedDash = false;
-  const MAX_TAGS = 4;
-  const chips = [];
-  let renderPending = false;
-  const render = () => {
-    if (renderPending) return;
-    renderPending = true;
-    requestAnimationFrame(() => {
-      renderPending = false;
-      if (!target) return;
-      const t = displayText(fullText);
-      if (t) { target.classList.remove('arti-thinking'); target.innerHTML = Html.parseAiMarkdown(t); }
-    });
-  };
-
-  const abort = new AbortController();
-  const timer = setTimeout(() => abort.abort(), 60000);
-  try {
-    const res = await fetch(LAMBDA_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ history }),
-      signal: abort.signal,
-    });
-    if (!res.ok || !res.body) throw new Error('Mo unavailable (HTTP ' + res.status + ')');
-    const reader = res.body.getReader(), dec = new TextDecoder();
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      fullText += dec.decode(value, { stream: true });
-      // fire newly-completed tags
-      const found = [...fullText.matchAll(ALL_TAGS_RE)];
-      while (tagsFired < Math.min(found.length, MAX_TAGS)) {
-        const inside = /<\s*data\b([^>]{1,600}?)\/>/i.exec(found[tagsFired][0])[1];
-        const attrs = parseAttrs(inside);
-        tagsFired++;
-        if (!attrs) continue;
-        if (!firedDash && !isEdgarTag(attrs)) {
-          const q = driveDashboard(attrs);
-          if (q) {
-            firedDash = true;
-            if (noteEl) { noteEl.innerHTML = 'Dashboard updated → <b>' + esc(q) + '</b> · signals, charts and Partner Fit are live behind this sheet'; noteEl.classList.remove('hidden'); }
-            continue;
-          }
-        }
-        const c = chipFor(attrs);
-        if (c) chips.push(c);
-      }
-      render();
-    }
-    clearTimeout(timer);
-    history.push({ role: 'model', parts: [{ text: fullText }] });
-    const finalText = displayText(fullText);
-    if (target) {
-      target.classList.remove('arti-thinking');
-      target.innerHTML = finalText ? Html.parseAiMarkdown(finalText)
-        : '<span style="color:var(--text-quaternary);">Data pulled — see the dashboard behind this sheet.</span>';
-    }
-    if (chips.length && chipsEl) chipsEl.innerHTML = chips.join('');
-  } catch (err) {
-    clearTimeout(timer);
-    if (target) {
-      target.classList.remove('arti-thinking');
-      target.innerHTML = '<div class="mocore-error">Mo couldn\'t answer: ' + esc(err.message || 'connection failed') + '. Your dashboard is unaffected — try again.</div>';
-    }
-  } finally {
-    busy = false;
-    DOM.show('artiActions');  // search side effects (e.g. empty-state) may have hidden the input row
-    if (chatInput) { chatInput.disabled = false; chatInput.focus(); }
-    if (chatSend) chatSend.disabled = false;
-  }
-}
-
-// follow-up chips drive the dashboard without a new Mo turn
-document.addEventListener('click', (e) => {
-  const b = e.target.closest('.mocore-drive');
-  if (!b) return;
-  const app = A();
-  if (app && b.dataset.q) {
-    window.__mocoreKeepSheet = true;
-    if (app.UI && app.UI.searchInput) app.UI.searchInput.value = b.dataset.q;
-    app.runSearch(b.dataset.q);
-    setTimeout(() => { window.__mocoreKeepSheet = false; }, 800);
-  }
-});
-// greeting example chips
-document.addEventListener('click', (e) => {
-  const b = e.target.closest('.mocore-example');
-  if (b) ask(b.dataset.ask || b.textContent);
-});
-
-window.MoCore = { ask, get busy() { return busy; }, get history() { return history; }, reset() { history = []; } };
-
-// ── boot wiring ──
-function boot() {
-  const app = A();
-  // FAB always visible: Mo works before any search
-  document.getElementById('artiFab')?.classList.remove('hidden');
-  // Greeting when the sheet opens with nothing to show
-  if (app && app.openArtiSheet && !app.__mocoreWrapped) {
-    app.__mocoreWrapped = true;
-    const orig = app.openArtiSheet.bind(app);
-    app.openArtiSheet = function () {
-      orig();
-      DOM.show('artiActions');
-      const box = DOM.get('aiContentContainer');
-      if (box && !box.textContent.trim()) {
-        box.innerHTML = '<div class="mocore-greet">' +
-          '<div class="mocore-greet-title">Hi, I\'m Mo.</div>' +
-          'Ask me anything about federal contracts — like you\'d ask a colleague, not a search box. ' +
-          'I pull live USASpending data and put the answer on your dashboard: signals, charts, partners, expiring paper.' +
-          '<div class="mocore-chips" style="margin-top:12px;">' +
-          '<button class="chip-tray-item mocore-example">Who\'s buying cyber at DHS</button>' +
-          '<button class="chip-tray-item mocore-example">Expiring Navy contracts</button>' +
-          '<button class="chip-tray-item mocore-example">Where to sell cloud in FedCiv</button>' +
-          '<button class="chip-tray-item mocore-example" data-ask="Which primes should a small business partner with at the VA?">Best VA partners for a small biz</button>' +
-          '</div></div>';
-      }
-    };
-  }
-  // share-link replay: ?mo=<question>
-  try {
-    const q = new URLSearchParams(location.search).get('mo');
-    if (q && q.trim()) setTimeout(() => ask(q.trim()), 700);
-  } catch {}
-}
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
-else boot();
-})();
-</script>
-
-<script>
-// ═══════════ LINKEDIN DRAFT — turns the current search into a post ═══════════
-(function () {
-'use strict';
-const app = () => (typeof App !== 'undefined' && App) ? App : window.App;
-const money = (n) => {
-  const x = Number(n) || 0;
-  if (x >= 1e9) return '$' + (x / 1e9).toFixed(1) + 'B';
-  if (x >= 1e6) return '$' + (x / 1e6).toFixed(1) + 'M';
-  if (x >= 1e3) return '$' + (x / 1e3).toFixed(0) + 'K';
-  return '$' + Math.round(x);
-};
-const $ = (id) => document.getElementById(id);
-
-function gather() {
-  const A = app();
-  const rows = (A && A.searchData && A.searchData.active) || [];
-  if (!rows.length) return null;
-  const q = (A.displayQuery || A.currentQuery || '').trim();
-  const terr = A.territory && A.SECTORS && A.SECTORS[A.territory] ? A.SECTORS[A.territory].label : '';
-
-  let total = 0;
-  const byVendor = new Map(), byAgency = new Map();
-  const now = Date.now(), cutoff18 = now + 548 * 86400000;
-  let expTotal = 0, expCount = 0, expMax = null;
-
-  for (const c of rows) {
-    const amt = parseFloat(c['Award Amount']) || 0;
-    total += amt;
-    const v = c['Recipient Name'] || 'Unknown';
-    byVendor.set(v, (byVendor.get(v) || 0) + amt);
-    const ag = c['Awarding Agency'] || '';
-    if (ag) byAgency.set(ag, (byAgency.get(ag) || 0) + amt);
-    if (c._endTs && c._endTs > now && c._endTs <= cutoff18 && amt > 50000) {
-      expTotal += amt; expCount++;
-      if (!expMax || amt > (parseFloat(expMax['Award Amount']) || 0)) expMax = c;
-    }
-  }
-  const vendors = [...byVendor.entries()].sort((a, b) => b[1] - a[1]);
-  const agencies = [...byAgency.entries()].sort((a, b) => b[1] - a[1]);
-  const top3 = vendors.slice(0, 3).reduce((s, [, v]) => s + v, 0);
-  return { q, terr, total, vendors, agencies,
-           top3Share: total ? Math.round(top3 / total * 100) : 0,
-           expTotal, expCount, expMax, n: rows.length };
-}
-
-function shareUrl(d) {
-  const A = app();
-  let u = 'https://fedhoo.com/?q=' + encodeURIComponent(d.q);
-  if (A && A.territory) u += '&territory=' + encodeURIComponent(A.territory);
-  return u;
-}
-
-function compose(d) {
-  const where = d.terr ? ` across ${d.terr}` : '';
-  const [v1, v1amt] = d.vendors[0];
-  const v1share = d.total ? Math.round(v1amt / d.total * 100) : 0;
-  const conc = d.top3Share >= 60 ? `a consolidated market \u2014 partnering beats priming here`
-             : d.top3Share >= 35 ? `meaningful concentration, but the door isn't closed`
-             : `a fragmented market \u2014 room for new entrants`;
-  const lines = [];
-  lines.push(`${money(d.total)} in federal ${d.q} awards${where} \u2014 and ${money(d.expTotal)} of it comes up for recompete within 18 months.`);
-  lines.push('');
-  lines.push('What the data says:');
-  lines.push('');
-  lines.push(`\u25B8 ${v1} leads with ${money(v1amt)} (${v1share}% of the market)`);
-  d.vendors.slice(1, 4).forEach(([v, amt]) => lines.push(`\u25B8 ${v}: ${money(amt)}`));
-  lines.push(`\u25B8 Top 3 vendors hold ${d.top3Share}% \u2014 ${conc}`);
-  if (d.expCount) {
-    lines.push(`\u25B8 ${d.expCount} contracts worth ${money(d.expTotal)} expire in the next 18 months`);
-    if (d.expMax) lines.push(`\u25B8 Largest recompete: ${d.expMax['Recipient Name']}, ${money(d.expMax['Award Amount'])}, ends ${d.expMax['End Date'] || 'TBD'}`);
-  }
-  if (d.agencies.length) {
-    const ags = d.agencies.slice(0, 2).map(([a]) => a).join(' and ');
-    lines.push(`\u25B8 Biggest buyer${d.agencies.length > 1 ? 's' : ''}: ${ags}`);
-  }
-  lines.push('');
-  lines.push('[YOUR TAKE \u2014 the one thing only you would say about this market]');
-  lines.push('');
-  lines.push(`Explore the data yourself: ${shareUrl(d)}`);
-  lines.push('Data: USASpending.gov via fedhoo.');
-  lines.push('');
-  lines.push('Want the full read \u2014 partners, routes in, timing? Book a Federal Partner Strategy Session: https://calendly.com/markflournoy/chat-with-mark');
-  return lines.join('\n');
-}
-
-window.LiDraft = {
-  open() {
-    const d = gather();
-    const A = app();
-    if (!d) { A && A.toast && A.toast('Run a search first \u2014 the draft is built from live results.', 'warning'); return; }
-    $('liSub').textContent = d.terr ? `${d.q} \u00B7 ${d.terr} \u00B7 ${d.n} awards` : `${d.q} \u00B7 ${d.n} awards`;
-    $('liText').value = compose(d);
-    $('liBackdrop').classList.remove('hidden');
-    $('liModal').classList.remove('hidden');
-    try { typeof gtag === 'function' && gtag('event', 'li_draft_open', { query: d.q.slice(0, 60) }); } catch {}
-  },
-  close() {
-    this._abort && this._abort.abort();
-    $('liModal').classList.add('hidden');
-    $('liBackdrop').classList.add('hidden');
-  },
-  copy() {
-    const btn = $('liCopyBtn'), text = $('liText').value;
-    const flash = (m) => { const o = btn.textContent; btn.textContent = m; setTimeout(() => btn.textContent = o, 1500); };
-    if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(text).then(() => flash('Copied!'), () => flash('Try again'));
-    } else {
-      try { $('liText').select(); document.execCommand('copy'); flash('Copied!'); } catch { flash('Try again'); }
-    }
-  },
-  openLinkedIn(e) {
-    const text = $('liText').value;
-    $('liOpenBtn').href = 'https://www.linkedin.com/feed/?shareActive=true&text=' + encodeURIComponent(text);
-    // navigation proceeds via the anchor's href
-  },
-  async polish() {
-    const A = app(), btn = $('liPolishBtn'), ta = $('liText');
-    if (!A || !A.AI_ENDPOINT || btn.disabled) return;
-    const draft = ta.value;
-    btn.disabled = true; btn.textContent = 'Polishing\u2026';
-    this._abort = new AbortController();
-    const timeout = setTimeout(() => this._abort.abort(), 28000);
-    try {
-      const res = await fetch(A.AI_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          request_type: 'govhoo_chat',
-          market_data: {
-            query: A.currentQuery || '',
-            contracts: ((A.searchData && A.searchData.active) || []).slice(0, 50).map(c => ({
-              vendor: c['Recipient Name'],
-              agency: c['Awarding Agency'],
-              office: c['Awarding Sub Agency'] || c['Funding Agency'],
-              amount: c['Award Amount'],
-              end_date: c['End Date'],
-              description: c['Award Description'] || c['Contract Description'] || ''
-            }))
-          },
-          objective: (() => { try { const l = localStorage.getItem('fedhoo_seller_product'); return l ? `I sell ${l}.` : null; } catch { return null; } })(),
-          history: [],
-          question: 'Rewrite the following LinkedIn post draft to be punchier and more engaging. Keep EVERY number, vendor name, agency name, and URL exactly as written. Keep the [YOUR TAKE ...] placeholder line intact and on its own line. No markdown formatting, no asterisks, no headers \u2014 plain text with line breaks and the \u25B8 bullets kept. Return only the post text.\n\n---\n' + draft
-        }),
-        signal: this._abort.signal
-      });
-      clearTimeout(timeout);
-      if (!res.ok || !res.body) throw new Error('HTTP ' + res.status);
-      // Backend speaks SSE: lines of `data: {"t":"chunk","text":...}` ending in {"t":"done"} or {"t":"error","msg":...}
-      const reader = res.body.getReader(), dec = new TextDecoder();
-      let buf = '', out = '', finished = false;
-      while (!finished) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buf += dec.decode(value, { stream: true });
-        const lines = buf.split('\n'); buf = lines.pop();
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          let msg; try { msg = JSON.parse(line.slice(6).trim()); } catch { continue; }
-          if (msg.t === 'chunk' && msg.text) { out += msg.text; ta.value = out; }
-          else if (msg.t === 'done') { finished = true; break; }
-          else if (msg.t === 'error') { throw new Error(msg.msg || 'AI error'); }
-        }
-      }
-      out = out.replace(/```[a-z]*\n?|```/g, '').replace(/\*\*/g, '').trim();
-      if (!out) { throw new Error('empty response'); }
-      ta.value = out;
-    } catch (err) {
-      ta.value = draft;
-      const hint = err && err.message && err.message.length < 70 && err.name !== 'AbortError' ? ` (${err.message})` : '';
-      A.toast && A.toast(`Polish unavailable right now${hint} \u2014 your draft is untouched.`, 'warning');
-    } finally {
-      btn.disabled = false; btn.textContent = 'Polish with AI';
-      this._abort = null;
-    }
-  },
-};
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && !$('liModal').classList.contains('hidden')) LiDraft.close();
-});
-})();
-</script>
-
-<script>
-// ═══════════ PARTNER FIT — ranked teaming targets from live data ═══════════
+// ═══════════ PARTNER FIT — channel-aware teaming targets ═══════════
+// Two routes into any federal market:
+//   CHANNEL  — resellers/distributors (Carahsoft, CDW-G, SHI...) who hold the
+//              contract while the vendor delivers. Scored on award velocity,
+//              agency breadth, and renewal paper. Sub-flow is irrelevant here.
+//   PRIME    — integrators you team with as a sub. Scored on sub-flow
+//              generosity, expiring paper, position, and vehicle access.
 (function () {
 'use strict';
 const app = () => (typeof App !== 'undefined' && App) ? App : window.App;
@@ -7056,16 +6538,36 @@ const esc = (s) => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;
 const norm = (s) => String(s||'').toUpperCase().replace(/[.,]/g,'').replace(/\s+/g,' ').trim();
 const cap = (v, c) => Math.min(v, c) / c;
 
-function score(v, marketTotal, hasSubs) {
-  // Transparent weights: sub-flow 30 | sub breadth 15 | expiring paper 25 | position 15 | vehicles 15
+// Known government channel players (matched as substrings of normalized names)
+const CHANNEL_NAMES = ['CARAHSOFT','CDW','SHI INTERNATIONAL','SHI GOVERNMENT','DLT SOLUTIONS',
+  'IMMIX','THUNDERCAT','WORLD WIDE TECHNOLOGY','IRON BOW','RED RIVER','PRESIDIO',
+  'INSIGHT PUBLIC SECTOR','MYTHICS','EPLUS','FOUR POINTS TECHNOLOGY','STERLING COMPUTERS',
+  'GOVCONNECTION','CONNECTION PUBLIC SECTOR','SOFTWAREONE','SOFTCHOICE','AFFIGENT',
+  'GOVPLACE','FCN INC','NORSEMAN','EMERGENT LLC','ALVAREZ & ASSOCIATES','BLUE TECH',
+  'MINBURN','DH TECHNOLOGIES','SYNNEX','TD SYNNEX','INGRAM MICRO'];
+const SW_RE = /licen|software|subscription|saas|renewal|cloud service|maintenance|support renewal|brand name/i;
+
+function isChannel(v) {
+  const n = norm(v.name);
+  if (CHANNEL_NAMES.some(c => n.includes(c))) return true;
+  // Heuristic: mostly software/license paper across several awards = reseller behavior
+  return v.awards >= 3 && v.swHits / v.awards >= 0.5 && v.subOut === 0;
+}
+
+function scorePrime(v, marketTotal, hasSubs) {
   let s = 0;
-  if (hasSubs) {
-    s += 30 * cap(v.subOut / Math.max(v.prime, 1), 0.5);
-    s += 15 * cap(v.subCount, 12);
-  }
-  s += 25 * cap(v.expiring / Math.max(v.prime, 1), 0.6);
-  s += 15 * cap(v.prime / Math.max(marketTotal, 1), 0.25);
+  if (hasSubs) { s += 30 * cap(v.subOut / Math.max(v.prime,1), 0.5); s += 15 * cap(v.subCount, 12); }
+  s += 25 * cap(v.expiring / Math.max(v.prime,1), 0.6);
+  s += 15 * cap(v.prime / Math.max(marketTotal,1), 0.25);
   s += 15 * cap(v.vehicles, 5);
+  return Math.round(s);
+}
+function scoreChannel(v, marketTotal) {
+  let s = 0;
+  s += 30 * cap(v.awards, 20);                                   // velocity: active order flow
+  s += 25 * cap(v.agencies.size, 8);                             // breadth: doors already open
+  s += 25 * cap(v.expiring / Math.max(v.prime,1), 0.6);          // renewals = displacement windows
+  s += 20 * cap(v.prime / Math.max(marketTotal,1), 0.25);        // weight in this market
   return Math.round(s);
 }
 
@@ -7083,12 +6585,14 @@ function compute() {
     const key = norm(c['Recipient Name']);
     if (!key) continue;
     let v = V.get(key);
-    if (!v) { v = { name: c['Recipient Name'], prime: 0, awards: 0, expiring: 0,
-                    vehicleSet: new Set(), subOut: 0, subCount: 0, subNames: new Set() }; V.set(key, v); }
+    if (!v) { v = { name: c['Recipient Name'], prime: 0, awards: 0, expiring: 0, swHits: 0,
+                    agencies: new Set(), vehicleSet: new Set(), subOut: 0, subNames: new Set() }; V.set(key, v); }
     v.prime += amt; v.awards++;
+    if (c['Awarding Agency']) v.agencies.add(c['Awarding Agency']);
+    if (SW_RE.test(c['Description'] || '')) v.swHits++;
     if (c._endTs && c._endTs > now && c._endTs <= cut) v.expiring += amt;
-    const isVehicle = c['idv_type'] || /IDV/i.test(c['Contract Award Type'] || '');
-    if (isVehicle) v.vehicleSet.add(c['Award ID'] || c['generated_internal_id'] || String(v.awards));
+    const isVeh = c['idv_type'] || /IDV/i.test(c['Contract Award Type'] || '');
+    if (isVeh) v.vehicleSet.add(c['Award ID'] || c['generated_internal_id'] || String(v.awards));
     else if (c['parent_award_id']) v.vehicleSet.add(c['parent_award_id']);
   }
   if (subs) for (const s of subs) {
@@ -7097,35 +6601,61 @@ function compute() {
     v.subOut += parseFloat(s['Sub-Award Amount']) || 0;
     v.subNames.add(norm(s['Sub-Awardee Name']));
   }
-  const list = [];
+  const channel = [], primes = [];
   for (const v of V.values()) {
     if (v.prime < 250000) continue;
     v.vehicles = v.vehicleSet.size;
     v.subCount = v.subNames.size;
-    v.score = score(v, marketTotal, !!subs);
-    list.push(v);
+    if (isChannel(v)) { v.role = 'channel'; v.score = scoreChannel(v, marketTotal); channel.push(v); }
+    else { v.role = 'prime'; v.score = scorePrime(v, marketTotal, !!subs); primes.push(v); }
   }
-  list.sort((a, b) => b.score - a.score);
-  return { list: list.slice(0, 8), marketTotal, hasSubs: !!subs };
+  channel.sort((a,b) => b.score - a.score);
+  primes.sort((a,b) => b.score - a.score);
+  return { channel: channel.slice(0, 4), primes: primes.slice(0, 6), marketTotal, hasSubs: !!subs };
 }
 
-function whyLine(v, marketTotal, hasSubs) {
+function whyChannel(v, mt) {
+  const bits = [`${v.awards} award${v.awards===1?'':'s'} across ${v.agencies.size} agenc${v.agencies.size===1?'y':'ies'}`];
+  if (v.expiring > 0) bits.push(`${money(v.expiring)} renewing within 18 mo`);
+  bits.push(`${Math.round(v.prime/Math.max(mt,1)*100)}% of market (${money(v.prime)})`);
+  if (v.swHits / Math.max(v.awards,1) >= 0.5) bits.push('license/software-heavy paper');
+  return bits.join(' \u00B7 ');
+}
+function whyPrime(v, mt, hasSubs) {
   const bits = [];
-  if (hasSubs) {
-    bits.push(v.subOut > 0
-      ? `flows ${Math.round(v.subOut / Math.max(v.prime,1) * 100)}% of prime $ to ${v.subCount} sub${v.subCount===1?'':'s'}`
-      : 'no subaward flow visible \u2014 likely self-performs');
-  }
+  if (hasSubs) bits.push(v.subOut > 0
+    ? `flows ${Math.round(v.subOut/Math.max(v.prime,1)*100)}% of prime $ to ${v.subCount} sub${v.subCount===1?'':'s'}`
+    : 'no subaward flow visible in this market');
   if (v.expiring > 0) bits.push(`${money(v.expiring)} expiring within 18 mo`);
   if (v.vehicles > 0) bits.push(`${v.vehicles} vehicle award${v.vehicles===1?'':'s'}`);
-  bits.push(`${Math.round(v.prime / Math.max(marketTotal,1) * 100)}% market share (${money(v.prime)})`);
+  bits.push(`${Math.round(v.prime/Math.max(mt,1)*100)}% market share (${money(v.prime)})`);
   return bits.join(' \u00B7 ');
 }
 
-document.addEventListener('click', (e) => {
-  const btn = e.target.closest('.pf-ask');
-  if (btn && window.Mo) Mo.ask(btn.dataset.ask || '');
-});
+function lensIsProduct() {
+  try {
+    const l = (localStorage.getItem('fedhoo_seller_product') || '').toLowerCase();
+    return /saas|software|licen|platform|cloud|app|product|subscription|tool/.test(l);
+  } catch { return false; }
+}
+
+function rowHtml(v, i, d) {
+  const clean = (typeof Utils !== 'undefined' && Utils.normalizeVendorName) ? Utils.normalizeVendorName(v.name) : v.name;
+  const liPeople = 'https://www.linkedin.com/search/results/people/?keywords=' + encodeURIComponent('"' + clean + '"') + '&origin=GLOBAL_SEARCH_HEADER';
+  const tier = v.score >= 60 ? 'go' : v.score >= 35 ? 'warn' : 'dim';
+  const roleBadge = v.role === 'channel'
+    ? '<span class="pf-role channel">Channel</span>'
+    : '<span class="pf-role">Prime</span>';
+  const why = v.role === 'channel' ? whyChannel(v, d.marketTotal) : whyPrime(v, d.marketTotal, d.hasSubs);
+  return `<div class="pf-row">
+    <span class="pf-rank">${i}</span>
+    <div class="pf-body">
+      <div class="pf-name-row"><span class="pf-name">${esc(v.name)}</span><span class="pf-score ${tier}">${v.score}</span>${roleBadge}</div>
+      <div class="pf-why">${esc(why)}</div>
+      <div class="pf-actions"><a class="pf-link" href="${liPeople}" target="_blank" rel="noopener">People \u2197</a></div>
+    </div>
+  </div>`;
+}
 
 window.PartnerFit = {
   _last: null,
@@ -7133,42 +6663,43 @@ window.PartnerFit = {
     const card = document.getElementById('partnerFitCard');
     const listEl = document.getElementById('partnerFitList');
     const note = document.getElementById('partnerFitNote');
+    const sub = document.getElementById('pfSub');
     if (!card || !listEl) return;
     const d = compute();
     this._last = d;
-    if (!d || d.list.length < 2) { card.classList.add('hidden'); return; }
-    const A = app();
-    const q = (A.displayQuery || A.currentQuery || 'this market');
-    listEl.innerHTML = d.list.map((v, i) => {
-      const clean = (typeof Utils !== 'undefined' && Utils.normalizeVendorName) ? Utils.normalizeVendorName(v.name) : v.name;
-      const liPeople = `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent('\"' + clean + '\"')}&origin=GLOBAL_SEARCH_HEADER`;
-      const tier = v.score >= 60 ? 'go' : v.score >= 35 ? 'warn' : 'dim';
-      const askQ = `Tell me about partnering with ${v.name} in the ${q} market \u2014 their sub relationships, vehicles, expiring contracts, and who I should contact.`;
-      return `<div class=\"pf-row\">
-        <span class=\"pf-rank\">${i + 1}</span>
-        <div class=\"pf-body\">
-          <div class=\"pf-name-row\"><span class=\"pf-name\">${esc(v.name)}</span><span class=\"pf-score ${tier}\">${v.score}</span></div>
-          <div class=\"pf-why\">${esc(whyLine(v, d.marketTotal, d.hasSubs))}</div>
-          <div class=\"pf-actions\">
-            <a class=\"pf-link\" href=\"${liPeople}\" target=\"_blank\" rel=\"noopener\">People \u2197</a>
-            <button class=\"pf-link pf-ask\" data-ask=\"${esc(askQ)}\">Ask Mo</button>
-          </div>
-        </div>
-      </div>`;
-    }).join('');
-    note.textContent = d.hasSubs
-      ? 'Score = sub-flow generosity (45) + expiring paper (25) + market position (15) + vehicle access (15), computed from this search.'
-      : 'Subaward data still loading \u2014 scores will update to include sub-flow generosity.';
+    if (!d || (d.channel.length + d.primes.length) < 2) { card.classList.add('hidden'); return; }
+    const productSeller = lensIsProduct();
+    const sections = [];
+    const channelSec = d.channel.length ? {
+      title: 'Channel & resellers', hint: 'they hold the contract \u2014 you sell through them', rows: d.channel } : null;
+    const primeSec = d.primes.length ? {
+      title: 'Primes', hint: 'team as a sub or supplier', rows: d.primes } : null;
+    // Product/SaaS sellers see the channel route first; services sellers see primes first
+    if (productSeller) { if (channelSec) sections.push(channelSec); if (primeSec) sections.push(primeSec); }
+    else { if (primeSec) sections.push(primeSec); if (channelSec) sections.push(channelSec); }
+    let rank = 0;
+    listEl.innerHTML = sections.map(s =>
+      `<div class="pf-section">${s.title}<span class="pf-section-hint">${s.hint}</span></div>` +
+      s.rows.map(v => rowHtml(v, ++rank, d)).join('')
+    ).join('');
+    if (sub) sub.textContent = productSeller
+      ? 'You sell a product \u2014 channel holders lead this ranking; primes follow for teaming plays.'
+      : 'Two ways into this market: team with a prime, or sell through a channel holder.';
+    note.textContent = (d.hasSubs
+      ? 'Prime score = sub-flow generosity + expiring paper + position + vehicles. '
+      : 'Subaward data still loading \u2014 prime scores will update with sub-flow. ')
+      + 'Channel score = award velocity + agency breadth + renewal paper + market weight. Channel players are contract holders \u2014 no sub-flow expected or penalized.';
     card.classList.remove('hidden');
   },
   exportCSV() {
     const A = app(), d = this._last || compute();
-    if (!d || !d.list.length) { A && A.toast && A.toast('No partner data for this search.', 'warning'); return; }
-    const headers = ['Rank','Partner','Fit Score','Prime $','% of Market','Sub $ Out','Distinct Subs','Expiring 18mo $','Vehicle Awards'];
-    const rows = d.list.map((v, i) => [
-      i + 1, `\"${String(v.name).replace(/\"/g,'\"\"')}\"`, v.score, Math.round(v.prime),
-      Math.round(v.prime / Math.max(d.marketTotal,1) * 100), Math.round(v.subOut),
-      v.subCount, Math.round(v.expiring), v.vehicles,
+    if (!d) { A && A.toast && A.toast('No partner data for this search.', 'warning'); return; }
+    const all = [...d.channel, ...d.primes];
+    const headers = ['Rank','Partner','Route','Fit Score','Prime $','% of Market','Awards','Agencies','Sub $ Out','Distinct Subs','Expiring 18mo $','Vehicle Awards'];
+    const rows = all.map((v, i) => [
+      i + 1, `"${String(v.name).replace(/"/g,'""')}"`, v.role, v.score, Math.round(v.prime),
+      Math.round(v.prime / Math.max(d.marketTotal,1) * 100), v.awards, v.agencies.size,
+      Math.round(v.subOut), v.subCount, Math.round(v.expiring), v.vehicles,
     ].join(','));
     if (typeof Utils !== 'undefined' && Utils.downloadCSV) {
       Utils.downloadCSV(`fedhoo_partner_fit_${(A.currentQuery||'export').replace(/\s+/g,'_')}`, headers, rows);
