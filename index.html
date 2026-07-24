@@ -973,6 +973,39 @@ a, button, input, select { touch-action: manipulation; }
 .pf-link:hover { text-decoration: underline; }
 .pf-note { font-size: 11px; color: var(--text-quaternary); margin-top: 10px; line-height: 1.5; }
 
+
+/* ── Mo Door (landing) ── */
+#moDoor { max-width: 720px; margin: 8vh auto 0; padding: 0 16px; }
+.mo-door-card { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 20px; padding: 26px 22px; box-shadow: 0 8px 28px rgba(20,18,28,0.06); }
+.mo-door-title { font-size: 22px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.02em; }
+.mo-door-sub { font-size: 13px; color: var(--text-tertiary); margin: 6px 0 16px; line-height: 1.5; }
+.mo-door-row { display: flex; gap: 10px; }
+#moDoorInput { flex: 1; min-width: 0; font: inherit; font-size: 15px; color: var(--text-primary); background: var(--bg-app); border: 1.5px solid var(--border); border-radius: 14px; padding: 13px 16px; outline: none; }
+#moDoorInput:focus { border-color: var(--accent); }
+#moDoorGo { flex-shrink: 0; font: inherit; font-size: 14px; font-weight: 700; color: #fff; background: var(--btn-bg, #46446E); border: none; border-radius: 14px; padding: 0 22px; cursor: pointer; }
+#moDoorGo:active { transform: scale(0.97); }
+.mo-door-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.mo-door-chip { font: inherit; font-size: 12px; font-weight: 600; color: var(--text-secondary); background: var(--chip-bg, var(--bg-app)); border: 1px solid var(--border); border-radius: 9999px; padding: 7px 13px; cursor: pointer; }
+.mo-door-chip:hover { border-color: var(--accent); color: var(--accent); }
+.mo-door-hint { font-size: 11px; color: var(--text-quaternary); margin-top: 12px; }
+@media (max-width: 560px) { #moDoor { margin-top: 4vh; } .mo-door-row { flex-direction: column; } #moDoorGo { padding: 12px; } }
+
+/* ── Pipeline card ── */
+.pl-summary { display: flex; gap: 8px; flex-wrap: wrap; margin: 2px 0 10px; }
+.pl-pill { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 9999px; background: var(--chip-bg, var(--bg-app)); color: var(--text-secondary); border: 1px solid var(--border); }
+.pl-row { display: flex; gap: 12px; padding: 12px 2px; border-bottom: 1px solid var(--border-inner, var(--border)); align-items: flex-start; }
+.pl-row:last-child { border-bottom: none; }
+.pl-badge { flex-shrink: 0; font-size: 9px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; padding: 3px 8px; border-radius: 9999px; margin-top: 3px; }
+.pl-badge.renewal   { background: var(--accent-dim, rgba(70,68,110,0.12)); color: var(--accent, #46446E); }
+.pl-badge.shortterm { background: var(--warn-bg);  color: var(--warn-text); }
+.pl-badge.maturing  { background: var(--chip-bg, var(--bg-app)); color: var(--text-tertiary); border: 1px solid var(--border); }
+.pl-body { flex: 1; min-width: 0; }
+.pl-line1 { font-weight: 700; font-size: var(--text-sm, 13px); color: var(--text-primary); }
+.pl-line1 .pl-amt { color: var(--accent); }
+.pl-line2 { font-size: 12px; color: var(--text-secondary); margin-top: 2px; line-height: 1.45; }
+.pl-why { font-size: 11px; color: var(--text-quaternary); margin-top: 3px; line-height: 1.4; }
+.pl-note { font-size: 11px; color: var(--text-quaternary); margin-top: 10px; line-height: 1.5; }
+
 </style>
 </head>
 <body>
@@ -1156,6 +1189,19 @@ a, button, input, select { touch-action: manipulation; }
 <div class="page-wrap">
 
   <!-- LANDING PROMPT, shown only before first search -->
+  <div id="moDoor" class="hidden">
+    <div class="mo-door-card">
+      <div class="mo-door-title">Ask Mo</div>
+      <div class="mo-door-sub">Describe what you're looking for in plain English — Mo turns it into a live market dashboard.</div>
+      <div class="mo-door-row">
+        <input id="moDoorInput" type="text" autocomplete="off" placeholder="Who sells endpoint security to the VA?" aria-label="Ask Mo in plain English" />
+        <button id="moDoorGo" onclick="MoDoor.go()">Go</button>
+      </div>
+      <div class="mo-door-chips" id="moDoorChips"></div>
+      <div class="mo-door-hint">Or use the search bar above for direct keyword, NAICS, or PSC queries.</div>
+    </div>
+  </div>
+
   <!-- RESULTS GRID -->
   <div class="tools-grid hidden" id="resultsGrid">
 
@@ -1278,6 +1324,17 @@ a, button, input, select { touch-action: manipulation; }
       <div class="pf-sub" id="pfSub">Two ways into this market: sell through a channel holder, or team with a prime.</div>
       <div id="partnerFitList"></div>
       <div class="pf-note" id="partnerFitNote"></div>
+    </div>
+
+    <!-- PIPELINE CARD -->
+    <div class="app-card wide result-panel hidden" id="pipelineCard">
+      <div class="card-header-row">
+        <h2 class="card-title card-title--flush">Pipeline Signals</h2>
+        <button class="export-btn" onclick="Pipeline.exportCSV()" title="Export pipeline to CSV">Export CSV</button>
+      </div>
+      <div class="pl-summary" id="plSummary"></div>
+      <div id="pipelineList"></div>
+      <div class="pl-note">Renewal = software/licensing paper that re-buys on cycle. Short-Term = bridge or base-only awards — recompete turbulence. Maturing = long-run contracts entering their final stretch. Patterns follow govhoo's pipeline engine, computed from this search's live data.</div>
     </div>
 
     <!-- RECENT AWARDS CARD -->
@@ -2948,6 +3005,7 @@ const App = {
     const searchKey = `${query.toLowerCase()}|${this.territory || ''}`;
     if (searchKey === this._lastSearchKey && this.searchData.loaded) return;
     this._lastSearchKey = searchKey;
+    const _md = document.getElementById('moDoor'); if (_md) _md.classList.add('hidden');
 
     // Dismiss keyboard and dropdowns immediately regardless of how search was triggered
     this.UI.searchInput?.blur();
@@ -3180,6 +3238,7 @@ const App = {
         DOM.show('shareBtn');
         DOM.show('snapshotBtn');
         if (window.PartnerFit) PartnerFit.render();
+        if (window.Pipeline) Pipeline.render();
       DOM.show('bioCard');
 
       // Render chart and panels immediately
@@ -4233,6 +4292,7 @@ const App = {
     // Cache for sub-sankey and reveal the third chart tab
     this._subawardData = subs;
     if (window.PartnerFit) PartnerFit.render();
+        if (window.Pipeline) Pipeline.render();
     DOM.get('tabSubSankey')?.classList.remove('hidden');
     DOM.get('dotSubSankey')?.classList.remove('hidden');
 
@@ -6281,9 +6341,9 @@ ${gemData.next_steps.map((step, i) => `<div class="ns-item"><span class="ns-num"
         this.UI.searchInput.value = lastQuery;
         this.runSearch(lastQuery, false, true);
       } else {
-        // Cold visitor — run default search immediately
-        this.UI.searchInput.value = 'Cloud';
-        this.runSearch('Cloud', false, true);
+        // Cold visitor — show the Mo front door instead of a default search
+        const _door = document.getElementById('moDoor');
+        if (_door) _door.classList.remove('hidden');
       }
     } catch(e) {
       console.warn('fedhoo init error:', e);
@@ -6704,6 +6764,187 @@ window.PartnerFit = {
     if (typeof Utils !== 'undefined' && Utils.downloadCSV) {
       Utils.downloadCSV(`fedhoo_partner_fit_${(A.currentQuery||'export').replace(/\s+/g,'_')}`, headers, rows);
       A.toast && A.toast('Partner fit scores exported.', 'ok');
+    }
+  },
+};
+})();
+</script>
+
+
+<script>
+// ═══════════ MO DOOR — plain-English front door ═══════════
+// Translates conversational asks into fedhoo's own query grammar
+// ("keywords AND agency-alias") and hands off to App.runSearch. All analysis
+// stays on Arti's data-grounded pipeline.
+(function () {
+'use strict';
+const FILLER = /\b(who|whom|what|which|show|me|us|find|list|give|get|search|look(?:ing)?|up|sells?|selling|sold|provides?|providing|provided|resells?|reselling|supplies|supplying|offers?|offering|wins?|winning|won|holds?|holding|buys?|buying|companies|company|vendors?|contractors?|firms?|does|do|is|are|was|were|the|a|an|to|at|for|in|on|of|with|from|about|please|can|you|any|all|their|there|that|work|deals?)\b/g;
+const INTENT_RE = /\b(expir\w*|recompete\w*|renewal?s?|re-?bids?|ending|coming up|next (?:6|12|18|twelve) months?|next year)\b/g;
+const EXAMPLES = [
+  'Who sells endpoint security to the VA?',
+  'Cyber contracts expiring at DHS',
+  'Who resells Splunk to the Army?',
+  'Zero trust spending at CMS',
+];
+
+function agencyVocab() {
+  // Build once from fedhoo's own alias tables: key -> canonical token to place in the query
+  if (agencyVocab._v) return agencyVocab._v;
+  const v = new Map();
+  try {
+    for (const [k, name] of Object.entries(Utils.agencyAliases || {})) { v.set(k.toLowerCase(), k); v.set(String(name).toLowerCase(), name); }
+    for (const [k, o] of Object.entries(Utils.subAgencyAliases || {})) { v.set(k.toLowerCase(), k); if (o && o.name) v.set(String(o.name).toLowerCase(), o.name); }
+  } catch (e) {}
+  agencyVocab._v = v; return v;
+}
+
+function parse(text) {
+  let t = String(text || '').replace(/[?!.]/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!t) return null;
+  const lower = t.toLowerCase();
+  // 1) longest-n-gram agency detection against fedhoo's alias vocabulary
+  const vocab = agencyVocab();
+  const words = lower.split(' ');
+  let agency = null, span = null;
+  outer:
+  for (let n = Math.min(6, words.length); n >= 1; n--) {
+    for (let i = 0; i + n <= words.length; i++) {
+      const gram = words.slice(i, i + n).join(' ');
+      if (vocab.has(gram)) { agency = vocab.get(gram); span = [i, i + n]; break outer; }
+    }
+  }
+  // 2) intent flags (pipeline focus), removed from keywords
+  const pipelineIntent = INTENT_RE.test(lower);
+  // 3) residual keywords = original words minus agency span, minus filler/intent
+  let kept = words.filter((w, i) => !(span && i >= span[0] && i < span[1]));
+  let kw = kept.join(' ').replace(INTENT_RE, ' ').replace(FILLER, ' ').replace(/\s+/g, ' ').trim();
+  if (!kw && agency) kw = '';           // pure-agency ask is fine
+  if (!kw && !agency) kw = lower.replace(/\s+/g,' ').trim(); // fall back to raw text
+  const query = kw && agency ? kw + ' AND ' + agency : (kw || agency || '');
+  return query ? { query, pipelineIntent } : null;
+}
+
+window.MoDoor = {
+  init() {
+    const chips = document.getElementById('moDoorChips');
+    if (chips) chips.innerHTML = EXAMPLES.map(e =>
+      `<button class="mo-door-chip" onclick="MoDoor.ask(this.textContent)">${e}</button>`).join('');
+    const inp = document.getElementById('moDoorInput');
+    if (inp) inp.addEventListener('keydown', ev => { if (ev.key === 'Enter') MoDoor.go(); });
+  },
+  ask(text) { const inp = document.getElementById('moDoorInput'); if (inp) inp.value = text; this.go(); },
+  hide() { const d = document.getElementById('moDoor'); if (d) d.classList.add('hidden'); },
+  go() {
+    const inp = document.getElementById('moDoorInput');
+    const parsed = parse(inp && inp.value);
+    if (!parsed) return;
+    window.__pipelineIntent = !!parsed.pipelineIntent;
+    this.hide();
+    const A = (typeof App !== 'undefined' && App) ? App : window.App;
+    if (A && A.runSearch) A.runSearch(parsed.query);
+  },
+  _parse: parse, // exposed for tests
+};
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => MoDoor.init());
+else MoDoor.init();
+})();
+</script>
+<script>
+// ═══════════ PIPELINE SIGNALS — govhoo's pattern engine, fedhoo-native ═══════════
+(function () {
+'use strict';
+const app = () => (typeof App !== 'undefined' && App) ? App : window.App;
+const money = (n) => { const x = Number(n)||0;
+  if (x>=1e9) return '$'+(x/1e9).toFixed(1)+'B';
+  if (x>=1e6) return '$'+(x/1e6).toFixed(1)+'M';
+  if (x>=1e3) return '$'+(x/1e3).toFixed(0)+'K';
+  return '$'+Math.round(x); };
+const esc = (s) => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const RENEW_RE = /subscription|renew|renewal|licen[sc]e|saas|cots/i;   // govhoo's renewal signals
+const code = (v) => v == null ? '' : (typeof v === 'object' ? String(v.code || '') : String(v));
+
+function classify(c, now) {
+  const end = c._endTs || Date.parse(c['End Date']);
+  if (!end || end <= now) return null;
+  const start = Date.parse(c['Start Date']) || (end - 365*864e5);
+  const years = (end - start) / 315576e5;
+  const days = Math.ceil((end - now) / 864e5);
+  const naics = code(c['NAICS']), psc = code(c['PSC']).toUpperCase();
+  const isSw = naics.startsWith('5112') || naics.startsWith('5182') || psc.startsWith('7A') || psc === 'DA10';
+  const desc = c['Description'] || '';
+  let type, why, bonus = 0;
+  if (isSw || RENEW_RE.test(desc)) {
+    type = 'renewal'; bonus = 15;
+    why = 'Software/licensing paper \u2014 recurring buy behavior; renewal events come on cycle.';
+  } else if (years <= 3) {
+    type = 'shortterm';
+    why = `Short duration (${years.toFixed(1)} yr) \u2014 bridge or base-only award; expect recompete turbulence.`;
+  } else if (days <= 548) {
+    type = 'maturing';
+    why = `Long-run contract (${years.toFixed(1)} yr) entering its final stretch \u2014 incumbent fatigue window.`;
+  } else return null;   // long contract, far from end: not a near-term signal
+  if (days > 548) return null;  // all patterns limited to an 18-month horizon
+  const amt = parseFloat(c['Award Amount']) || 0;
+  // score: size (log) + proximity (sooner = hotter, floor at 90d) + pattern bonus
+  const score = Math.round(Math.log10(Math.max(amt,1)) * 8 + Math.max(0, (548 - Math.max(days,90)) / 548) * 30 + bonus);
+  return { type, why, score, amt, days, end,
+           vendor: c['Recipient Name'] || 'Unknown',
+           agency: c['Awarding Sub Agency'] && c['Awarding Sub Agency'] !== c['Awarding Agency'] ? c['Awarding Sub Agency'] : (c['Awarding Agency'] || ''),
+           desc: desc.slice(0, 110),
+           id: c['generated_internal_id'] || c['Award ID'] || '' };
+}
+
+const LABEL = { renewal: 'Renewal', shortterm: 'Short-Term', maturing: 'Maturing' };
+
+window.Pipeline = {
+  _last: null,
+  render() {
+    const card = document.getElementById('pipelineCard');
+    const list = document.getElementById('pipelineList');
+    const sum = document.getElementById('plSummary');
+    if (!card || !list) return;
+    const A = app();
+    const rows = (A && A.searchData && A.searchData.active) || [];
+    const now = Date.now(), seen = new Set(), out = [];
+    for (const c of rows) {
+      const r = classify(c, now);
+      if (!r || r.amt < 250000) continue;
+      const k = r.id || (r.vendor + r.end);
+      if (seen.has(k)) continue;
+      seen.add(k); out.push(r);
+    }
+    out.sort((a,b) => b.score - a.score);
+    this._last = out;
+    if (out.length < 2) { card.classList.add('hidden'); return; }
+    const totals = {};
+    for (const r of out) { totals[r.type] = (totals[r.type] || 0) + r.amt; }
+    sum.innerHTML = Object.entries(totals).map(([t, v]) =>
+      `<span class="pl-pill">${LABEL[t]}: ${money(v)} \u00B7 ${out.filter(r=>r.type===t).length}</span>`).join('');
+    list.innerHTML = out.slice(0, 8).map(r => `<div class="pl-row">
+      <span class="pl-badge ${r.type}">${LABEL[r.type]}</span>
+      <div class="pl-body">
+        <div class="pl-line1">${esc(r.vendor)} \u00B7 <span class="pl-amt">${money(r.amt)}</span></div>
+        <div class="pl-line2">${esc(r.agency)} \u2014 ends in ${r.days}d (${new Date(r.end).toISOString().slice(0,10)})${r.desc ? ' \u00B7 ' + esc(r.desc) : ''}</div>
+        <div class="pl-why">${esc(r.why)}</div>
+      </div>
+    </div>`).join('');
+    card.classList.remove('hidden');
+    if (window.__pipelineIntent) {
+      window.__pipelineIntent = false;
+      setTimeout(() => { try { card.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) {} }, 600);
+    }
+  },
+  exportCSV() {
+    const A = app(), out = this._last || [];
+    if (!out.length) { A && A.toast && A.toast('No pipeline signals for this search.', 'warning'); return; }
+    const headers = ['Rank','Pattern','Incumbent','Agency','Amount','Ends','Days Left','Signal'];
+    const rows = out.map((r, i) => [ i+1, LABEL[r.type],
+      `"${String(r.vendor).replace(/"/g,'""')}"`, `"${String(r.agency).replace(/"/g,'""')}"`,
+      Math.round(r.amt), new Date(r.end).toISOString().slice(0,10), r.days,
+      `"${r.why.replace(/"/g,'""')}"` ].join(','));
+    if (typeof Utils !== 'undefined' && Utils.downloadCSV) {
+      Utils.downloadCSV(`fedhoo_pipeline_${(A.currentQuery||'export').replace(/\s+/g,'_')}`, headers, rows);
+      A.toast && A.toast('Pipeline exported.', 'ok');
     }
   },
 };
