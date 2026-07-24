@@ -1006,6 +1006,14 @@ a, button, input, select { touch-action: manipulation; }
 .pl-why { font-size: 11px; color: var(--text-quaternary); margin-top: 3px; line-height: 1.4; }
 .pl-note { font-size: 11px; color: var(--text-quaternary); margin-top: 10px; line-height: 1.5; }
 
+
+/* ── v8: sheet quick action + collapsible cards ── */
+.sheet-quick { display: flex; margin: 0 0 10px; }
+.sheet-quick-btn { font: inherit; font-size: 12px; font-weight: 700; color: var(--accent); background: var(--accent-dim, rgba(70,68,110,0.10)); border: 1px solid var(--accent); border-radius: 9999px; padding: 8px 14px; cursor: pointer; }
+.sheet-quick-btn:active { transform: scale(0.97); }
+.rows-hidden { display: none !important; }
+.rows-toggle { display: block; width: 100%; font: inherit; font-size: 12px; font-weight: 700; color: var(--accent); background: none; border: none; padding: 10px 0 2px; cursor: pointer; text-align: left; }
+
 </style>
 </head>
 <body>
@@ -1113,6 +1121,9 @@ a, button, input, select { touch-action: manipulation; }
           <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
           <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
         </svg>
+      </button>
+      <button class="hdr-icon-circle hidden" id="meetingBriefBtn" onclick="App.meetingBrief()" title="60-second meeting brief" aria-label="Generate 60-second meeting brief">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
       </button>
       <button class="hdr-icon-circle hidden" id="snapshotBtn" onclick="App.generateSnapshot()" title="Market Focus report" aria-label="Generate Market Focus report">
         <svg class="snap-icon-default" width="16" height="16" viewBox="0 0 640 640" fill="currentColor" aria-hidden="true">
@@ -1416,6 +1427,7 @@ a, button, input, select { touch-action: manipulation; }
 
     <!-- Input — shown after lens is set -->
     <div class="sheet-ask-more hidden" id="artiActions">
+      <div class="sheet-quick"><button class="sheet-quick-btn" onclick="App.meetingBrief()">⚡ 60-sec meeting brief</button></div>
       <div class="sheet-input-row">
         <input type="text" class="sheet-input" id="chatInput"
           placeholder="Ask about this market…"
@@ -3237,6 +3249,7 @@ const App = {
       DOM.show('resultsGrid');
         DOM.show('shareBtn');
         DOM.show('snapshotBtn');
+        DOM.show('meetingBriefBtn');
         if (window.PartnerFit) PartnerFit.render();
         if (window.Pipeline) Pipeline.render();
       DOM.show('bioCard');
@@ -3927,7 +3940,7 @@ const App = {
         <div class="arti-brief-header">
           <svg class="arti-brief-avatar" aria-label="Mo"><use href="#icon-arti"/></svg>
           <div>
-            <div class="arti-brief-name">Arti</div>
+            <div class="arti-brief-name">Mo</div>
             <div class="arti-brief-role">Pre-meeting briefing</div>
           </div>
         </div>
@@ -4058,6 +4071,7 @@ const App = {
       return;
     }
     if (!message) return;
+    if (window.MoRouter && MoRouter.maybeNavigate(message)) return;
 
     this.aiState.count++;
     this.aiState.history.push({ role: 'user', content: message });
@@ -6749,6 +6763,7 @@ window.PartnerFit = {
       ? 'Prime score = sub-flow generosity + expiring paper + position + vehicles. '
       : 'Subaward data still loading \u2014 prime scores will update with sub-flow. ')
       + 'Channel score = award velocity + agency breadth + renewal paper + market weight. Channel players are contract holders \u2014 no sub-flow expected or penalized.';
+    collapseRows(listEl, '.pf-row', 3, 'PartnerFit');
     card.classList.remove('hidden');
   },
   exportCSV() {
@@ -6778,13 +6793,13 @@ window.PartnerFit = {
 // stays on Arti's data-grounded pipeline.
 (function () {
 'use strict';
-const FILLER = /\b(who|whom|what|which|show|me|us|find|list|give|get|search|look(?:ing)?|up|sells?|selling|sold|provides?|providing|provided|resells?|reselling|supplies|supplying|offers?|offering|wins?|winning|won|holds?|holding|buys?|buying|companies|company|vendors?|contractors?|firms?|does|do|is|are|was|were|the|a|an|to|at|for|in|on|of|with|from|about|please|can|you|any|all|their|there|that|work|deals?)\b/g;
+const FILLER = /\b(who|whom|what|which|show|me|us|find|list|give|get|search|look(?:ing)?|up|sells?|selling|sold|provides?|providing|provided|resells?|reselling|supplies|supplying|offers?|offering|wins?|winning|won|holds?|holding|buys?|buying|companies|company|vendors?|contractors?|firms?|does|do|is|are|was|were|the|a|an|to|at|for|in|on|of|with|from|about|please|can|you|any|all|their|there|that|work|deals?|and|switch(?:ed|ing)?|pull|go|prep\w*|meetings?|walk(?:ing)?|into|before|my|our)\b/g;
 const INTENT_RE = /\b(expir\w*|recompete\w*|renewal?s?|re-?bids?|ending|coming up|next (?:6|12|18|twelve) months?|next year)\b/g;
 const EXAMPLES = [
   'Who sells endpoint security to the VA?',
   'Cyber contracts expiring at DHS',
   'Who resells Splunk to the Army?',
-  'Zero trust spending at CMS',
+  'Prep me for a VA cyber meeting',
 ];
 
 function agencyVocab() {
@@ -6821,7 +6836,7 @@ function parse(text) {
   if (!kw && agency) kw = '';           // pure-agency ask is fine
   if (!kw && !agency) kw = lower.replace(/\s+/g,' ').trim(); // fall back to raw text
   const query = kw && agency ? kw + ' AND ' + agency : (kw || agency || '');
-  return query ? { query, pipelineIntent } : null;
+  return query ? { query, pipelineIntent, agency: agency || null } : null;
 }
 
 window.MoDoor = {
@@ -6928,6 +6943,7 @@ window.Pipeline = {
         <div class="pl-why">${esc(r.why)}</div>
       </div>
     </div>`).join('');
+    collapseRows(list, '.pl-row', 3, 'Pipeline');
     card.classList.remove('hidden');
     if (window.__pipelineIntent) {
       window.__pipelineIntent = false;
@@ -6948,6 +6964,75 @@ window.Pipeline = {
     }
   },
 };
+})();
+</script>
+
+
+<script>
+// ═══════════ v8: unified Mo — routing, meeting brief, compact cards ═══════════
+(function () {
+'use strict';
+const A = () => (typeof App !== 'undefined' && App) ? App : window.App;
+
+// Collapse card rows to `keep`, with a Show all / Show less toggle.
+// Also hides section headers that would be left with no visible rows.
+window.collapseRows = function (listEl, rowSel, keep, tag) {
+  if (!listEl) return;
+  const kids = [...listEl.children];
+  const rows = kids.filter(k => k.matches(rowSel));
+  listEl.parentElement.querySelectorAll('.rows-toggle[data-tag="' + tag + '"]').forEach(b => b.remove());
+  if (rows.length <= keep) return;
+  let shown = 0;
+  for (const el of kids) {
+    el.classList.remove('rows-hidden');
+    if (el.matches(rowSel)) { shown++; if (shown > keep) el.classList.add('rows-hidden'); }
+    else if (shown >= keep) el.classList.add('rows-hidden');
+  }
+  const btn = document.createElement('button');
+  btn.className = 'rows-toggle'; btn.dataset.tag = tag; btn.dataset.open = '0';
+  btn.textContent = 'Show all ' + rows.length + ' \u203A';
+  btn.onclick = () => {
+    const open = btn.dataset.open === '1';
+    kids.forEach(el => { if (open) btn._hidden.includes(el) && el.classList.add('rows-hidden');
+                         else el.classList.remove('rows-hidden'); });
+    btn.dataset.open = open ? '0' : '1';
+    btn.textContent = open ? ('Show all ' + rows.length + ' \u203A') : 'Show less \u2039';
+  };
+  btn._hidden = kids.filter(el => el.classList.contains('rows-hidden'));
+  listEl.after(btn);
+};
+
+// Sheet-input router: navigation-shaped messages re-drive the dashboard.
+const NAV_VERB = /^(show|find|pull\s*up|search|switch\s*(?:to)?|look\s*up|open|go\s*to)\b/i;
+const QUESTION = /\?|^(who|whom|what|why|how|should|can|could|would|does|do|is|are|was|were|which|when|compare|explain|analy[sz]e|summari[sz]e)\b/i;
+window.MoRouter = {
+  maybeNavigate(message) {
+    try {
+      const msg = String(message || '').trim();
+      if (!msg || !window.MoDoor || !MoDoor._parse) return false;
+      const isNavVerb = NAV_VERB.test(msg);
+      if (!isNavVerb && QUESTION.test(msg)) return false;      // questions -> analysis
+      const parsed = MoDoor._parse(msg);
+      if (!parsed || !parsed.query) return false;
+      if (!isNavVerb && !parsed.agency) return false;          // conservative: need a verb or an agency
+      const app = A();
+      const cur = (app.currentQuery || '').toLowerCase();
+      if (parsed.query.toLowerCase() === cur) return false;    // same market -> let Arti pipeline answer
+      window.__pipelineIntent = !!parsed.pipelineIntent;
+      app.toast && app.toast('Dashboard updated \u2192 ' + parsed.query, 'ok');
+      app.runSearch(parsed.query);
+      return true;
+    } catch (e) { return false; }
+  },
+};
+
+// One-tap pre-meeting brief through the existing data-grounded pipeline.
+const MEETING_PROMPT = 'Give me a 60-second pre-meeting brief on this market: '
+  + '1) the three numbers I should quote in the room, '
+  + '2) the incumbents and where each is vulnerable (expiring paper, thin sub bench, channel exposure), '
+  + '3) three sharp questions to ask the customer. Be specific to this data \u2014 no generic advice.';
+const app0 = A();
+if (app0) app0.meetingBrief = function () { this.sendArtiChat(MEETING_PROMPT); };
 })();
 </script>
 
