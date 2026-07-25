@@ -1035,19 +1035,14 @@ a, button, input, select { touch-action: manipulation; }
 @media (max-width: 560px) { .card-header-row { flex-wrap: wrap; } .dl-sorts { margin: 8px 0 0; order: 3; width: 100%; justify-content: stretch; } .dl-sort { flex: 1; text-align: center; } }
 
 
-/* ── v11 ── */
-#sellerContext { display: none !important; }   /* inference replaces the lens ceremony */
+/* ── v12 ── */
+#sellerContext { display: none !important; }
 .pf-traction { font-size: 11px; color: var(--text-tertiary); margin-top: 3px; line-height: 1.4; }
-/* Vendors wrapper: flatten the nested cards */
-#vendorsBody > .app-card { background: none; border: none; box-shadow: none; border-radius: 0; padding: 0; margin: 0; }
-#vendorsBody > .app-card .card-title { display: none; }
-#vendorsBody > #subawardsCard { display: none; }
-#vendorsBody > .app-card.hidden { display: none !important; }
-/* Sticky section pills */
-.section-nav { position: sticky; top: 8px; z-index: 40; display: flex; gap: 4px; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 9999px; padding: 4px; margin: 0 auto 14px; width: max-content; max-width: 100%; overflow-x: auto; box-shadow: 0 4px 16px rgba(20,18,28,0.08); -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.vendor-tabs { column-span: all; -webkit-column-span: all; display: flex; justify-content: flex-start; padding: 2px 0 10px; }
+#subawardsCard { display: none; }
+.section-nav { position: sticky; top: 8px; z-index: 40; display: flex; gap: 4px; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 9999px; padding: 4px; margin: 0 auto 14px; width: max-content; max-width: calc(100% - 8px); overflow-x: auto; box-shadow: 0 4px 16px rgba(20,18,28,0.10); -webkit-overflow-scrolling: touch; scrollbar-width: none; }
 .section-nav::-webkit-scrollbar { display: none; }
 .section-nav .dl-sort { flex-shrink: 0; }
-@media (max-width: 560px) { .section-nav { width: auto; margin-left: -4px; margin-right: -4px; } }
 
 </style>
 </head>
@@ -1245,6 +1240,14 @@ a, button, input, select { touch-action: manipulation; }
     </div>
   </div>
 
+  <!-- SECTION NAV — sticky, sibling of the multicol grid -->
+  <nav class="section-nav hidden" id="sectionNav" aria-label="Dashboard sections">
+    <button class="dl-sort active" data-target="marketCard" onclick="SectionNav.go('marketCard')">Market</button>
+    <button class="dl-sort" data-target="partnerFitCard" onclick="SectionNav.go('partnerFitCard')">Partners</button>
+    <button class="dl-sort" data-target="dealsCard" onclick="SectionNav.go('dealsCard')">Contracts</button>
+    <button class="dl-sort" data-target="primesCard" onclick="SectionNav.go('primesCard')">Vendors</button>
+  </nav>
+
   <!-- RESULTS GRID -->
   <div class="tools-grid hidden" id="resultsGrid">
 
@@ -1335,9 +1338,6 @@ a, button, input, select { touch-action: manipulation; }
 
     </div><!-- /marketCard unified -->
 
-          </div><!-- /vendorsBody -->
-    </div><!-- /vendorsCard -->
-
     <!-- PARTNER FIT CARD -->
     <div class="app-card wide result-panel hidden" id="partnerFitCard">
       <div class="card-header-row">
@@ -1380,24 +1380,14 @@ a, button, input, select { touch-action: manipulation; }
       <div class="contract-list" id="recentList"></div>
     </div>
 
-    <!-- SECTION NAV — sticky pills, appears with results -->
-    <nav class="section-nav hidden" id="sectionNav" aria-label="Dashboard sections">
-      <button class="dl-sort active" data-target="marketCard" onclick="SectionNav.go('marketCard')">Market</button>
-      <button class="dl-sort" data-target="partnerFitCard" onclick="SectionNav.go('partnerFitCard')">Partners</button>
-      <button class="dl-sort" data-target="dealsCard" onclick="SectionNav.go('dealsCard')">Contracts</button>
-      <button class="dl-sort" data-target="vendorsCard" onclick="SectionNav.go('vendorsCard')">Vendors</button>
-    </nav>
-
-    <!-- VENDORS CARD — primes + sub flow, pill-switched -->
-    <div class="app-card wide result-panel hidden" id="vendorsCard">
-      <div class="card-header-row">
-        <h2 class="card-title card-title--flush">Vendors</h2>
-        <div class="dl-sorts" role="tablist" aria-label="Vendor view">
-          <button class="dl-sort active" data-vtab="primes" onclick="Vendors.show('primes')">Top primes</button>
-          <button class="dl-sort" data-vtab="subs" onclick="Vendors.show('subs')">Prime → Sub flow</button>
-        </div>
+    <!-- VENDOR VIEW PILLS — flat, column-span, toggles the two cards below -->
+    <div class="vendor-tabs wide" id="vendorTabs">
+      <div class="dl-sorts" role="tablist" aria-label="Vendor view">
+        <button class="dl-sort active" data-vtab="primes" onclick="Vendors.show('primes')">Top primes</button>
+        <button class="dl-sort" data-vtab="subs" onclick="Vendors.show('subs')">Prime → Sub flow</button>
       </div>
-      <div id="vendorsBody">
+    </div>
+
     <!-- TOP PRIMES CARD -->
     <div class="app-card wide result-panel hidden" id="primesCard">
       <div class="primes-header">
@@ -3306,7 +3296,7 @@ const App = {
         DOM.show('snapshotBtn');
         if (window.PartnerFit) PartnerFit.render();
         if (window.Deals) Deals.render();
-        DOM.show('vendorsCard'); DOM.show('sectionNav');
+        DOM.show('sectionNav');
         if (window.__pipelineIntent) { window.__pipelineIntent = false; setTimeout(() => DOM.get('dealsCard')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 600); }
       DOM.show('bioCard');
 
@@ -5246,35 +5236,22 @@ ${vendorSorted.slice(0, 5).map(([name, d]) => {
 </div>
 </div>
 
-${vehicles.length > 0 ? `
 <div class="g2">
 <div>
+${vehicles.length > 0 ? `
 <div class="sl">Contract vehicles</div>
 <table><thead><tr><th>Vehicle</th><th class="r">Spend</th><th class="r">Awards</th></tr></thead><tbody>
 ${vehicles.slice(0,3).map(([n,d]) => `<tr><td>${Html.escapeHtml(n)}</td><td class="r">${money(d.spend)}</td><td class="r">${d.count}</td></tr>`).join('')}
-</tbody></table>
+</tbody></table>` : ''}
+${window.SnapExtras ? SnapExtras.partnersTable(3) : ''}
 </div>
 <div>
-<div class="sl">Expiring contracts</div>
-<table><thead><tr><th>Incumbent</th><th>Agency</th><th class="r">Value</th><th class="r">Days</th></tr></thead><tbody>
-${exp90.slice(0, 4).map(c => {
-      const days = Math.ceil((c._endTs - nowTs) / 86400000);
-      return `<tr><td>${Html.escapeHtml(c['Recipient Name'] || '')}</td><td class="sm">${Html.escapeHtml(cleanAg(c['Awarding Agency'] || ''))}</td><td class="r">${money(c['Award Amount'])}</td><td class="r${days <= 14 ? ' exp-urgent' : ''}">${days}d</td></tr>`;
-    }).join('')}
-</tbody></table>
+${window.SnapExtras ? SnapExtras.pipelineTable(6) : ''}
 </div>
-</div>` : `
-<div class="sl">Expiring contracts</div>
-<table style="max-width:500px"><thead><tr><th>Incumbent</th><th>Agency</th><th class="r">Value</th><th class="r">Days</th></tr></thead><tbody>
-${exp90.slice(0, 4).map(c => {
-      const days = Math.ceil((c._endTs - nowTs) / 86400000);
-      return `<tr><td>${Html.escapeHtml(c['Recipient Name'] || '')}</td><td class="sm">${Html.escapeHtml(cleanAg(c['Awarding Agency'] || ''))}</td><td class="r">${money(c['Award Amount'])}</td><td class="r${days <= 14 ? ' exp-urgent' : ''}">${days}d</td></tr>`;
-    }).join('')}
-</tbody></table>`}
+</div>
 
 
 
-${window.SnapExtras ? window.SnapExtras.html() : ''}
 <div class="ft">
   <a href="https://fedhoo.com" class="ft-logo" target="_blank">
     <svg width="22" height="22" viewBox="0 0 40 40"><circle cx="20" cy="20" r="19" fill="#8EAF8E" stroke="#3D5C3D" stroke-width="2.4"/><circle cx="14" cy="16" r="2.4" fill="#3D5C3D"/><circle cx="26" cy="16" r="2.4" fill="#3D5C3D"/><path d="M13 24 Q20 30 27 24" fill="none" stroke="#3D5C3D" stroke-width="2.4" stroke-linecap="round"/></svg>
@@ -7062,13 +7039,25 @@ function questionsFor(f) {
 }
 
 window.SnapExtras = {
-  html() {
+  partnersTable(n) {
+    try {
+      const pfd = window.PartnerFit && PartnerFit._last;
+      if (!pfd) return '';
+      const partners = [...(pfd.channel||[]).slice(0,2).map(v=>({v,route:'Channel'})),
+                        ...(pfd.primes||[]).slice(0,n).map(v=>({v,route:'Prime'}))].slice(0, n + 1);
+      if (!partners.length) return '';
+      return '<div class="sl">Partner routes</div>'
+        + '<table><thead><tr><th>Partner</th><th>Route</th><th class="r">Fit</th><th class="r">Prime $</th></tr></thead><tbody>'
+        + partners.map(p => '<tr><td>' + Html.escapeHtml(p.v.name) + '</td><td class="sm">' + p.route + '</td><td class="r">' + p.v.score + '</td><td class="r">' + money(p.v.prime) + '</td></tr>').join('')
+        + '</tbody></table>';
+    } catch (e) { return ''; }
+  },
+  pipelineTable(n) {
     try {
       const f = briefFacts();
-      if (!f) return '';
-      const now = Date.now(), cut = now + 548 * 86400000;
       const app = A();
-      const rows = (app.searchData.active || []).filter(c => {
+      const now = Date.now(), cut = now + 548 * 86400000;
+      const rows = ((app.searchData && app.searchData.active) || []).filter(c => {
         const e = c._endTs || Date.parse(c['End Date']);
         return e && e > now && e <= cut && (parseFloat(c['Award Amount'])||0) >= 250000;
       }).map(c => {
@@ -7079,28 +7068,12 @@ window.SnapExtras = {
         return { e, amt: parseFloat(c['Award Amount'])||0,
           pat: renew ? 'Renewal' : bridge ? 'Short-Term' : 'Maturing',
           v: c['Recipient Name']||'', ag: (c['Awarding Sub Agency'] && c['Awarding Sub Agency'] !== c['Awarding Agency']) ? c['Awarding Sub Agency'] : (c['Awarding Agency']||'') };
-      }).sort((a,b) => a.e - b.e).slice(0, 6);
-      const pfd = window.PartnerFit && PartnerFit._last;
-      const partners = pfd ? [...(pfd.channel||[]).slice(0,2).map(v=>({v,route:'Channel'})), ...(pfd.primes||[]).slice(0,3).map(v=>({v,route:'Prime'}))] : [];
-      let h = '';
-      if (partners.length) {
-        h += '<div class="sl">Partner routes</div>'
-          + '<table><thead><tr><th>Partner</th><th>Route</th><th class="r">Fit</th><th class="r">Prime $</th></tr></thead><tbody>'
-          + partners.map(p => '<tr><td>' + Html.escapeHtml(p.v.name) + '</td><td class="sm">' + p.route + '</td><td class="r">' + p.v.score + '</td><td class="r">' + money(p.v.prime) + '</td></tr>').join('')
-          + '</tbody></table>';
-      }
-      if (rows.length) {
-        h += '<div class="sl">18-month pipeline</div>'
-          + '<table><thead><tr><th>Pattern</th><th>Incumbent</th><th>Agency</th><th class="r">Value</th><th class="r">Ends</th></tr></thead><tbody>'
-          + rows.map(r => '<tr><td class="sm">' + r.pat + '</td><td>' + Html.escapeHtml(r.v) + '</td><td class="sm">' + Html.escapeHtml(r.ag) + '</td><td class="r">' + money(r.amt) + '</td><td class="r">' + new Date(r.e).toISOString().slice(0,10) + '</td></tr>').join('')
-          + '</tbody></table>';
-      }
-      const qs = questionsFor(f);
-      if (qs.length) {
-        h += '<div class="sl">Questions to ask</div><ol style="margin:6px 0 0 18px;padding:0;font-size:12px;line-height:1.7">'
-          + qs.map(q => '<li>' + q + '</li>').join('') + '</ol>';
-      }
-      return h;
+      }).sort((a,b) => a.e - b.e).slice(0, n);
+      if (!rows.length) return '';
+      return '<div class="sl">18-month pipeline</div>'
+        + '<table><thead><tr><th>Pattern</th><th>Incumbent</th><th class="r">Value</th><th class="r">Ends</th></tr></thead><tbody>'
+        + rows.map(r => '<tr><td class="sm">' + r.pat + '</td><td>' + Html.escapeHtml(r.v) + '</td><td class="r">' + money(r.amt) + '</td><td class="r">' + new Date(r.e).toISOString().slice(0,10) + '</td></tr>').join('')
+        + '</tbody></table>';
     } catch (e) { return ''; }
   },
 };
@@ -7200,7 +7173,7 @@ window.Deals = {
 
 
 <script>
-// ═══════════ v11: Vendors toggle + sticky section nav ═══════════
+// ═══════════ v12: vendor toggle + sticky section nav (multicol-safe) ═══════════
 (function () {
 'use strict';
 window.Vendors = {
@@ -7214,18 +7187,20 @@ window.Vendors = {
 window.SectionNav = {
   go(id) {
     const el = document.getElementById(id);
+    if (el && el.offsetParent === null && id === 'primesCard') Vendors.show('primes');
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   },
   _wire() {
     if (this._io || !('IntersectionObserver' in window)) return;
-    const ids = ['marketCard', 'partnerFitCard', 'dealsCard', 'vendorsCard'];
+    const map = { marketCard: 'marketCard', partnerFitCard: 'partnerFitCard', dealsCard: 'dealsCard', primesCard: 'primesCard', subawardsCard: 'primesCard' };
     this._io = new IntersectionObserver((entries) => {
       const vis = entries.filter(e => e.isIntersecting).sort((a,b) => b.intersectionRatio - a.intersectionRatio)[0];
       if (!vis) return;
+      const target = map[vis.target.id];
       document.querySelectorAll('#sectionNav [data-target]').forEach(b =>
-        b.classList.toggle('active', b.dataset.target === vis.target.id));
+        b.classList.toggle('active', b.dataset.target === target));
     }, { rootMargin: '-15% 0px -55% 0px', threshold: [0.05, 0.25, 0.5] });
-    ids.forEach(id => { const el = document.getElementById(id); if (el) this._io.observe(el); });
+    Object.keys(map).forEach(id => { const el = document.getElementById(id); if (el) this._io.observe(el); });
   },
 };
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => SectionNav._wire());
