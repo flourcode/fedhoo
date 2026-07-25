@@ -1234,27 +1234,9 @@ a, button, input, select { touch-action: manipulation; }
 <div class="page-wrap">
 
   <!-- LANDING PROMPT, shown only before first search -->
-  <div id="moDoor" class="hidden">
-    <div class="mo-door-card">
-      <div class="mo-door-title">Ask Mo</div>
-      <div class="mo-door-sub">Describe what you're looking for in plain English — Mo turns it into a live market dashboard.</div>
-      <div class="mo-door-row">
-        <input id="moDoorInput" type="text" autocomplete="off" placeholder="Who sells endpoint security to the VA?" aria-label="Ask Mo in plain English" />
-        <button id="moDoorGo" onclick="MoDoor.go()">Go</button>
-      </div>
-      <div class="mo-door-chips" id="moDoorChips"></div>
-      <div class="mo-door-hint">Or use the search bar above for direct keyword, NAICS, or PSC queries.</div>
-    </div>
-  </div>
+  
 
-  <!-- SECTION NAV — sticky, sibling of the multicol grid -->
-  <nav class="section-nav hidden" id="sectionNav" aria-label="Dashboard sections">
-    <button class="dl-sort active" data-target="marketCard" onclick="SectionNav.go('marketCard')">Market</button>
-    <button class="dl-sort" data-target="partnerFitCard" onclick="SectionNav.go('partnerFitCard')">Partners</button>
-    <button class="dl-sort" data-target="dealsCard" onclick="SectionNav.go('dealsCard')">Contracts</button>
-  </nav>
-
-  <!-- RESULTS GRID -->
+    <!-- RESULTS GRID -->
   <div class="tools-grid hidden" id="resultsGrid">
 
     <!-- UNIFIED INTELLIGENCE CARD -->
@@ -3294,7 +3276,6 @@ const App = {
         DOM.show('snapshotBtn');
         if (window.PartnerFit) PartnerFit.render();
         if (window.Deals) Deals.render();
-        DOM.show('sectionNav');
         if (window.__pipelineIntent) { window.__pipelineIntent = false; setTimeout(() => DOM.get('dealsCard')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 600); }
       DOM.show('bioCard');
 
@@ -5405,12 +5386,9 @@ ${gemData.next_steps.map((step, i) => `<div class="ns-item"><span class="ns-num"
   _sellerProduct: null,
 
   initSellerContext() {
-    const saved = localStorage.getItem('fedhoo_seller_product');
-    if (saved) {
-      this._sellerProduct = saved;
-      this._sellerLens = saved; // Feed into Mo's existing lens system
-      this._showSellerContextSet(saved);
-    }
+    // Inference-first: the AI infers what you sell from your search terms.
+    // Stored lenses are no longer auto-applied at boot (stale-lens holdover
+    // fix); setting a lens in the Mo sheet still applies for the session.
   },
 
   saveSellerContext() {
@@ -6388,9 +6366,9 @@ ${gemData.next_steps.map((step, i) => `<div class="ns-item"><span class="ns-num"
         this.UI.searchInput.value = lastQuery;
         this.runSearch(lastQuery, false, true);
       } else {
-        // Cold visitor — show the Mo front door instead of a default search
-        const _door = document.getElementById('moDoor');
-        if (_door) _door.classList.remove('hidden');
+        // Cold visitor — load the default market immediately (no empty state)
+        this.UI.searchInput.value = 'Cloud';
+        this.runSearch('Cloud', false, true);
       }
     } catch(e) {
       console.warn('fedhoo init error:', e);
@@ -7187,32 +7165,7 @@ window.Deals = {
 </script>
 
 
-<script>
-// ═══════════ v12: vendor toggle + sticky section nav (multicol-safe) ═══════════
-(function () {
-'use strict';
-window.SectionNav = {
-  go(id) {
-    const el = document.getElementById(id);
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  },
-  _wire() {
-    if (this._io || !('IntersectionObserver' in window)) return;
-    const map = { marketCard: 'marketCard', partnerFitCard: 'partnerFitCard', dealsCard: 'dealsCard' };
-    this._io = new IntersectionObserver((entries) => {
-      const vis = entries.filter(e => e.isIntersecting).sort((a,b) => b.intersectionRatio - a.intersectionRatio)[0];
-      if (!vis) return;
-      const target = map[vis.target.id];
-      document.querySelectorAll('#sectionNav [data-target]').forEach(b =>
-        b.classList.toggle('active', b.dataset.target === target));
-    }, { rootMargin: '-15% 0px -55% 0px', threshold: [0.05, 0.25, 0.5] });
-    Object.keys(map).forEach(id => { const el = document.getElementById(id); if (el) this._io.observe(el); });
-  },
-};
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => SectionNav._wire());
-else SectionNav._wire();
-})();
-</script>
+
 
 
 <script>
