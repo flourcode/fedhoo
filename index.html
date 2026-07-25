@@ -1303,6 +1303,34 @@ a, button, input, select { touch-action: manipulation; }
 
     </div><!-- /marketCard unified -->
 
+    <!-- PARTNER FIT CARD -->
+    <div class="app-card wide result-panel hidden" id="partnerFitCard">
+      <div class="card-header-row">
+        <h2 class="card-title card-title--flush">Partner Fit</h2>
+        <button class="export-btn" onclick="PartnerFit.exportCSV()" title="Export partner scores to CSV">Export CSV</button>
+      </div>
+      <div class="pf-sub" id="pfSub">Two ways into this market: sell through a channel holder, or team with a prime.</div>
+      <div id="partnerFitList"></div>
+      <div class="pf-note" id="partnerFitNote"></div>
+    </div>
+
+    <!-- EXPIRING SOON CARD -->
+    <div class="app-card wide result-panel hidden" id="expiringCard">
+      <div class="card-header-row">
+        <h2 class="card-title card-title--flush">Expiring Soon</h2>
+        <button class="export-btn" onclick="App.exportExpiringCSV()" title="Export expiring contracts to CSV">Export CSV</button>
+      </div>
+      <div class="contract-list" id="expiringList"></div>
+    </div>
+
+    <!-- RECENT AWARDS CARD -->
+    <div class="app-card wide result-panel hidden" id="recentCard">
+      <div class="card-header-row">
+        <h2 class="card-title card-title--flush">Recent Awards</h2>
+      </div>
+      <div class="contract-list" id="recentList"></div>
+    </div>
+
     <!-- TOP PRIMES CARD -->
     <div class="app-card wide result-panel hidden" id="primesCard">
       <div class="primes-header">
@@ -1324,45 +1352,6 @@ a, button, input, select { touch-action: manipulation; }
         <button class="export-btn" onclick="App.exportSubawardsCSV()" title="Export subawards to CSV">Export CSV</button>
       </div>
       <div class="contract-list" id="subawardsList"></div>
-    </div>
-
-    <!-- PARTNER FIT CARD -->
-    <div class="app-card wide result-panel hidden" id="partnerFitCard">
-      <div class="card-header-row">
-        <h2 class="card-title card-title--flush">Partner Fit</h2>
-        <button class="export-btn" onclick="PartnerFit.exportCSV()" title="Export partner scores to CSV">Export CSV</button>
-      </div>
-      <div class="pf-sub" id="pfSub">Two ways into this market: sell through a channel holder, or team with a prime.</div>
-      <div id="partnerFitList"></div>
-      <div class="pf-note" id="partnerFitNote"></div>
-    </div>
-
-    <!-- PIPELINE CARD -->
-    <div class="app-card wide result-panel hidden" id="pipelineCard">
-      <div class="card-header-row">
-        <h2 class="card-title card-title--flush">Pipeline Signals</h2>
-        <button class="export-btn" onclick="Pipeline.exportCSV()" title="Export pipeline to CSV">Export CSV</button>
-      </div>
-      <div class="pl-summary" id="plSummary"></div>
-      <div id="pipelineList"></div>
-      <div class="pl-note">Renewal = software/licensing paper that re-buys on cycle. Short-Term = bridge or base-only awards — recompete turbulence. Maturing = long-run contracts entering their final stretch. Patterns follow govhoo's pipeline engine, computed from this search's live data.</div>
-    </div>
-
-    <!-- RECENT AWARDS CARD -->
-    <div class="app-card wide result-panel hidden" id="recentCard">
-      <div class="card-header-row">
-        <h2 class="card-title card-title--flush">Recent Awards</h2>
-      </div>
-      <div class="contract-list" id="recentList"></div>
-    </div>
-
-    <!-- EXPIRING SOON CARD -->
-    <div class="app-card wide result-panel hidden" id="expiringCard">
-      <div class="card-header-row">
-        <h2 class="card-title card-title--flush">Expiring Soon</h2>
-        <button class="export-btn" onclick="App.exportExpiringCSV()" title="Export expiring contracts to CSV">Export CSV</button>
-      </div>
-      <div class="contract-list" id="expiringList"></div>
     </div>
 
     <!-- CONTRACTS CARD -->
@@ -3251,7 +3240,7 @@ const App = {
         DOM.show('snapshotBtn');
         DOM.show('meetingBriefBtn');
         if (window.PartnerFit) PartnerFit.render();
-        if (window.Pipeline) Pipeline.render();
+        if (window.__pipelineIntent) { window.__pipelineIntent = false; setTimeout(() => DOM.get('expiringCard')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 600); }
       DOM.show('bioCard');
 
       // Render chart and panels immediately
@@ -4306,7 +4295,6 @@ const App = {
     // Cache for sub-sankey and reveal the third chart tab
     this._subawardData = subs;
     if (window.PartnerFit) PartnerFit.render();
-        if (window.Pipeline) Pipeline.render();
     DOM.get('tabSubSankey')?.classList.remove('hidden');
     DOM.get('dotSubSankey')?.classList.remove('hidden');
 
@@ -6864,108 +6852,7 @@ if (document.readyState === 'loading') document.addEventListener('DOMContentLoad
 else MoDoor.init();
 })();
 </script>
-<script>
-// ═══════════ PIPELINE SIGNALS — govhoo's pattern engine, fedhoo-native ═══════════
-(function () {
-'use strict';
-const app = () => (typeof App !== 'undefined' && App) ? App : window.App;
-const money = (n) => { const x = Number(n)||0;
-  if (x>=1e9) return '$'+(x/1e9).toFixed(1)+'B';
-  if (x>=1e6) return '$'+(x/1e6).toFixed(1)+'M';
-  if (x>=1e3) return '$'+(x/1e3).toFixed(0)+'K';
-  return '$'+Math.round(x); };
-const esc = (s) => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-const RENEW_RE = /subscription|renew|renewal|licen[sc]e|saas|cots/i;   // govhoo's renewal signals
-const code = (v) => v == null ? '' : (typeof v === 'object' ? String(v.code || '') : String(v));
 
-function classify(c, now) {
-  const end = c._endTs || Date.parse(c['End Date']);
-  if (!end || end <= now) return null;
-  const start = Date.parse(c['Start Date']) || (end - 365*864e5);
-  const years = (end - start) / 315576e5;
-  const days = Math.ceil((end - now) / 864e5);
-  const naics = code(c['NAICS']), psc = code(c['PSC']).toUpperCase();
-  const isSw = naics.startsWith('5112') || naics.startsWith('5182') || psc.startsWith('7A') || psc === 'DA10';
-  const desc = c['Description'] || '';
-  let type, why, bonus = 0;
-  if (isSw || RENEW_RE.test(desc)) {
-    type = 'renewal'; bonus = 15;
-    why = 'Software/licensing paper \u2014 recurring buy behavior; renewal events come on cycle.';
-  } else if (years <= 3) {
-    type = 'shortterm';
-    why = `Short duration (${years.toFixed(1)} yr) \u2014 bridge or base-only award; expect recompete turbulence.`;
-  } else if (days <= 548) {
-    type = 'maturing';
-    why = `Long-run contract (${years.toFixed(1)} yr) entering its final stretch \u2014 incumbent fatigue window.`;
-  } else return null;   // long contract, far from end: not a near-term signal
-  if (days > 548) return null;  // all patterns limited to an 18-month horizon
-  const amt = parseFloat(c['Award Amount']) || 0;
-  // score: size (log) + proximity (sooner = hotter, floor at 90d) + pattern bonus
-  const score = Math.round(Math.log10(Math.max(amt,1)) * 8 + Math.max(0, (548 - Math.max(days,90)) / 548) * 30 + bonus);
-  return { type, why, score, amt, days, end,
-           vendor: c['Recipient Name'] || 'Unknown',
-           agency: c['Awarding Sub Agency'] && c['Awarding Sub Agency'] !== c['Awarding Agency'] ? c['Awarding Sub Agency'] : (c['Awarding Agency'] || ''),
-           desc: desc.slice(0, 110),
-           id: c['generated_internal_id'] || c['Award ID'] || '' };
-}
-
-const LABEL = { renewal: 'Renewal', shortterm: 'Short-Term', maturing: 'Maturing' };
-
-window.Pipeline = {
-  _last: null,
-  render() {
-    const card = document.getElementById('pipelineCard');
-    const list = document.getElementById('pipelineList');
-    const sum = document.getElementById('plSummary');
-    if (!card || !list) return;
-    const A = app();
-    const rows = (A && A.searchData && A.searchData.active) || [];
-    const now = Date.now(), seen = new Set(), out = [];
-    for (const c of rows) {
-      const r = classify(c, now);
-      if (!r || r.amt < 250000) continue;
-      const k = r.id || (r.vendor + r.end);
-      if (seen.has(k)) continue;
-      seen.add(k); out.push(r);
-    }
-    out.sort((a,b) => b.score - a.score);
-    this._last = out;
-    if (out.length < 2) { card.classList.add('hidden'); return; }
-    const totals = {};
-    for (const r of out) { totals[r.type] = (totals[r.type] || 0) + r.amt; }
-    sum.innerHTML = Object.entries(totals).map(([t, v]) =>
-      `<span class="pl-pill">${LABEL[t]}: ${money(v)} \u00B7 ${out.filter(r=>r.type===t).length}</span>`).join('');
-    list.innerHTML = out.slice(0, 8).map(r => `<div class="pl-row">
-      <span class="pl-badge ${r.type}">${LABEL[r.type]}</span>
-      <div class="pl-body">
-        <div class="pl-line1">${esc(r.vendor)} \u00B7 <span class="pl-amt">${money(r.amt)}</span></div>
-        <div class="pl-line2">${esc(r.agency)} \u2014 ends in ${r.days}d (${new Date(r.end).toISOString().slice(0,10)})${r.desc ? ' \u00B7 ' + esc(r.desc) : ''}</div>
-        <div class="pl-why">${esc(r.why)}</div>
-      </div>
-    </div>`).join('');
-    collapseRows(list, '.pl-row', 3, 'Pipeline');
-    card.classList.remove('hidden');
-    if (window.__pipelineIntent) {
-      window.__pipelineIntent = false;
-      setTimeout(() => { try { card.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) {} }, 600);
-    }
-  },
-  exportCSV() {
-    const A = app(), out = this._last || [];
-    if (!out.length) { A && A.toast && A.toast('No pipeline signals for this search.', 'warning'); return; }
-    const headers = ['Rank','Pattern','Incumbent','Agency','Amount','Ends','Days Left','Signal'];
-    const rows = out.map((r, i) => [ i+1, LABEL[r.type],
-      `"${String(r.vendor).replace(/"/g,'""')}"`, `"${String(r.agency).replace(/"/g,'""')}"`,
-      Math.round(r.amt), new Date(r.end).toISOString().slice(0,10), r.days,
-      `"${r.why.replace(/"/g,'""')}"` ].join(','));
-    if (typeof Utils !== 'undefined' && Utils.downloadCSV) {
-      Utils.downloadCSV(`fedhoo_pipeline_${(A.currentQuery||'export').replace(/\s+/g,'_')}`, headers, rows);
-      A.toast && A.toast('Pipeline exported.', 'ok');
-    }
-  },
-};
-})();
-</script>
 
 
 <script>
@@ -7026,13 +6913,102 @@ window.MoRouter = {
   },
 };
 
-// One-tap pre-meeting brief through the existing data-grounded pipeline.
-const MEETING_PROMPT = 'Give me a 60-second pre-meeting brief on this market: '
-  + '1) the three numbers I should quote in the room, '
-  + '2) the incumbents and where each is vulnerable (expiring paper, thin sub bench, channel exposure), '
-  + '3) three sharp questions to ask the customer. Be specific to this data \u2014 no generic advice.';
+// One-tap pre-meeting brief — DETERMINISTIC. Every number below is computed
+// from the live search data in this session. No model, no invention.
+const money = (n) => { const x = Number(n)||0;
+  if (x>=1e9) return '$'+(x/1e9).toFixed(1)+'B';
+  if (x>=1e6) return '$'+(x/1e6).toFixed(1)+'M';
+  if (x>=1e3) return '$'+(x/1e3).toFixed(0)+'K';
+  return '$'+Math.round(x); };
+const esc = (s) => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const mon = (ts) => new Date(ts).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+const RENEW_RE = /subscription|renew|renewal|licen[sc]e|saas|cots/i;
+const CHANNEL_RE = /CARAHSOFT|CDW|SHI INTERNATIONAL|DLT SOLUTIONS|IMMIX|THUNDERCAT|WORLD WIDE TECHNOLOGY|IRON BOW|RED RIVER|PRESIDIO|INSIGHT PUBLIC SECTOR|MYTHICS|EPLUS|FOUR POINTS|STERLING COMPUTERS|GOVCONNECTION|SOFTWAREONE|TD SYNNEX|INGRAM/i;
+
+function briefFacts() {
+  const app = A();
+  const rows = (app && app.searchData && app.searchData.active) || [];
+  if (rows.length < 3) return null;
+  const subs = app._subawardData || null;
+  const now = Date.now(), cut = now + 548 * 86400000;
+  let total = 0, expTotal = 0, biggestExp = null;
+  const V = new Map();
+  for (const c of rows) {
+    const amt = parseFloat(c['Award Amount']) || 0; total += amt;
+    const key = String(c['Recipient Name']||'').toUpperCase();
+    let v = V.get(key);
+    if (!v) { v = { name: c['Recipient Name']||'Unknown', prime:0, expiring:0, awards:0, subOut:0, renew:0, bridge:0 }; V.set(key, v); }
+    v.prime += amt; v.awards++;
+    const end = c._endTs || Date.parse(c['End Date']);
+    const start = Date.parse(c['Start Date']);
+    const isRenew = RENEW_RE.test(c['Description']||'');
+    if (isRenew) v.renew++;
+    if (end && start && (end-start) <= 3.05*31557600000 && end > now && end <= cut) v.bridge++;
+    if (end && end > now && end <= cut) {
+      expTotal += amt; v.expiring += amt;
+      if (!biggestExp || amt > biggestExp.amt) biggestExp = { amt, end,
+        vendor: c['Recipient Name']||'Unknown',
+        agency: (c['Awarding Sub Agency'] && c['Awarding Sub Agency'] !== c['Awarding Agency']) ? c['Awarding Sub Agency'] : (c['Awarding Agency']||'the agency'),
+        renew: isRenew };
+    }
+  }
+  if (subs) for (const s of subs) {
+    const v = V.get(String(s['Prime Recipient Name']||'').toUpperCase());
+    if (v) v.subOut += parseFloat(s['Sub-Award Amount']) || 0;
+  }
+  const top = [...V.values()].sort((a,b) => b.prime - a.prime).slice(0, 3);
+  return { total, count: rows.length, expTotal, biggestExp, top, hasSubs: !!subs, query: app.displayQuery || app.currentQuery || 'this market' };
+}
+
+function angleFor(v, f) {
+  const bits = [];
+  if (v.expiring > 0) bits.push(money(v.expiring) + ' expiring within 18 mo \u2014 displacement window');
+  if (CHANNEL_RE.test(v.name)) bits.push('channel holder \u2014 route to sell through, not against');
+  else if (v.renew >= 1 && v.renew >= v.awards/2) bits.push('license/renewal paper \u2014 re-buys on cycle');
+  if (f.hasSubs) bits.push(v.subOut > 0 ? ('flows ' + Math.round(v.subOut/Math.max(v.prime,1)*100) + '% to subs \u2014 open to teaming') : 'no visible sub flow \u2014 self-performs or thin bench');
+  if (v.bridge >= 1) bits.push(v.bridge + ' short-term award' + (v.bridge>1?'s':'') + ' \u2014 recompete turbulence');
+  return bits.length ? bits.join(' \u00B7 ') : (Math.round(v.prime/Math.max(f.total,1)*100) + '% of this market');
+}
+
+function questionsFor(f) {
+  const qs = [];
+  if (f.biggestExp) qs.push('How is ' + esc(f.biggestExp.agency) + ' approaching the ' + esc(f.biggestExp.vendor) + ' contract ending ' + mon(f.biggestExp.end) + ' (' + money(f.biggestExp.amt) + ')' + (f.biggestExp.renew ? ' \u2014 straight renewal or recompete?' : '?'));
+  const conc = f.top[0];
+  if (conc && conc.prime / Math.max(f.total,1) >= 0.35) qs.push('Is the team open to alternatives to ' + esc(conc.name) + ' (' + Math.round(conc.prime/f.total*100) + '% of this market)?');
+  const br = f.top.find(v => v.bridge >= 1);
+  if (br) qs.push('Is the ' + esc(br.name) + ' short-term award headed to a full recompete?');
+  const ch = f.top.find(v => CHANNEL_RE.test(v.name));
+  if (ch && qs.length < 3) qs.push('Which contract holders (' + esc(ch.name.split(' ')[0]) + ', others) do you prefer for software buys?');
+  if (qs.length < 3) qs.push('What outcomes matter most in the next 18 months, and who owns that budget?');
+  return qs.slice(0, 3);
+}
+
 const app0 = A();
-if (app0) app0.meetingBrief = function () { this.sendArtiChat(MEETING_PROMPT); };
+if (app0) app0.meetingBrief = function () {
+  const f = briefFacts();
+  if (!f) { this.toast && this.toast('Run a search first \u2014 the brief is built from live market data.', 'warning'); return; }
+  this.openArtiSheet();
+  DOM.show('artiActions');
+  const el = this.UI.aiContentContainer;
+  if (!el) return;
+  const expPct = f.total ? Math.round(f.expTotal / f.total * 100) : 0;
+  el.innerHTML = '<div class="arti-brief-header">'
+    + '<svg class="arti-brief-avatar" aria-label="Mo"><use href="#icon-arti"/></svg>'
+    + '<div><div class="arti-brief-name">Mo</div><div class="arti-brief-role">60-second brief \u00B7 computed from live data</div></div></div>'
+    + '<div class="strategic-read">'
+    + '<p><strong>The numbers \u2014 ' + esc(f.query) + ':</strong> ' + money(f.total) + ' across ' + f.count + ' awards. '
+    + money(f.expTotal) + ' (' + expPct + '%) expires within 18 months. '
+    + esc(f.top[0].name) + ' leads with ' + Math.round(f.top[0].prime/Math.max(f.total,1)*100) + '%.</p>'
+    + '<p><strong>Incumbents &amp; angles:</strong></p><ul>'
+    + f.top.map(v => '<li><strong>' + esc(v.name) + '</strong> (' + money(v.prime) + ') \u2014 ' + angleFor(v, f) + '</li>').join('')
+    + '</ul><p><strong>Ask these:</strong></p><ol>'
+    + questionsFor(f).map(q => '<li>' + q + '</li>').join('')
+    + '</ol>'
+    + (f.hasSubs ? '' : '<p style="opacity:.7;font-size:12px;">Subaward data still loading \u2014 teaming angles will sharpen shortly.</p>')
+    + '</div>';
+  const lbl = DOM.get('sheetQuestionLabel');
+  if (lbl) lbl.textContent = '60-second meeting brief';
+};
 })();
 </script>
 
