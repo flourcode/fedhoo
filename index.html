@@ -1014,6 +1014,26 @@ a, button, input, select { touch-action: manipulation; }
 .rows-hidden { display: none !important; }
 .rows-toggle { display: block; width: 100%; font: inherit; font-size: 12px; font-weight: 700; color: var(--accent); background: none; border: none; padding: 10px 0 2px; cursor: pointer; text-align: left; }
 
+
+/* ── v10: unified Contracts card + retired cards ── */
+#expiringCard, #recentCard, #contractsCard { display: none !important; }
+.dl-sorts { display: flex; gap: 4px; background: var(--chip-bg, var(--bg-app)); border: 1px solid var(--border); border-radius: 9999px; padding: 3px; margin-left: auto; margin-right: 10px; }
+.dl-sort { font: inherit; font-size: 11px; font-weight: 700; color: var(--text-tertiary); background: none; border: none; border-radius: 9999px; padding: 5px 11px; cursor: pointer; white-space: nowrap; }
+.dl-sort.active { background: var(--bg-elevated); color: var(--accent); box-shadow: 0 1px 3px rgba(20,18,28,0.10); }
+.dl-row { display: flex; gap: 12px; padding: 12px 2px; border-bottom: 1px solid var(--border-inner, var(--border)); align-items: flex-start; }
+.dl-row:last-child { border-bottom: none; }
+.dl-badge { flex-shrink: 0; font-size: 9px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; padding: 3px 8px; border-radius: 9999px; margin-top: 3px; }
+.dl-badge.renewal   { background: var(--accent-dim, rgba(70,68,110,0.12)); color: var(--accent, #46446E); }
+.dl-badge.shortterm { background: var(--warn-bg);  color: var(--warn-text); }
+.dl-badge.maturing  { background: var(--chip-bg, var(--bg-app)); color: var(--text-tertiary); border: 1px solid var(--border); }
+.dl-badge.active-b  { background: var(--chip-bg, var(--bg-app)); color: var(--text-quaternary); border: 1px solid var(--border); }
+.dl-body { flex: 1; min-width: 0; }
+.dl-line1 { font-weight: 700; font-size: var(--text-sm, 13px); color: var(--text-primary); }
+.dl-line1 .dl-amt { color: var(--accent); }
+.dl-line2 { font-size: 12px; color: var(--text-secondary); margin-top: 2px; line-height: 1.45; }
+.dl-why { font-size: 11px; color: var(--text-quaternary); margin-top: 3px; line-height: 1.4; }
+@media (max-width: 560px) { .card-header-row { flex-wrap: wrap; } .dl-sorts { margin: 8px 0 0; order: 3; width: 100%; justify-content: stretch; } .dl-sort { flex: 1; text-align: center; } }
+
 </style>
 </head>
 <body>
@@ -1121,9 +1141,6 @@ a, button, input, select { touch-action: manipulation; }
           <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
           <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
         </svg>
-      </button>
-      <button class="hdr-icon-circle hidden" id="meetingBriefBtn" onclick="App.meetingBrief()" title="60-second meeting brief" aria-label="Generate 60-second meeting brief">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
       </button>
       <button class="hdr-icon-circle hidden" id="snapshotBtn" onclick="App.generateSnapshot()" title="Market Focus report" aria-label="Generate Market Focus report">
         <svg class="snap-icon-default" width="16" height="16" viewBox="0 0 640 640" fill="currentColor" aria-hidden="true">
@@ -1314,6 +1331,20 @@ a, button, input, select { touch-action: manipulation; }
       <div class="pf-note" id="partnerFitNote"></div>
     </div>
 
+    <!-- DEALS CARD — unified contracts, sortable -->
+    <div class="app-card wide result-panel hidden" id="dealsCard">
+      <div class="card-header-row">
+        <h2 class="card-title card-title--flush">Contracts</h2>
+        <div class="dl-sorts" role="tablist" aria-label="Sort contracts">
+          <button class="dl-sort active" data-sort="ending" onclick="Deals.sort('ending')">Ending soon</button>
+          <button class="dl-sort" data-sort="newest" onclick="Deals.sort('newest')">Newest</button>
+          <button class="dl-sort" data-sort="largest" onclick="Deals.sort('largest')">Largest</button>
+        </div>
+        <button class="export-btn" onclick="Deals.exportCSV()" title="Export contracts to CSV">Export CSV</button>
+      </div>
+      <div id="dealsList"></div>
+    </div>
+
     <!-- EXPIRING SOON CARD -->
     <div class="app-card wide result-panel hidden" id="expiringCard">
       <div class="card-header-row">
@@ -1416,7 +1447,6 @@ a, button, input, select { touch-action: manipulation; }
 
     <!-- Input — shown after lens is set -->
     <div class="sheet-ask-more hidden" id="artiActions">
-      <div class="sheet-quick"><button class="sheet-quick-btn" onclick="App.meetingBrief()">⚡ 60-sec meeting brief</button></div>
       <div class="sheet-input-row">
         <input type="text" class="sheet-input" id="chatInput"
           placeholder="Ask about this market…"
@@ -3238,9 +3268,9 @@ const App = {
       DOM.show('resultsGrid');
         DOM.show('shareBtn');
         DOM.show('snapshotBtn');
-        DOM.show('meetingBriefBtn');
         if (window.PartnerFit) PartnerFit.render();
-        if (window.__pipelineIntent) { window.__pipelineIntent = false; setTimeout(() => DOM.get('expiringCard')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 600); }
+        if (window.Deals) Deals.render();
+        if (window.__pipelineIntent) { window.__pipelineIntent = false; setTimeout(() => DOM.get('dealsCard')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 600); }
       DOM.show('bioCard');
 
       // Render chart and panels immediately
@@ -4107,7 +4137,7 @@ const App = {
               description: c['Award Description'] || c['Contract Description'] || ''
             }))
           },
-          objective: this._sellerLens ? `I sell ${this._sellerLens}.` : null,
+          objective: this._sellerLens ? `I sell ${this._sellerLens}.` : `Infer what I likely sell from my search \"${this.displayQuery || this.currentQuery}\" and answer from that seller's perspective.`,
           history: this.aiState.history.slice(-6),
           question: message
         }),
@@ -4295,6 +4325,7 @@ const App = {
     // Cache for sub-sankey and reveal the third chart tab
     this._subawardData = subs;
     if (window.PartnerFit) PartnerFit.render();
+    if (window.Deals) Deals.render();
     DOM.get('tabSubSankey')?.classList.remove('hidden');
     DOM.get('dotSubSankey')?.classList.remove('hidden');
 
@@ -4807,7 +4838,7 @@ const App = {
       setTimeout(() => DOM.get('chatInput')?.focus(), 350);
     } else {
       DOM.show('sheetLensPrompt');
-      DOM.hide('artiActions');
+      DOM.show('artiActions');
       setTimeout(() => DOM.get('sheetLensInput')?.focus(), 350);
     }
   },
@@ -5206,6 +5237,7 @@ ${exp90.slice(0, 4).map(c => {
 
 
 
+${window.SnapExtras ? window.SnapExtras.html() : ''}
 <div class="ft">
   <a href="https://fedhoo.com" class="ft-logo" target="_blank">
     <svg width="22" height="22" viewBox="0 0 40 40"><circle cx="20" cy="20" r="19" fill="#8EAF8E" stroke="#3D5C3D" stroke-width="2.4"/><circle cx="14" cy="16" r="2.4" fill="#3D5C3D"/><circle cx="26" cy="16" r="2.4" fill="#3D5C3D"/><path d="M13 24 Q20 30 27 24" fill="none" stroke="#3D5C3D" stroke-width="2.4" stroke-linecap="round"/></svg>
@@ -6696,7 +6728,8 @@ function whyPrime(v, mt, hasSubs) {
 
 function lensIsProduct() {
   try {
-    const l = (localStorage.getItem('fedhoo_seller_product') || '').toLowerCase();
+    const A2 = (typeof App !== 'undefined' && App) ? App : window.App;
+    const l = ((localStorage.getItem('fedhoo_seller_product') || '') + ' ' + ((A2 && A2.currentQuery) || '')).toLowerCase();
     return /saas|software|licen|platform|cloud|app|product|subscription|tool/.test(l);
   } catch { return false; }
 }
@@ -6983,31 +7016,139 @@ function questionsFor(f) {
   return qs.slice(0, 3);
 }
 
-const app0 = A();
-if (app0) app0.meetingBrief = function () {
-  const f = briefFacts();
-  if (!f) { this.toast && this.toast('Run a search first \u2014 the brief is built from live market data.', 'warning'); return; }
-  this.openArtiSheet();
-  DOM.show('artiActions');
-  const el = this.UI.aiContentContainer;
-  if (!el) return;
-  const expPct = f.total ? Math.round(f.expTotal / f.total * 100) : 0;
-  el.innerHTML = '<div class="arti-brief-header">'
-    + '<svg class="arti-brief-avatar" aria-label="Mo"><use href="#icon-arti"/></svg>'
-    + '<div><div class="arti-brief-name">Mo</div><div class="arti-brief-role">60-second brief \u00B7 computed from live data</div></div></div>'
-    + '<div class="strategic-read">'
-    + '<p><strong>The numbers \u2014 ' + esc(f.query) + ':</strong> ' + money(f.total) + ' across ' + f.count + ' awards. '
-    + money(f.expTotal) + ' (' + expPct + '%) expires within 18 months. '
-    + esc(f.top[0].name) + ' leads with ' + Math.round(f.top[0].prime/Math.max(f.total,1)*100) + '%.</p>'
-    + '<p><strong>Incumbents &amp; angles:</strong></p><ul>'
-    + f.top.map(v => '<li><strong>' + esc(v.name) + '</strong> (' + money(v.prime) + ') \u2014 ' + angleFor(v, f) + '</li>').join('')
-    + '</ul><p><strong>Ask these:</strong></p><ol>'
-    + questionsFor(f).map(q => '<li>' + q + '</li>').join('')
-    + '</ol>'
-    + (f.hasSubs ? '' : '<p style="opacity:.7;font-size:12px;">Subaward data still loading \u2014 teaming angles will sharpen shortly.</p>')
-    + '</div>';
-  const lbl = DOM.get('sheetQuestionLabel');
-  if (lbl) lbl.textContent = '60-second meeting brief';
+window.SnapExtras = {
+  html() {
+    try {
+      const f = briefFacts();
+      if (!f) return '';
+      const now = Date.now(), cut = now + 548 * 86400000;
+      const app = A();
+      const rows = (app.searchData.active || []).filter(c => {
+        const e = c._endTs || Date.parse(c['End Date']);
+        return e && e > now && e <= cut && (parseFloat(c['Award Amount'])||0) >= 250000;
+      }).map(c => {
+        const e = c._endTs || Date.parse(c['End Date']);
+        const st = Date.parse(c['Start Date']);
+        const renew = RENEW_RE.test(c['Description']||'');
+        const bridge = st && (e - st) <= 3.05*31557600000;
+        return { e, amt: parseFloat(c['Award Amount'])||0,
+          pat: renew ? 'Renewal' : bridge ? 'Short-Term' : 'Maturing',
+          v: c['Recipient Name']||'', ag: (c['Awarding Sub Agency'] && c['Awarding Sub Agency'] !== c['Awarding Agency']) ? c['Awarding Sub Agency'] : (c['Awarding Agency']||'') };
+      }).sort((a,b) => a.e - b.e).slice(0, 6);
+      const pfd = window.PartnerFit && PartnerFit._last;
+      const partners = pfd ? [...(pfd.channel||[]).slice(0,2).map(v=>({v,route:'Channel'})), ...(pfd.primes||[]).slice(0,3).map(v=>({v,route:'Prime'}))] : [];
+      let h = '';
+      if (partners.length) {
+        h += '<div class="sl">Partner routes</div>'
+          + '<table><thead><tr><th>Partner</th><th>Route</th><th class="r">Fit</th><th class="r">Prime $</th></tr></thead><tbody>'
+          + partners.map(p => '<tr><td>' + Html.escapeHtml(p.v.name) + '</td><td class="sm">' + p.route + '</td><td class="r">' + p.v.score + '</td><td class="r">' + money(p.v.prime) + '</td></tr>').join('')
+          + '</tbody></table>';
+      }
+      if (rows.length) {
+        h += '<div class="sl">18-month pipeline</div>'
+          + '<table><thead><tr><th>Pattern</th><th>Incumbent</th><th>Agency</th><th class="r">Value</th><th class="r">Ends</th></tr></thead><tbody>'
+          + rows.map(r => '<tr><td class="sm">' + r.pat + '</td><td>' + Html.escapeHtml(r.v) + '</td><td class="sm">' + Html.escapeHtml(r.ag) + '</td><td class="r">' + money(r.amt) + '</td><td class="r">' + new Date(r.e).toISOString().slice(0,10) + '</td></tr>').join('')
+          + '</tbody></table>';
+      }
+      const qs = questionsFor(f);
+      if (qs.length) {
+        h += '<div class="sl">Questions to ask</div><ol style="margin:6px 0 0 18px;padding:0;font-size:12px;line-height:1.7">'
+          + qs.map(q => '<li>' + q + '</li>').join('') + '</ol>';
+      }
+      return h;
+    } catch (e) { return ''; }
+  },
+};
+})();
+</script>
+
+
+<script>
+// ═══════════ CONTRACTS — one card, govhoo pipeline format, sortable ═══════════
+(function () {
+'use strict';
+const app = () => (typeof App !== 'undefined' && App) ? App : window.App;
+const money = (n) => { const x = Number(n)||0;
+  if (x>=1e9) return '$'+(x/1e9).toFixed(1)+'B';
+  if (x>=1e6) return '$'+(x/1e6).toFixed(1)+'M';
+  if (x>=1e3) return '$'+(x/1e3).toFixed(0)+'K';
+  return '$'+Math.round(x); };
+const esc = (s) => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const RENEW_RE = /subscription|renew|renewal|licen[sc]e|saas|cots/i;
+const LABEL = { renewal:'Renewal', shortterm:'Short-Term', maturing:'Maturing', active:'Active' };
+
+function rowsFor(sort) {
+  const A = app();
+  const src = (A && A.searchData && A.searchData.active) || [];
+  const now = Date.now(), cut = now + 548*86400000, seen = new Set();
+  const out = [];
+  for (const c of src) {
+    const amt = parseFloat(c['Award Amount']) || 0;
+    if (amt < 100000) continue;
+    const id = c['generated_internal_id'] || c['Award ID'] || (c['Recipient Name']+amt);
+    if (seen.has(id)) continue; seen.add(id);
+    const end = c._endTs || Date.parse(c['End Date']) || 0;
+    const start = Date.parse(c['Start Date']) || 0;
+    let pat = 'active', why = '';
+    if (end > now && end <= cut) {
+      if (RENEW_RE.test(c['Description']||'')) { pat='renewal'; why='License/subscription paper \u2014 re-buys on cycle.'; }
+      else if (start && (end-start) <= 3.05*31557600000) { pat='shortterm'; why='Short duration \u2014 bridge or base-only; recompete turbulence.'; }
+      else { pat='maturing'; why='Long-run contract entering its final stretch.'; }
+    }
+    out.push({ id, amt, end, start, pat, why,
+      v: c['Recipient Name']||'Unknown',
+      ag: (c['Awarding Sub Agency'] && c['Awarding Sub Agency'] !== c['Awarding Agency']) ? c['Awarding Sub Agency'] : (c['Awarding Agency']||''),
+      desc: String(c['Description']||'').slice(0,100) });
+  }
+  if (sort === 'ending') return out.filter(r => r.end > now).sort((a,b) => (a.end||9e15) - (b.end||9e15));
+  if (sort === 'newest') return out.sort((a,b) => (b.start||0) - (a.start||0));
+  return out.sort((a,b) => b.amt - a.amt);   // largest
+}
+
+window.Deals = {
+  _sort: 'ending', _rows: [],
+  sort(s) {
+    this._sort = s;
+    document.querySelectorAll('.dl-sort').forEach(b => b.classList.toggle('active', b.dataset.sort === s));
+    this.render();
+  },
+  render() {
+    const card = document.getElementById('dealsCard');
+    const list = document.getElementById('dealsList');
+    if (!card || !list) return;
+    const rows = rowsFor(this._sort);
+    this._rows = rows;
+    if (rows.length < 2) { card.classList.add('hidden'); return; }
+    const now = Date.now();
+    list.innerHTML = rows.slice(0, 40).map(r => {
+      const dateBit = this._sort === 'newest'
+        ? ('started ' + (r.start ? new Date(r.start).toISOString().slice(0,10) : '\u2014'))
+        : (r.end ? ('ends ' + (r.end > now ? 'in ' + Math.ceil((r.end-now)/864e5) + 'd ' : '') + '(' + new Date(r.end).toISOString().slice(0,10) + ')') : 'no end date');
+      return '<div class="dl-row">'
+        + '<span class="dl-badge ' + (r.pat==='active'?'active-b':r.pat) + '">' + LABEL[r.pat] + '</span>'
+        + '<div class="dl-body">'
+        + '<div class="dl-line1">' + esc(r.v) + ' \u00B7 <span class="dl-amt">' + money(r.amt) + '</span></div>'
+        + '<div class="dl-line2">' + esc(r.ag) + ' \u2014 ' + dateBit + (r.desc ? ' \u00B7 ' + esc(r.desc) : '') + '</div>'
+        + (r.why ? '<div class="dl-why">' + esc(r.why) + '</div>' : '')
+        + '</div></div>';
+    }).join('');
+    if (window.collapseRows) collapseRows(list, '.dl-row', 6, 'Deals');
+    card.classList.remove('hidden');
+  },
+  exportCSV() {
+    const A = app(), rows = this._rows.length ? this._rows : rowsFor(this._sort);
+    if (!rows.length) { A && A.toast && A.toast('No contracts to export.', 'warning'); return; }
+    const headers = ['Rank','Pattern','Vendor','Agency','Amount','Start','End','Description'];
+    const body = rows.map((r,i) => [ i+1, LABEL[r.pat],
+      `"${String(r.v).replace(/"/g,'""')}"`, `"${String(r.ag).replace(/"/g,'""')}"`,
+      Math.round(r.amt), r.start ? new Date(r.start).toISOString().slice(0,10) : '',
+      r.end ? new Date(r.end).toISOString().slice(0,10) : '',
+      `"${r.desc.replace(/"/g,'""')}"` ].join(','));
+    if (typeof Utils !== 'undefined' && Utils.downloadCSV) {
+      Utils.downloadCSV(`fedhoo_contracts_${this._sort}_${(A.currentQuery||'export').replace(/\s+/g,'_')}`, headers, body);
+      A.toast && A.toast('Contracts exported.', 'ok');
+    }
+  },
 };
 })();
 </script>
