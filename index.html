@@ -1181,9 +1181,6 @@ a, button, input, select { touch-action: manipulation; }
 
     </div>
     <div class="header-actions">
-      <button class="hdr-icon-circle hidden" id="postImageBtn" onclick="PostImage.make()" title="Create post image" aria-label="Create a shareable post image">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
-      </button>
       <button class="hdr-icon-circle hidden" id="shareBtn" onclick="App.shareSearch(this)" title="Copy link" aria-label="Share search">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
@@ -3314,7 +3311,6 @@ const App = {
       DOM.show('resultsGrid');
         DOM.show('shareBtn');
         DOM.show('snapshotBtn');
-        DOM.show('postImageBtn');
         if (window.PartnerFit) PartnerFit.render();
         if (window.Deals) Deals.render();
         if (window.ChartCaptions) ChartCaptions.update(App._chartView || 'treemap');
@@ -7583,186 +7579,6 @@ window.MatchScope = {
       ? `Exact <strong>\u201C${q}\u201D</strong>: ${s.exN} award${s.exN===1?'':'s'} \u00B7 ${money(s.ex$)}. Related terms add ${money(s.rel$)}.`
       : `Showing <strong>\u201C${q}\u201D + related terms</strong> (${money(s.ex$ + s.rel$)}). Exact matches alone: ${s.exN} \u00B7 ${money(s.ex$)}.`;
     document.querySelectorAll('[data-ms]').forEach(b => b.classList.toggle('active', b.dataset.ms === this._mode));
-  },
-};
-})();
-</script>
-
-
-<script>
-// ═══════════ POST IMAGE — LinkedIn-ready 4:5 card drawn from live data ═══════════
-(function () {
-'use strict';
-const A = () => (typeof App !== 'undefined' && App) ? App : window.App;
-const money = (n) => { const x = Number(n)||0;
-  if (x>=1e9) return '$'+(x/1e9).toFixed(1)+'B';
-  if (x>=1e6) return '$'+(x/1e6).toFixed(1)+'M';
-  if (x>=1e3) return '$'+(x/1e3).toFixed(0)+'K';
-  return '$'+Math.round(x); };
-const FONT = (w, px) => `${w} ${px}px "Google Sans Flex", system-ui, -apple-system, sans-serif`;
-const PALETTE = ['#7FA8C9','#C9899D','#8885C8','#8FBC9E','#C9B27F','#9B98B0'];
-
-function ell(ctx, text, max) {
-  let t = String(text || '');
-  if (ctx.measureText(t).width <= max) return t;
-  while (t.length > 2 && ctx.measureText(t + '\u2026').width > max) t = t.slice(0, -1);
-  return t + '\u2026';
-}
-function rr(ctx, x, y, w, h, r) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
-  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
-}
-function cleanAg(a) { return (typeof Utils !== 'undefined' && Utils.cleanAgency) ? Utils.cleanAgency(a) : a; }
-
-function gather() {
-  const app = A();
-  const rows = (app && app.searchData && app.searchData.active) || [];
-  if (rows.length < 2) return null;
-  let total = 0;
-  const byAg = new Map(), flows = new Map(), agencies = new Set(), vendors = new Set();
-  for (const c of rows) {
-    const amt = parseFloat(c['Award Amount']) || 0; total += amt;
-    const ag = c['Awarding Agency'] || 'Other', v = c['Recipient Name'] || 'Unknown';
-    agencies.add(ag); vendors.add(v);
-    byAg.set(ag, (byAg.get(ag) || 0) + amt);
-    const k = ag + '\u0001' + v;
-    flows.set(k, (flows.get(k) || 0) + amt);
-  }
-  const pfd = window.PartnerFit && PartnerFit._last;
-  const partners = pfd ? [...(pfd.channel||[]).slice(0,2).map(v=>({n:v.name,s:v.score,r:'Channel'})),
-                         ...(pfd.primes||[]).slice(0,3).map(v=>({n:v.name,s:v.score,r:'Prime'}))].slice(0,3) : [];
-  return {
-    q: (app.displayQuery || app.currentQuery || '').toUpperCase(),
-    total, nA: agencies.size, nV: vendors.size, nC: rows.length,
-    ags: [...byAg.entries()].sort((a,b)=>b[1]-a[1]).slice(0,5),
-    flows: [...flows.entries()].map(([k,amt])=>{ const [ag,v]=k.split('\u0001'); return {ag,v,amt}; })
-      .sort((a,b)=>b.amt-a.amt).slice(0,4),
-    partners,
-    scope: (app.drillState && app.drillState.level > 0 && app.drillState.currentAgency) ? cleanAg(app.drillState.currentAgency) : null,
-  };
-}
-
-function draw(d) {
-  const W = 1080, H = 1350, S = 2;
-  const cv = document.createElement('canvas');
-  cv.width = W * S; cv.height = H * S;
-  const ctx = cv.getContext('2d');
-  ctx.scale(S, S);
-  // canvas
-  ctx.fillStyle = '#F4F3F8'; ctx.fillRect(0, 0, W, H);
-  const PAD = 56, CW = W - PAD * 2;
-  // white card
-  ctx.save();
-  rr(ctx, 28, 28, W - 56, H - 56, 32);
-  ctx.shadowColor = 'rgba(20,18,28,0.10)'; ctx.shadowBlur = 40; ctx.shadowOffsetY = 10;
-  ctx.fillStyle = '#FFFFFF'; ctx.fill();
-  ctx.restore();
-
-  let y = 108;
-  // brand
-  ctx.fillStyle = '#46446E'; ctx.font = FONT(800, 30);
-  ctx.fillText('fedhoo', PAD, y);
-  ctx.fillStyle = '#8B88A0'; ctx.font = FONT(600, 21);
-  const bw = ctx.measureText('Federal Markets. Simplified.').width;
-  ctx.fillText('Federal Markets. Simplified.', W - PAD - bw, y);
-  y += 62;
-  // query + scope
-  ctx.fillStyle = '#393640'; ctx.font = FONT(800, 42);
-  ctx.fillText(ell(ctx, d.q + (d.scope ? ' \u00B7 ' + d.scope.toUpperCase() : ''), CW), PAD, y);
-  y += 88;
-  // hero
-  ctx.fillStyle = '#46446E'; ctx.font = FONT(800, 96);
-  ctx.fillText(money(d.total), PAD, y);
-  ctx.fillStyle = '#8B88A0'; ctx.font = FONT(600, 24);
-  ctx.fillText(`${d.nA} agencies \u00B7 ${d.nV} vendors \u00B7 ${d.nC} awards \u00B7 last 12 months`, PAD, y + 40);
-  y += 104;
-
-  // agency mosaic
-  ctx.fillStyle = '#8B88A0'; ctx.font = FONT(800, 20);
-  ctx.fillText('WHERE THE MONEY IS', PAD, y); y += 20;
-  const agSum = d.ags.reduce((a, [,v]) => a + v, 0) || 1;
-  let x = PAD;
-  const MH = 210, GAP = 6;
-  d.ags.forEach(([name, amt], i) => {
-    const w = Math.max(70, (CW - GAP * (d.ags.length - 1)) * (amt / agSum));
-    rr(ctx, x, y, Math.min(w, PAD + CW - x), MH, 14);
-    ctx.fillStyle = PALETTE[i % PALETTE.length]; ctx.fill();
-    ctx.fillStyle = 'rgba(20,18,28,0.85)';
-    ctx.font = FONT(800, 22);
-    const label = ell(ctx, cleanAg(name), w - 24);
-    ctx.fillText(label, x + 14, y + 36);
-    ctx.font = FONT(800, 26);
-    ctx.fillText(money(amt), x + 14, y + MH - 20);
-    x += w + GAP;
-  });
-  y += MH + 66;
-
-  // flows
-  ctx.fillStyle = '#8B88A0'; ctx.font = FONT(800, 20);
-  ctx.fillText('BIGGEST AGENCY \u2192 PRIME FLOWS', PAD, y); y += 26;
-  const fMax = d.flows[0] ? d.flows[0].amt : 1;
-  for (const f of d.flows) {
-    const bh = 56, bw2 = Math.max(180, CW * (f.amt / fMax));
-    rr(ctx, PAD, y, bw2, bh, 12);
-    ctx.fillStyle = 'rgba(136,133,200,0.16)'; ctx.fill();
-    rr(ctx, PAD, y, 8, bh, 4); ctx.fillStyle = '#46446E'; ctx.fill();
-    ctx.fillStyle = '#393640'; ctx.font = FONT(700, 23);
-    ctx.fillText(ell(ctx, `${cleanAg(f.ag)} \u2192 ${f.v}`, CW - 170), PAD + 24, y + 35);
-    ctx.fillStyle = '#46446E'; ctx.font = FONT(800, 23);
-    const mw = ctx.measureText(money(f.amt)).width;
-    ctx.fillText(money(f.amt), PAD + CW - mw, y + 35);
-    y += 56 + 12;
-  }
-  y += 40;
-
-  // partners
-  if (d.partners.length) {
-    ctx.fillStyle = '#8B88A0'; ctx.font = FONT(800, 20);
-    ctx.fillText('TOP PARTNER ROUTES', PAD, y); y += 34;
-    d.partners.forEach((p, i) => {
-      ctx.fillStyle = '#393640'; ctx.font = FONT(700, 24);
-      ctx.fillText(ell(ctx, `${i + 1}. ${p.n}`, CW - 220), PAD, y);
-      ctx.fillStyle = p.r === 'Channel' ? '#46446E' : '#8B88A0';
-      ctx.font = FONT(800, 19);
-      const tag = `${p.r} \u00B7 fit ${p.s}`;
-      const tw = ctx.measureText(tag).width;
-      ctx.fillText(tag, PAD + CW - tw, y);
-      y += 40;
-    });
-  }
-
-  // footer
-  ctx.fillStyle = '#E8E6F0'; ctx.fillRect(PAD, H - 132, CW, 2);
-  ctx.fillStyle = '#8B88A0'; ctx.font = FONT(600, 21);
-  ctx.fillText('Data: USASpending.gov \u00B7 live at', PAD, H - 88);
-  ctx.fillStyle = '#46446E'; ctx.font = FONT(800, 21);
-  const pre = ctx.measureText('Data: USASpending.gov \u00B7 live at ').width;
-  ctx.fillText(`fedhoo.com/?q=${encodeURIComponent((A().originalQuery || A().currentQuery || '').toLowerCase())}`, PAD + pre, H - 88);
-  return cv;
-}
-
-window.PostImage = {
-  async make() {
-    const app = A();
-    const d = gather();
-    if (!d) { app.toast && app.toast('Run a search first.', 'warning'); return; }
-    try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch (e) {}
-    const cv = draw(d);
-    const blob = await new Promise(res => cv.toBlob(res, 'image/png'));
-    if (!blob) { app.toast && app.toast('Could not create the image.', 'warning'); return; }
-    const fname = `fedhoo_${(app.currentQuery || 'market').replace(/\s+/g, '_').toLowerCase()}.png`;
-    const file = new File([blob], fname, { type: 'image/png' });
-    // Mobile: straight into the share sheet -> post it in the LinkedIn app
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      try { await navigator.share({ files: [file], title: 'fedhoo market card' }); return; }
-      catch (e) { /* cancelled — fall through to download */ }
-    }
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob); a.download = fname;
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-    app.toast && app.toast('Post image downloaded \u2014 sized for LinkedIn (4:5).', 'ok');
   },
 };
 })();
