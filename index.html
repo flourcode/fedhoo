@@ -1034,6 +1034,21 @@ a, button, input, select { touch-action: manipulation; }
 .dl-why { font-size: 11px; color: var(--text-quaternary); margin-top: 3px; line-height: 1.4; }
 @media (max-width: 560px) { .card-header-row { flex-wrap: wrap; } .dl-sorts { margin: 8px 0 0; order: 3; width: 100%; justify-content: stretch; } .dl-sort { flex: 1; text-align: center; } }
 
+
+/* ── v11 ── */
+#sellerContext { display: none !important; }   /* inference replaces the lens ceremony */
+.pf-traction { font-size: 11px; color: var(--text-tertiary); margin-top: 3px; line-height: 1.4; }
+/* Vendors wrapper: flatten the nested cards */
+#vendorsBody > .app-card { background: none; border: none; box-shadow: none; border-radius: 0; padding: 0; margin: 0; }
+#vendorsBody > .app-card .card-title { display: none; }
+#vendorsBody > #subawardsCard { display: none; }
+#vendorsBody > .app-card.hidden { display: none !important; }
+/* Sticky section pills */
+.section-nav { position: sticky; top: 8px; z-index: 40; display: flex; gap: 4px; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 9999px; padding: 4px; margin: 0 auto 14px; width: max-content; max-width: 100%; overflow-x: auto; box-shadow: 0 4px 16px rgba(20,18,28,0.08); -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.section-nav::-webkit-scrollbar { display: none; }
+.section-nav .dl-sort { flex-shrink: 0; }
+@media (max-width: 560px) { .section-nav { width: auto; margin-left: -4px; margin-right: -4px; } }
+
 </style>
 </head>
 <body>
@@ -1320,6 +1335,9 @@ a, button, input, select { touch-action: manipulation; }
 
     </div><!-- /marketCard unified -->
 
+          </div><!-- /vendorsBody -->
+    </div><!-- /vendorsCard -->
+
     <!-- PARTNER FIT CARD -->
     <div class="app-card wide result-panel hidden" id="partnerFitCard">
       <div class="card-header-row">
@@ -1362,6 +1380,24 @@ a, button, input, select { touch-action: manipulation; }
       <div class="contract-list" id="recentList"></div>
     </div>
 
+    <!-- SECTION NAV — sticky pills, appears with results -->
+    <nav class="section-nav hidden" id="sectionNav" aria-label="Dashboard sections">
+      <button class="dl-sort active" data-target="marketCard" onclick="SectionNav.go('marketCard')">Market</button>
+      <button class="dl-sort" data-target="partnerFitCard" onclick="SectionNav.go('partnerFitCard')">Partners</button>
+      <button class="dl-sort" data-target="dealsCard" onclick="SectionNav.go('dealsCard')">Contracts</button>
+      <button class="dl-sort" data-target="vendorsCard" onclick="SectionNav.go('vendorsCard')">Vendors</button>
+    </nav>
+
+    <!-- VENDORS CARD — primes + sub flow, pill-switched -->
+    <div class="app-card wide result-panel hidden" id="vendorsCard">
+      <div class="card-header-row">
+        <h2 class="card-title card-title--flush">Vendors</h2>
+        <div class="dl-sorts" role="tablist" aria-label="Vendor view">
+          <button class="dl-sort active" data-vtab="primes" onclick="Vendors.show('primes')">Top primes</button>
+          <button class="dl-sort" data-vtab="subs" onclick="Vendors.show('subs')">Prime → Sub flow</button>
+        </div>
+      </div>
+      <div id="vendorsBody">
     <!-- TOP PRIMES CARD -->
     <div class="app-card wide result-panel hidden" id="primesCard">
       <div class="primes-header">
@@ -3270,6 +3306,7 @@ const App = {
         DOM.show('snapshotBtn');
         if (window.PartnerFit) PartnerFit.render();
         if (window.Deals) Deals.render();
+        DOM.show('vendorsCard'); DOM.show('sectionNav');
         if (window.__pipelineIntent) { window.__pipelineIntent = false; setTimeout(() => DOM.get('dealsCard')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 600); }
       DOM.show('bioCard');
 
@@ -6679,10 +6716,10 @@ function compute() {
     const key = norm(c['Recipient Name']);
     if (!key) continue;
     let v = V.get(key);
-    if (!v) { v = { name: c['Recipient Name'], prime: 0, awards: 0, expiring: 0, swHits: 0,
+    if (!v) { v = { name: c['Recipient Name'], prime: 0, awards: 0, expiring: 0, swHits: 0, agencyAmts: {},
                     agencies: new Set(), vehicleSet: new Set(), subOut: 0, subNames: new Set() }; V.set(key, v); }
     v.prime += amt; v.awards++;
-    if (c['Awarding Agency']) v.agencies.add(c['Awarding Agency']);
+    if (c['Awarding Agency']) { v.agencies.add(c['Awarding Agency']); v.agencyAmts[c['Awarding Agency']] = (v.agencyAmts[c['Awarding Agency']] || 0) + amt; }
     if (SW_RE.test(c['Description'] || '')) v.swHits++;
     if (c._endTs && c._endTs > now && c._endTs <= cut) v.expiring += amt;
     const isVeh = c['idv_type'] || /IDV/i.test(c['Contract Award Type'] || '');
@@ -6734,6 +6771,13 @@ function lensIsProduct() {
   } catch { return false; }
 }
 
+function tractionHtml(v) {
+  const tops = Object.entries(v.agencyAmts || {}).sort((a,b) => b[1] - a[1]).slice(0, 3);
+  if (!tops.length) return '';
+  const clean = (typeof Utils !== 'undefined' && Utils.cleanAgency) ? Utils.cleanAgency : (x => x);
+  const line = tops.map(([ag, amt]) => `${esc(clean(ag))} ${money(amt)} (${Math.round(amt / Math.max(v.prime, 1) * 100)}%)`).join(' \u00B7 ');
+  return `<div class="pf-traction">Traction: ${line}</div>`;
+}
 function rowHtml(v, i, d) {
   const clean = (typeof Utils !== 'undefined' && Utils.normalizeVendorName) ? Utils.normalizeVendorName(v.name) : v.name;
   const liPeople = 'https://www.linkedin.com/search/results/people/?keywords=' + encodeURIComponent('"' + clean + '"') + '&origin=GLOBAL_SEARCH_HEADER';
@@ -6747,6 +6791,7 @@ function rowHtml(v, i, d) {
     <div class="pf-body">
       <div class="pf-name-row"><span class="pf-name">${esc(v.name)}</span><span class="pf-score ${tier}">${v.score}</span>${roleBadge}</div>
       <div class="pf-why">${esc(why)}</div>
+      ${tractionHtml(v)}
       <div class="pf-actions"><a class="pf-link" href="${liPeople}" target="_blank" rel="noopener">People \u2197</a></div>
     </div>
   </div>`;
@@ -6784,18 +6829,18 @@ window.PartnerFit = {
       ? 'Prime score = sub-flow generosity + expiring paper + position + vehicles. '
       : 'Subaward data still loading \u2014 prime scores will update with sub-flow. ')
       + 'Channel score = award velocity + agency breadth + renewal paper + market weight. Channel players are contract holders \u2014 no sub-flow expected or penalized.';
-    collapseRows(listEl, '.pf-row', 3, 'PartnerFit');
     card.classList.remove('hidden');
   },
   exportCSV() {
     const A = app(), d = this._last || compute();
     if (!d) { A && A.toast && A.toast('No partner data for this search.', 'warning'); return; }
     const all = [...d.channel, ...d.primes];
-    const headers = ['Rank','Partner','Route','Fit Score','Prime $','% of Market','Awards','Agencies','Sub $ Out','Distinct Subs','Expiring 18mo $','Vehicle Awards'];
+    const headers = ['Rank','Partner','Route','Fit Score','Prime $','% of Market','Awards','Agencies','Sub $ Out','Distinct Subs','Expiring 18mo $','Vehicle Awards','Top Agencies'];
     const rows = all.map((v, i) => [
       i + 1, `"${String(v.name).replace(/"/g,'""')}"`, v.role, v.score, Math.round(v.prime),
       Math.round(v.prime / Math.max(d.marketTotal,1) * 100), v.awards, v.agencies.size,
       Math.round(v.subOut), v.subCount, Math.round(v.expiring), v.vehicles,
+      `"${Object.entries(v.agencyAmts||{}).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([ag,amt])=>ag+' $'+Math.round(amt/1e6)+'M').join('; ').replace(/"/g,'""')}"`,
     ].join(','));
     if (typeof Utils !== 'undefined' && Utils.downloadCSV) {
       Utils.downloadCSV(`fedhoo_partner_fit_${(A.currentQuery||'export').replace(/\s+/g,'_')}`, headers, rows);
@@ -7150,6 +7195,41 @@ window.Deals = {
     }
   },
 };
+})();
+</script>
+
+
+<script>
+// ═══════════ v11: Vendors toggle + sticky section nav ═══════════
+(function () {
+'use strict';
+window.Vendors = {
+  show(tab) {
+    document.querySelectorAll('[data-vtab]').forEach(b => b.classList.toggle('active', b.dataset.vtab === tab));
+    const p = document.getElementById('primesCard'), s = document.getElementById('subawardsCard');
+    if (p) p.style.display = tab === 'primes' ? '' : 'none';
+    if (s) s.style.display = tab === 'subs' ? 'block' : 'none';
+  },
+};
+window.SectionNav = {
+  go(id) {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  },
+  _wire() {
+    if (this._io || !('IntersectionObserver' in window)) return;
+    const ids = ['marketCard', 'partnerFitCard', 'dealsCard', 'vendorsCard'];
+    this._io = new IntersectionObserver((entries) => {
+      const vis = entries.filter(e => e.isIntersecting).sort((a,b) => b.intersectionRatio - a.intersectionRatio)[0];
+      if (!vis) return;
+      document.querySelectorAll('#sectionNav [data-target]').forEach(b =>
+        b.classList.toggle('active', b.dataset.target === vis.target.id));
+    }, { rootMargin: '-15% 0px -55% 0px', threshold: [0.05, 0.25, 0.5] });
+    ids.forEach(id => { const el = document.getElementById(id); if (el) this._io.observe(el); });
+  },
+};
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => SectionNav._wire());
+else SectionNav._wire();
 })();
 </script>
 
