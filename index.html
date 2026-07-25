@@ -4148,8 +4148,17 @@ const App = {
               agency: c['Awarding Agency'],
               office: c['Awarding Sub Agency'] || c['Funding Agency'],
               amount: c['Award Amount'],
+              start_date: c['Start Date'] || '',
               end_date: c['End Date'],
+              naics: (c['NAICS'] && (c['NAICS'].code || c['NAICS'])) || '',
+              psc: (c['PSC'] && (c['PSC'].code || c['PSC'])) || '',
+              set_aside: c['Type of Set Aside'] || '',
               description: c['Award Description'] || c['Contract Description'] || ''
+            })),
+            subawards: (this._subawardData || []).slice(0, 25).map(s => ({
+              prime: s['Prime Recipient Name'],
+              sub: s['Sub-Awardee Name'],
+              amount: s['Sub-Award Amount']
             }))
           },
           objective: this._sellerLens ? `I sell ${this._sellerLens}.` : `Infer what I likely sell from my search \"${this.displayQuery || this.currentQuery}\" and answer from that seller's perspective.`,
@@ -5292,7 +5301,26 @@ ${window.SnapExtras ? SnapExtras.pipelineTable(6) : ''}
 
     let nextStepsHtml = '';
     try {
-      const gemRes = await fetch(App.PROXY_ENDPOINT, {
+      let gemRes = await fetch(App.PROXY_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          request_type: 'govhoo_next_steps',
+          query,
+          facts: [
+            `Market: ${query} (${money(total)} TTM, ${agencyCount} agencies, ${vendorCount} vendors)`,
+            `Assessment: ${verdict}`,
+            geminiPayload.is_channel ? 'CHANNEL MARKET: VARs control access. Product vendors rarely hold contracts directly.' : '',
+            `Top targets: ${geminiPayload.targets.map(t => `${t.agency} (${t.spend}, ${t.expiring} expiring, incumbent: ${t.top_vendor}, office: ${t.office})`).join('; ')}`,
+            `Nearest expirations: ${geminiPayload.expiring_contracts.map(c => `${c.vendor} at ${c.agency}, ${c.value}, ${c.days}d left`).join('; ')}`,
+            `Vehicles: ${geminiPayload.vehicles}`,
+          ].filter(Boolean).map(l => '- ' + l).join('\n'),
+          seller: this.getSellerContext() || null,
+        }),
+      });
+      // Legacy fallback while the Lambda without govhoo_next_steps is still deployed
+      if (!gemRes.ok && (gemRes.status === 400 || gemRes.status === 404)) {
+      gemRes = await fetch(App.PROXY_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -5338,6 +5366,7 @@ Return ONLY valid JSON — no markdown, no backticks:
 }`
         }),
       });
+      }
       if (gemRes.ok) {
         const gemData = await gemRes.json();
         console.log('Snapshot Gemini response:', gemData);
