@@ -1044,6 +1044,13 @@ a, button, input, select { touch-action: manipulation; }
 .section-nav::-webkit-scrollbar { display: none; }
 .section-nav .dl-sort { flex-shrink: 0; }
 
+
+/* ── v13: PF is the vendor card; decluttered market top ── */
+#primesCard, #subawardsCard { display: none !important; }
+#marketVerdict, #marketAction { display: none; }
+#marketCard.analysis-open #marketVerdict:not(.hidden),
+#marketCard.analysis-open #marketAction:not(.hidden) { display: block; }
+
 </style>
 </head>
 <body>
@@ -1245,7 +1252,6 @@ a, button, input, select { touch-action: manipulation; }
     <button class="dl-sort active" data-target="marketCard" onclick="SectionNav.go('marketCard')">Market</button>
     <button class="dl-sort" data-target="partnerFitCard" onclick="SectionNav.go('partnerFitCard')">Partners</button>
     <button class="dl-sort" data-target="dealsCard" onclick="SectionNav.go('dealsCard')">Contracts</button>
-    <button class="dl-sort" data-target="primesCard" onclick="SectionNav.go('primesCard')">Vendors</button>
   </nav>
 
   <!-- RESULTS GRID -->
@@ -1378,14 +1384,6 @@ a, button, input, select { touch-action: manipulation; }
         <h2 class="card-title card-title--flush">Recent Awards</h2>
       </div>
       <div class="contract-list" id="recentList"></div>
-    </div>
-
-    <!-- VENDOR VIEW PILLS — flat, column-span, toggles the two cards below -->
-    <div class="vendor-tabs wide" id="vendorTabs">
-      <div class="dl-sorts" role="tablist" aria-label="Vendor view">
-        <button class="dl-sort active" data-vtab="primes" onclick="Vendors.show('primes')">Top primes</button>
-        <button class="dl-sort" data-vtab="subs" onclick="Vendors.show('subs')">Prime → Sub flow</button>
-      </div>
     </div>
 
     <!-- TOP PRIMES CARD -->
@@ -4966,6 +4964,7 @@ const App = {
     const isOpen = toggle.getAttribute('aria-expanded') === 'true';
     toggle.setAttribute('aria-expanded', !isOpen);
     prose.style.display = isOpen ? 'none' : '';
+    const mc = DOM.get('marketCard'); if (mc) mc.classList.toggle('analysis-open', !isOpen);
     if (label) label.textContent = isOpen ? 'See analysis' : 'Hide analysis';
   },
 
@@ -6694,7 +6693,7 @@ function compute() {
     if (!key) continue;
     let v = V.get(key);
     if (!v) { v = { name: c['Recipient Name'], prime: 0, awards: 0, expiring: 0, swHits: 0, agencyAmts: {},
-                    agencies: new Set(), vehicleSet: new Set(), subOut: 0, subNames: new Set() }; V.set(key, v); }
+                    agencies: new Set(), vehicleSet: new Set(), subOut: 0, subNames: new Set(), subAmts: {} }; V.set(key, v); }
     v.prime += amt; v.awards++;
     if (c['Awarding Agency']) { v.agencies.add(c['Awarding Agency']); v.agencyAmts[c['Awarding Agency']] = (v.agencyAmts[c['Awarding Agency']] || 0) + amt; }
     if (SW_RE.test(c['Description'] || '')) v.swHits++;
@@ -6706,8 +6705,10 @@ function compute() {
   if (subs) for (const s of subs) {
     const v = V.get(norm(s['Prime Recipient Name']));
     if (!v) continue;
-    v.subOut += parseFloat(s['Sub-Award Amount']) || 0;
-    v.subNames.add(norm(s['Sub-Awardee Name']));
+    const _sa = parseFloat(s['Sub-Award Amount']) || 0;
+    v.subOut += _sa;
+    const _sn = s['Sub-Awardee Name'] || '';
+    if (_sn) { v.subNames.add(norm(_sn)); v.subAmts[_sn] = (v.subAmts[_sn] || 0) + _sa; }
   }
   const channel = [], primes = [];
   for (const v of V.values()) {
@@ -6755,6 +6756,12 @@ function tractionHtml(v) {
   const line = tops.map(([ag, amt]) => `${esc(clean(ag))} ${money(amt)} (${Math.round(amt / Math.max(v.prime, 1) * 100)}%)`).join(' \u00B7 ');
   return `<div class="pf-traction">Traction: ${line}</div>`;
 }
+function keySubsHtml(v) {
+  const tops = Object.entries(v.subAmts || {}).sort((a,b) => b[1] - a[1]).slice(0, 3);
+  if (!tops.length) return '';
+  const line = tops.map(([n, amt]) => `${esc(n)} (${money(amt)})`).join(' \u00B7 ');
+  return `<div class="pf-traction">Key subs: ${line}</div>`;
+}
 function rowHtml(v, i, d) {
   const clean = (typeof Utils !== 'undefined' && Utils.normalizeVendorName) ? Utils.normalizeVendorName(v.name) : v.name;
   const liPeople = 'https://www.linkedin.com/search/results/people/?keywords=' + encodeURIComponent('"' + clean + '"') + '&origin=GLOBAL_SEARCH_HEADER';
@@ -6769,7 +6776,13 @@ function rowHtml(v, i, d) {
       <div class="pf-name-row"><span class="pf-name">${esc(v.name)}</span><span class="pf-score ${tier}">${v.score}</span>${roleBadge}</div>
       <div class="pf-why">${esc(why)}</div>
       ${tractionHtml(v)}
-      <div class="pf-actions"><a class="pf-link" href="${liPeople}" target="_blank" rel="noopener">People \u2197</a></div>
+      ${keySubsHtml(v)}
+      <div class="pf-actions">
+        <a class="pf-link" href="${liPeople}" target="_blank" rel="noopener">People \u2197</a>
+        <a class="pf-link" href="https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent('"' + clean + '"')}" target="_blank" rel="noopener">Jobs \u2197</a>
+        <a class="pf-link" href="https://news.google.com/search?q=${encodeURIComponent('"' + clean + '" federal contract')}" target="_blank" rel="noopener">News \u2197</a>
+        <button class="pf-link" data-pfask="${esc(v.name)}">Ask Mo</button>
+      </div>
     </div>
   </div>`;
 }
@@ -6812,12 +6825,13 @@ window.PartnerFit = {
     const A = app(), d = this._last || compute();
     if (!d) { A && A.toast && A.toast('No partner data for this search.', 'warning'); return; }
     const all = [...d.channel, ...d.primes];
-    const headers = ['Rank','Partner','Route','Fit Score','Prime $','% of Market','Awards','Agencies','Sub $ Out','Distinct Subs','Expiring 18mo $','Vehicle Awards','Top Agencies'];
+    const headers = ['Rank','Partner','Route','Fit Score','Prime $','% of Market','Awards','Agencies','Sub $ Out','Distinct Subs','Expiring 18mo $','Vehicle Awards','Top Agencies','Key Subs'];
     const rows = all.map((v, i) => [
       i + 1, `"${String(v.name).replace(/"/g,'""')}"`, v.role, v.score, Math.round(v.prime),
       Math.round(v.prime / Math.max(d.marketTotal,1) * 100), v.awards, v.agencies.size,
       Math.round(v.subOut), v.subCount, Math.round(v.expiring), v.vehicles,
       `"${Object.entries(v.agencyAmts||{}).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([ag,amt])=>ag+' $'+Math.round(amt/1e6)+'M').join('; ').replace(/"/g,'""')}"`,
+      `"${Object.entries(v.subAmts||{}).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([n])=>n).join('; ').replace(/"/g,'""')}"`,
     ].join(','));
     if (typeof Utils !== 'undefined' && Utils.downloadCSV) {
       Utils.downloadCSV(`fedhoo_partner_fit_${(A.currentQuery||'export').replace(/\s+/g,'_')}`, headers, rows);
@@ -7138,7 +7152,7 @@ window.Deals = {
     this._rows = rows;
     if (rows.length < 2) { card.classList.add('hidden'); return; }
     const now = Date.now();
-    list.innerHTML = rows.slice(0, 40).map(r => {
+    list.innerHTML = rows.slice(0, 40).map((r, i) => {
       const dateBit = this._sort === 'newest'
         ? ('started ' + (r.start ? new Date(r.start).toISOString().slice(0,10) : '\u2014'))
         : (r.end ? ('ends ' + (r.end > now ? 'in ' + Math.ceil((r.end-now)/864e5) + 'd ' : '') + '(' + new Date(r.end).toISOString().slice(0,10) + ')') : 'no end date');
@@ -7148,6 +7162,7 @@ window.Deals = {
         + '<div class="dl-line1">' + esc(r.v) + ' \u00B7 <span class="dl-amt">' + money(r.amt) + '</span></div>'
         + '<div class="dl-line2">' + esc(r.ag) + ' \u2014 ' + dateBit + (r.desc ? ' \u00B7 ' + esc(r.desc) : '') + '</div>'
         + (r.why ? '<div class="dl-why">' + esc(r.why) + '</div>' : '')
+        + '<div class="pf-actions"><button class="pf-link" data-dlask="' + i + '">Ask Mo</button></div>'
         + '</div></div>';
     }).join('');
     if (window.collapseRows) collapseRows(list, '.dl-row', 6, 'Deals');
@@ -7176,23 +7191,14 @@ window.Deals = {
 // ═══════════ v12: vendor toggle + sticky section nav (multicol-safe) ═══════════
 (function () {
 'use strict';
-window.Vendors = {
-  show(tab) {
-    document.querySelectorAll('[data-vtab]').forEach(b => b.classList.toggle('active', b.dataset.vtab === tab));
-    const p = document.getElementById('primesCard'), s = document.getElementById('subawardsCard');
-    if (p) p.style.display = tab === 'primes' ? '' : 'none';
-    if (s) s.style.display = tab === 'subs' ? 'block' : 'none';
-  },
-};
 window.SectionNav = {
   go(id) {
     const el = document.getElementById(id);
-    if (el && el.offsetParent === null && id === 'primesCard') Vendors.show('primes');
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   },
   _wire() {
     if (this._io || !('IntersectionObserver' in window)) return;
-    const map = { marketCard: 'marketCard', partnerFitCard: 'partnerFitCard', dealsCard: 'dealsCard', primesCard: 'primesCard', subawardsCard: 'primesCard' };
+    const map = { marketCard: 'marketCard', partnerFitCard: 'partnerFitCard', dealsCard: 'dealsCard' };
     this._io = new IntersectionObserver((entries) => {
       const vis = entries.filter(e => e.isIntersecting).sort((a,b) => b.intersectionRatio - a.intersectionRatio)[0];
       if (!vis) return;
@@ -7205,6 +7211,35 @@ window.SectionNav = {
 };
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => SectionNav._wire());
 else SectionNav._wire();
+})();
+</script>
+
+
+<script>
+// ═══════════ v13: per-partner and per-contract Ask Mo ═══════════
+(function () {
+'use strict';
+const A = () => (typeof App !== 'undefined' && App) ? App : window.App;
+const money = (n) => { const x = Number(n)||0;
+  if (x>=1e9) return '$'+(x/1e9).toFixed(1)+'B';
+  if (x>=1e6) return '$'+(x/1e6).toFixed(1)+'M';
+  return '$'+Math.round(x/1e3)+'K'; };
+document.addEventListener('click', (ev) => {
+  const pf = ev.target.closest('[data-pfask]');
+  if (pf) {
+    const app = A(), q = app.displayQuery || app.currentQuery || 'this market';
+    app.sendArtiChat(`How do I build a partner relationship with ${pf.dataset.pfask} in the ${q} market? Where do they have agency traction, and what's my best first approach?`);
+    return;
+  }
+  const dl = ev.target.closest('[data-dlask]');
+  if (dl && window.Deals) {
+    const r = Deals._rows[Number(dl.dataset.dlask)];
+    if (!r) return;
+    const app = A();
+    const end = r.end ? ` ending ${new Date(r.end).toISOString().slice(0,10)}` : '';
+    app.sendArtiChat(`Tell me about the ${r.v} ${money(r.amt)} contract at ${r.ag}${end}. How could I position to win the recompete or team on it?`);
+  }
+});
 })();
 </script>
 
