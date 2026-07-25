@@ -1063,6 +1063,16 @@ a, button, input, select { touch-action: manipulation; }
 .scope-chip { font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); background: var(--accent-dim, rgba(70,68,110,0.10)); border-radius: 9999px; padding: 3px 9px; margin-left: 8px; vertical-align: 2px; display: none; }
 .scope-chip.on { display: inline-block; }
 
+
+/* ── v18: hero substat ── */
+.hero-substat { font-size: 12px; font-weight: 600; color: var(--text-tertiary); margin: 2px 0 8px; letter-spacing: 0.01em; }
+
+
+/* ── v19: match scope ── */
+.match-scope { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 10px; }
+.ms-label { font-size: 12px; color: var(--text-secondary); }
+.ms-label strong { color: var(--text-primary); }
+
 </style>
 </head>
 <body>
@@ -1272,6 +1282,14 @@ a, button, input, select { touch-action: manipulation; }
         </div>
       </div>
       <!-- Verdict — diagnosis, colored by score -->
+      <div class="hero-substat" id="heroSubstat"></div>
+      <div class="match-scope hidden" id="matchScope">
+        <span class="ms-label" id="msLabel"></span>
+        <div class="dl-sorts">
+          <button class="dl-sort" data-ms="exact" onclick="MatchScope.set('exact')">Exact matches</button>
+          <button class="dl-sort" data-ms="all" onclick="MatchScope.set('all')">Include related</button>
+        </div>
+      </div>
       <div class="market-verdict hidden" id="marketVerdict"></div>
       <!-- Action — prescription, always visible, bold -->
       <div class="market-action hidden" id="marketAction"></div>
@@ -3290,6 +3308,7 @@ const App = {
         if (window.PartnerFit) PartnerFit.render();
         if (window.Deals) Deals.render();
         if (window.ChartCaptions) ChartCaptions.update(App._chartView || 'treemap');
+        if (window.MatchScope) MatchScope.init();
         if (window.__pipelineIntent) { window.__pipelineIntent = false; setTimeout(() => DOM.get('dealsCard')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 600); }
       DOM.show('bioCard');
 
@@ -4601,7 +4620,7 @@ const App = {
     const analysisToggle = DOM.get('marketAnalysisToggle');
     const analysisLabel = DOM.get('marketAnalysisToggleText');
     if (proseEl && proseLines.length > 0) {
-      proseEl.innerHTML = window.SmartBrevity ? SmartBrevity.format(proseLines) : proseLines.map(p => `<p>${p}</p>`).join('');
+      proseEl.innerHTML = window.SmartBrevity ? SmartBrevity.format(window.MarketExtras ? MarketExtras.enrich(proseLines) : proseLines) : proseLines.map(p => `<p>${p}</p>`).join('');
       const isMobile = window.innerWidth <= 640;
       proseEl.style.display = 'none';
       if (analysisToggle) analysisToggle.setAttribute('aria-expanded', 'false');
@@ -6207,7 +6226,7 @@ ${gemData.next_steps.map((step, i) => `<div class="ns-item"><span class="ns-num"
     const analysisToggle = DOM.get('marketAnalysisToggle');
     const analysisLabel = DOM.get('marketAnalysisToggleText');
     if (proseEl && proseLines.length > 0) {
-      proseEl.innerHTML = window.SmartBrevity ? SmartBrevity.format(proseLines) : proseLines.map(p => `<p>${p}</p>`).join('');
+      proseEl.innerHTML = window.SmartBrevity ? SmartBrevity.format(window.MarketExtras ? MarketExtras.enrich(proseLines) : proseLines) : proseLines.map(p => `<p>${p}</p>`).join('');
       // Default: expanded on desktop, collapsed on mobile
       const isMobile = window.innerWidth <= 640;
       proseEl.style.display = 'none';
@@ -7264,11 +7283,41 @@ const KICKERS = [
   [/contract vehicles?/i,                   'How dollars flow'],
   [/buying offices|Purchasing spans/i,      'Who\u2019s buying'],
   [/turning over|up for renewal/i,          'What\u2019s moving'],
+  [/newest award|awarded in the last/i,     'Momentum'],
+  [/entered this market/i,                  'New entrants'],
   [/set.aside|small business/i,             'Set-asides'],
   [/subcontract|sub-award|flows? to subs/i, 'Sub flow'],
 ];
 window.SmartBrevity = {
+  _facts(sent) {
+    // salient facts: dollar figures, percentages, day-windows, proper-noun bigrams
+    const f = new Set();
+    const s = String(sent);
+    for (const m of s.matchAll(/\$[\d.,]+\s?[BMK]?|\d+%|\d+\s?days?/gi)) f.add(m[0].toLowerCase().replace(/\s+/g, ''));
+    for (const m of s.matchAll(/([A-Z][a-zA-Z&.]+)\s+([A-Z][a-zA-Z&.]+)/g)) f.add((m[1] + ' ' + m[2]).toLowerCase());
+    return f;
+  },
+  _dedupe(lines) {
+    // Drop short sentences that only restate facts already said (the "leads at
+    // 30%" / "$21.2M is turning over" repeats); keep longer sentences even if
+    // they reuse a figure, because they usually add advice.
+    const seen = new Set();
+    return lines.map(line => {
+      const kept = [];
+      for (const sent of String(line).split(/(?<=\.)\s+/)) {
+        const facts = this._facts(sent);
+        if (facts.size > 0) {
+          const allKnown = [...facts].every(f => seen.has(f));
+          if (allKnown && sent.length <= 110) continue;
+          for (const f of facts) seen.add(f);
+        }
+        kept.push(sent);
+      }
+      return kept.join(' ').trim();
+    }).filter(Boolean);
+  },
   format(lines) {
+    lines = this._dedupe(lines);
     const seenKickers = new Set();
     const out = [];
     for (let raw of lines) {
@@ -7350,6 +7399,150 @@ window.SyncCards = {
       el.textContent = label;
       el.classList.toggle('on', !!label);
     }
+  },
+};
+})();
+</script>
+
+
+<script>
+// ═══════════ v18: market signal enrichment (govhoo parity, deterministic) ═══════════
+(function () {
+'use strict';
+const A = () => (typeof App !== 'undefined' && App) ? App : window.App;
+const money = (n) => { const x = Number(n)||0;
+  if (x>=1e9) return '$'+(x/1e9).toFixed(1)+'B';
+  if (x>=1e6) return '$'+(x/1e6).toFixed(1)+'M';
+  if (x>=1e3) return '$'+(x/1e3).toFixed(0)+'K';
+  return '$'+Math.round(x); };
+
+function stats() {
+  const app = A();
+  const rows = (app && app.searchData && app.searchData.active) || [];
+  if (rows.length < 2) return null;
+  const now = Date.now(), d90 = now - 90*864e5, y3 = now - 3*365.25*864e5, cut12 = now + 365*864e5;
+  const agencies = new Set(), vendors = new Map();
+  let newest = null;
+  for (const c of rows) {
+    if (c['Awarding Agency']) agencies.add(c['Awarding Agency']);
+    const vn = c['Recipient Name'] || '';
+    const amt = parseFloat(c['Award Amount']) || 0;
+    const st = Date.parse(c['Start Date']) || 0;
+    const en = c._endTs || Date.parse(c['End Date']) || 0;
+    let v = vendors.get(vn);
+    if (!v) { v = { total: 0, earliest: Infinity, exp12: 0 }; vendors.set(vn, v); }
+    v.total += amt;
+    if (st) v.earliest = Math.min(v.earliest, st);
+    if (en > now && en <= cut12) v.exp12 += amt;
+    if (st >= d90 && (!newest || st > newest.st))
+      newest = { st, amt, v: vn, ag: (c['Awarding Sub Agency'] && c['Awarding Sub Agency'] !== c['Awarding Agency']) ? c['Awarding Sub Agency'] : (c['Awarding Agency']||'') };
+  }
+  const entrants = [...vendors.values()].filter(v => v.earliest !== Infinity && v.earliest >= y3).length;
+  const leader = [...vendors.entries()].sort((a,b) => b[1].total - a[1].total)[0];
+  return { rows: rows.length, agencies: agencies.size, vendors: vendors.size, newest, entrants, leader };
+}
+
+window.MarketExtras = {
+  substat() {
+    const s = stats();
+    const sub = document.getElementById('heroSubstat');
+    if (sub) sub.textContent = s ? `${s.agencies} agenc${s.agencies===1?'y':'ies'} \u00B7 ${s.vendors} vendor${s.vendors===1?'':'s'} \u00B7 ${s.rows} award${s.rows===1?'':'s'}` : '';
+  },
+  enrich(lines) {
+    try {
+      const s = stats();
+      if (!s) return lines;
+      const extra = [];
+      if (s.newest) extra.push(`Newest award: ${money(s.newest.amt)} to ${s.newest.v} at ${s.newest.ag}, awarded in the last 90 days \u2014 this market is actively buying.`);
+      if (s.entrants > 0 && s.vendors >= 4) extra.push(`${s.entrants} of ${s.vendors} vendors entered this market within the last 3 years \u2014 ${s.entrants / s.vendors >= 0.3 ? 'the door is open to newcomers' : 'entry is possible but slow'}.`);
+      if (s.leader && s.leader[1].exp12 > 0) extra.push(`${s.leader[0]} has ${money(s.leader[1].exp12)} expiring within 12 months \u2014 the leader's own paper is the biggest displacement pool.`);
+      this.substat();
+      return lines.concat(extra);
+    } catch (e) { return lines; }
+  },
+};
+if (window.SyncCards) {
+  const orig = SyncCards.refresh.bind(SyncCards);
+  SyncCards.refresh = function () { orig(); try { MarketExtras.substat(); } catch (e) {} };
+}
+})();
+</script>
+
+
+<script>
+// ═══════════ v19: transparent match scope — exact term vs related expansion ═══════════
+// One API call (expanded, full recall). Rows are then classified client-side by
+// whether they textually match the exact query; the toggle swaps the baseline
+// and replays resetDrill so every card, chart, and caption follows.
+(function () {
+'use strict';
+const A = () => (typeof App !== 'undefined' && App) ? App : window.App;
+const money = (n) => { const x = Number(n)||0;
+  if (x>=1e9) return '$'+(x/1e9).toFixed(1)+'B';
+  if (x>=1e6) return '$'+(x/1e6).toFixed(1)+'M';
+  if (x>=1e3) return '$'+(x/1e3).toFixed(0)+'K';
+  return '$'+Math.round(x); };
+
+function exactTokens(q) {
+  // keyword part only: strip fedhoo grammar joins; keep meaningful tokens
+  return String(q || '').split(/\s+AND\s+/i)[0].split(/[,\s]+/)
+    .map(t => t.trim()).filter(t => t.length >= 2 && !/^(and|or|the|of|for)$/i.test(t));
+}
+function rowMatches(c, res) {
+  const hay = ((c['Description'] || '') + ' ' + (c['Recipient Name'] || '')).toLowerCase();
+  return res.every(re => re.test(hay));
+}
+
+window.MatchScope = {
+  _full: null, _exact: null, _mode: null, _query: null,
+  init() {
+    const app = A();
+    if (!app || !app.searchData || !app.searchData.loaded) return;
+    const q = app.currentQuery || '';
+    if (q === this._query && this._full) { this._paint(); return; }
+    this._query = q; this._mode = null;
+    const bar = document.getElementById('matchScope');
+    const toks = exactTokens(q);
+    this._full = (app.searchData.baseline || app.searchData.active).slice();
+    if (!bar || !toks.length || this._full.length < 3) { bar && bar.classList.add('hidden'); return; }
+    const res = toks.map(t => new RegExp('\\b' + t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i'));
+    this._exact = this._full.filter(c => rowMatches(c, res));
+    const sum = rows => rows.reduce((a, c) => a + (parseFloat(c['Award Amount']) || 0), 0);
+    const exN = this._exact.length, ex$ = sum(this._exact), all$ = sum(this._full);
+    const rel$ = all$ - ex$;
+    // gate: meaningful split only
+    if (exN === 0 || exN === this._full.length || rel$ < all$ * 0.25) { bar.classList.add('hidden'); return; }
+    this._stats = { exN, ex$, rel$, allN: this._full.length };
+    // trust-first default: exact when it stands on its own; otherwise full with the seam visible
+    this._mode = exN >= 3 ? 'exact' : 'all';
+    bar.classList.remove('hidden');
+    this._apply(false);
+  },
+  set(mode) {
+    if (mode === this._mode) return;
+    this._mode = mode;
+    this._apply(true);
+  },
+  _apply(rerender) {
+    const app = A();
+    const rows = this._mode === 'exact' ? this._exact : this._full;
+    app.searchData.baseline = rows;
+    if (rerender) {
+      try { app.resetDrill(); } catch (e) { app.searchData.active = rows; if (window.SyncCards) SyncCards.refresh(); }
+    } else if (this._mode === 'exact') {
+      // first paint of a defaulted-exact search: re-run the pipeline on the exact set
+      try { app.resetDrill(); } catch (e) { app.searchData.active = rows; if (window.SyncCards) SyncCards.refresh(); }
+    }
+    this._paint();
+  },
+  _paint() {
+    const s = this._stats; if (!s) return;
+    const lbl = document.getElementById('msLabel');
+    const q = (A().displayQuery || this._query || '').split(/\s+AND\s+/i)[0];
+    if (lbl) lbl.innerHTML = this._mode === 'exact'
+      ? `Exact <strong>\u201C${q}\u201D</strong>: ${s.exN} award${s.exN===1?'':'s'} \u00B7 ${money(s.ex$)}. Related terms add ${money(s.rel$)}.`
+      : `Showing <strong>\u201C${q}\u201D + related terms</strong> (${money(s.ex$ + s.rel$)}). Exact matches alone: ${s.exN} \u00B7 ${money(s.ex$)}.`;
+    document.querySelectorAll('[data-ms]').forEach(b => b.classList.toggle('active', b.dataset.ms === this._mode));
   },
 };
 })();
