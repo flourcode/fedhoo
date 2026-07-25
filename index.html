@@ -1051,6 +1051,13 @@ a, button, input, select { touch-action: manipulation; }
 #marketCard.analysis-open #marketVerdict:not(.hidden),
 #marketCard.analysis-open #marketAction:not(.hidden) { display: block; }
 
+
+/* ── v15: Smart Brevity analysis + chart captions ── */
+.market-prose p { margin: 7px 0; font-size: 13px; line-height: 1.55; }
+.market-prose p strong { color: var(--accent); font-weight: 800; }
+.chart-caption { font-size: 12px; color: var(--text-secondary); margin-top: 8px; line-height: 1.5; min-height: 18px; }
+.chart-caption strong { color: var(--text-primary); }
+
 </style>
 </head>
 <body>
@@ -1317,6 +1324,7 @@ a, button, input, select { touch-action: manipulation; }
         <span class="chart-dot" id="dotSankey" onclick="App.switchChartView('sankey')"></span>
         <span class="chart-dot hidden" id="dotSubSankey" onclick="App.switchChartView('subsankey')"></span>
       </div>
+      <div class="chart-caption" id="chartCaption"></div>
       <div class="bubble-toggle-row" id="bubbleToggleRow" style="margin-top:10px;">
         <button class="bubble-toggle-btn active" data-mode="agencies" id="bubbleToggleAgencies">Agency</button>
         <button class="bubble-toggle-btn" data-mode="subagencies" id="bubbleToggleSubAgencies">Office</button>
@@ -3276,6 +3284,7 @@ const App = {
         DOM.show('snapshotBtn');
         if (window.PartnerFit) PartnerFit.render();
         if (window.Deals) Deals.render();
+        if (window.ChartCaptions) ChartCaptions.update(App._chartView || 'treemap');
         if (window.__pipelineIntent) { window.__pipelineIntent = false; setTimeout(() => DOM.get('dealsCard')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 600); }
       DOM.show('bioCard');
 
@@ -4380,6 +4389,7 @@ const App = {
 
   switchChartView(view) {
     this._chartView = view;
+    if (window.ChartCaptions) ChartCaptions.update(view);
     const track = this.UI.chartTrack;
     const viewport = this.UI.chartViewport;
     const offset = view === 'sankey' ? '-33.333%' : view === 'subsankey' ? '-66.666%' : '0%';
@@ -4574,11 +4584,11 @@ const App = {
     const analysisToggle = DOM.get('marketAnalysisToggle');
     const analysisLabel = DOM.get('marketAnalysisToggleText');
     if (proseEl && proseLines.length > 0) {
-      proseEl.innerHTML = proseLines.map(p => `<p>${p}</p>`).join('');
+      proseEl.innerHTML = window.SmartBrevity ? SmartBrevity.format(proseLines) : proseLines.map(p => `<p>${p}</p>`).join('');
       const isMobile = window.innerWidth <= 640;
-      proseEl.style.display = isMobile ? 'none' : '';
-      if (analysisToggle) analysisToggle.setAttribute('aria-expanded', !isMobile);
-      if (analysisLabel) analysisLabel.textContent = isMobile ? 'See analysis' : 'Hide analysis';
+      proseEl.style.display = 'none';
+      if (analysisToggle) analysisToggle.setAttribute('aria-expanded', 'false');
+      if (analysisLabel) analysisLabel.textContent = 'See analysis';
       if (analysisWrap) analysisWrap.classList.remove('hidden');
     }
   },
@@ -6160,12 +6170,12 @@ ${gemData.next_steps.map((step, i) => `<div class="ns-item"><span class="ns-num"
     const analysisToggle = DOM.get('marketAnalysisToggle');
     const analysisLabel = DOM.get('marketAnalysisToggleText');
     if (proseEl && proseLines.length > 0) {
-      proseEl.innerHTML = proseLines.map(p => `<p>${p}</p>`).join('');
+      proseEl.innerHTML = window.SmartBrevity ? SmartBrevity.format(proseLines) : proseLines.map(p => `<p>${p}</p>`).join('');
       // Default: expanded on desktop, collapsed on mobile
       const isMobile = window.innerWidth <= 640;
-      proseEl.style.display = isMobile ? 'none' : '';
-      if (analysisToggle) analysisToggle.setAttribute('aria-expanded', !isMobile);
-      if (analysisLabel) analysisLabel.textContent = isMobile ? 'See analysis' : 'Hide analysis';
+      proseEl.style.display = 'none';
+      if (analysisToggle) analysisToggle.setAttribute('aria-expanded', 'false');
+      if (analysisLabel) analysisLabel.textContent = 'See analysis';
       if (analysisWrap) analysisWrap.classList.remove('hidden');
     } else {
       if (analysisWrap) analysisWrap.classList.add('hidden');
@@ -7193,6 +7203,88 @@ document.addEventListener('click', (ev) => {
     app.sendArtiChat(`Tell me about the ${r.v} ${money(r.amt)} contract at ${r.ag}${end}. How could I position to win the recompete or team on it?`);
   }
 });
+})();
+</script>
+
+
+<script>
+// ═══════════ v15: Smart Brevity + per-chart captions ═══════════
+(function () {
+'use strict';
+const A = () => (typeof App !== 'undefined' && App) ? App : window.App;
+const money = (n) => { const x = Number(n)||0;
+  if (x>=1e9) return '$'+(x/1e9).toFixed(1)+'B';
+  if (x>=1e6) return '$'+(x/1e6).toFixed(1)+'M';
+  if (x>=1e3) return '$'+(x/1e3).toFixed(0)+'K';
+  return '$'+Math.round(x); };
+const esc = (s) => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+// Axios-style: bold kicker + one idea per line; strip hero-stat duplication.
+const KICKERS = [
+  [/near-term targets/i,                    'Go here first'],
+  [/contract vehicles?/i,                   'How dollars flow'],
+  [/buying offices|Purchasing spans/i,      'Who\u2019s buying'],
+  [/turning over|up for renewal/i,          'What\u2019s moving'],
+  [/set.aside|small business/i,             'Set-asides'],
+  [/subcontract|sub-award|flows? to subs/i, 'Sub flow'],
+];
+window.SmartBrevity = {
+  format(lines) {
+    const seenKickers = new Set();
+    const out = [];
+    for (let raw of lines) {
+      let line = String(raw || '').trim();
+      if (!line) continue;
+      // Drop the opening sentence that repeats the hero number
+      line = line.replace(/^The federal government spent .*?\.(?!\d)\s*/, '');
+      // Drop a standalone repeat like "$7.3B across 20 agencies and 42 vendors."
+      line = line.replace(/^\$[\d.,]+[BMK]? across \d+ agencies and \d+ vendors\.\s*/, '');
+      if (!line) continue;
+      let kicker = null;
+      for (const [re, k] of KICKERS) { if (re.test(line)) { kicker = k; break; } }
+      if (!kicker && out.length === 0) kicker = 'The picture';
+      if (kicker && seenKickers.has(kicker)) kicker = null;
+      if (kicker) seenKickers.add(kicker);
+      out.push('<p>' + (kicker ? '<strong>' + kicker + ':</strong> ' : '') + line + '</p>');
+    }
+    return out.join('');
+  },
+};
+
+// One-line data caption matched to the visible chart.
+window.ChartCaptions = {
+  update(view) {
+    const el = document.getElementById('chartCaption');
+    const app = A();
+    if (!el || !app || !app.searchData || !app.searchData.active) return;
+    const rows = app.searchData.active;
+    try {
+      if (view === 'subsankey') {
+        const subs = app._subawardData || [];
+        if (!subs.length) { el.innerHTML = ''; return; }
+        let top = null;
+        for (const s of subs) { const amt = parseFloat(s['Sub-Award Amount']) || 0;
+          if (!top || amt > top.amt) top = { amt, p: s['Prime Recipient Name'], sub: s['Sub-Awardee Name'] }; }
+        el.innerHTML = top ? `Largest sub flow: <strong>${esc(top.p)} \u2192 ${esc(top.sub)}</strong> (${money(top.amt)}). Tap a band to trace who works for whom.` : '';
+      } else if (view === 'sankey') {
+        const pair = new Map();
+        for (const c of rows) { const k = (c['Awarding Agency']||'') + '\u2192' + (c['Recipient Name']||'');
+          pair.set(k, (pair.get(k)||0) + (parseFloat(c['Award Amount'])||0)); }
+        const top = [...pair.entries()].sort((a,b) => b[1]-a[1])[0];
+        if (!top) { el.innerHTML = ''; return; }
+        const [k, amt] = top; const [ag, v] = k.split('\u2192');
+        el.innerHTML = `Largest flow: <strong>${esc(ag)} \u2192 ${esc(v)}</strong> (${money(amt)}).`;
+      } else {
+        const byAg = new Map(); let total = 0;
+        for (const c of rows) { const amt = parseFloat(c['Award Amount'])||0; total += amt;
+          const ag = c['Awarding Agency']||''; if (ag) byAg.set(ag, (byAg.get(ag)||0) + amt); }
+        const top = [...byAg.entries()].sort((a,b) => b[1]-a[1])[0];
+        if (!top) { el.innerHTML = ''; return; }
+        el.innerHTML = `<strong>${esc(top[0])}</strong> is the biggest buyer: ${money(top[1])} (${Math.round(top[1]/Math.max(total,1)*100)}% of this market). Tap a block to drill in.`;
+      }
+    } catch (e) { el.innerHTML = ''; }
+  },
+};
 })();
 </script>
 
