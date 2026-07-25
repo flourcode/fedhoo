@@ -4887,11 +4887,27 @@ const App = {
       const label = DOM.get('sheetLensLabel');
       if (label) label.textContent = this._sellerLens;
       DOM.show('artiActions');
-      setTimeout(() => DOM.get('chatInput')?.focus(), 350);
     } else {
-      DOM.show('sheetLensPrompt');
+      if (this.aiState && this.aiState.count > 0) DOM.hide('sheetLensPrompt');
+      else DOM.show('sheetLensPrompt');
       DOM.show('artiActions');
-      setTimeout(() => DOM.get('sheetLensInput')?.focus(), 350);
+    }
+    // Frictionless open: with a loaded market and no conversation yet, deliver
+    // the action plan immediately — partner routes, expiring targets, agency
+    // focus — instead of waiting for the user to type (govhoo Ask-Arti pattern).
+    if (this.searchData && this.searchData.loaded && this.aiState && this.aiState.count === 0
+        && this._moAutoQuery !== this.currentQuery) {
+      this._moAutoQuery = this.currentQuery;
+      DOM.hide('sheetLensPrompt');
+      const lbl = DOM.get('sheetQuestionLabel');
+      if (lbl) lbl.textContent = 'Market action plan';
+      this.sendArtiChat('Give me your action plan for this market. '
+        + '1) Partner routes: who should I team with or sell through — name the specific channel holders and primes in this data and one reason each. '
+        + '2) Expiring contracts: the two or three I should chase first, with vendor, agency, dollars, and timing. '
+        + '3) Agency focus: which single agency deserves my next 30 days and why. '
+        + 'Use only names and figures from the data. Keep it tight — no preamble. End with one concrete next move.');
+    } else {
+      setTimeout(() => DOM.get(this._sellerLens ? 'chatInput' : 'sheetLensInput')?.focus(), 350);
     }
   },
 
