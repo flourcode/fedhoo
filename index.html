@@ -1058,6 +1058,11 @@ a, button, input, select { touch-action: manipulation; }
 .chart-caption { font-size: 12px; color: var(--text-secondary); margin-top: 8px; line-height: 1.5; min-height: 18px; }
 .chart-caption strong { color: var(--text-primary); }
 
+
+/* ── v17: scope chips ── */
+.scope-chip { font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); background: var(--accent-dim, rgba(70,68,110,0.10)); border-radius: 9999px; padding: 3px 9px; margin-left: 8px; vertical-align: 2px; display: none; }
+.scope-chip.on { display: inline-block; }
+
 </style>
 </head>
 <body>
@@ -1337,7 +1342,7 @@ a, button, input, select { touch-action: manipulation; }
     <!-- PARTNER FIT CARD -->
     <div class="app-card wide result-panel hidden" id="partnerFitCard">
       <div class="card-header-row">
-        <h2 class="card-title card-title--flush">Partner Fit</h2>
+        <h2 class="card-title card-title--flush">Partner Fit<span class="scope-chip" id="pfScope"></span></h2>
         <button class="export-btn" onclick="PartnerFit.exportCSV()" title="Export partner scores to CSV">Export CSV</button>
       </div>
       <div class="pf-sub" id="pfSub">Two ways into this market: sell through a channel holder, or team with a prime.</div>
@@ -1348,7 +1353,7 @@ a, button, input, select { touch-action: manipulation; }
     <!-- DEALS CARD — unified contracts, sortable -->
     <div class="app-card wide result-panel hidden" id="dealsCard">
       <div class="card-header-row">
-        <h2 class="card-title card-title--flush">Contracts</h2>
+        <h2 class="card-title card-title--flush">Contracts<span class="scope-chip" id="dlScope"></span></h2>
         <div class="dl-sorts" role="tablist" aria-label="Sort contracts">
           <button class="dl-sort active" data-sort="ending" onclick="Deals.sort('ending')">Ending soon</button>
           <button class="dl-sort" data-sort="newest" onclick="Deals.sort('newest')">Newest</button>
@@ -3465,6 +3470,7 @@ const App = {
     DOM.hide('bubbleBreadcrumb');
     this.renderBubbleBreadcrumb();
     this._updateExportLabels();
+    if (window.SyncCards) SyncCards.refresh();
   },
 
   drillToAgency(name, preventRender = false) {
@@ -3498,6 +3504,7 @@ const App = {
     if (this.UI.sankeyContainer) { this.UI.sankeyContainer.innerHTML = ''; delete this.UI.sankeyContainer.dataset.rendered; if (this._chartView === 'sankey') this.renderSankey(); }
     if (this.UI.subSankeyContainer) { this.UI.subSankeyContainer.innerHTML = ''; delete this.UI.subSankeyContainer.dataset.rendered; if (this._chartView === 'subsankey') this.renderSubSankey(); }
     this._updateExportLabels();
+    if (window.SyncCards) SyncCards.refresh();
   },
 
   drillToSubAgency(name, preventRender = false) {
@@ -3523,6 +3530,7 @@ const App = {
     if (this.UI.sankeyContainer) { this.UI.sankeyContainer.innerHTML = ''; delete this.UI.sankeyContainer.dataset.rendered; if (this._chartView === 'sankey') this.renderSankey(); }
     if (this.UI.subSankeyContainer) { this.UI.subSankeyContainer.innerHTML = ''; delete this.UI.subSankeyContainer.dataset.rendered; if (this._chartView === 'subsankey') this.renderSubSankey(); }
     this._updateExportLabels();
+    if (window.SyncCards) SyncCards.refresh();
   },
 
   drillToLevel(n) {
@@ -6669,12 +6677,14 @@ const CHANNEL_NAMES = ['CARAHSOFT','CDW','SHI INTERNATIONAL','SHI GOVERNMENT','D
   'GOVCONNECTION','CONNECTION PUBLIC SECTOR','SOFTWAREONE','SOFTCHOICE','AFFIGENT',
   'GOVPLACE','FCN INC','NORSEMAN','EMERGENT LLC','ALVAREZ & ASSOCIATES','BLUE TECH',
   'MINBURN','DH TECHNOLOGIES','SYNNEX','TD SYNNEX','INGRAM MICRO'];
-const SW_RE = /licen|software|subscription|saas|renewal|cloud service|maintenance|support renewal|brand name/i;
+const SW_RE = /licen[sc]|subscription|saas|renewal|brand name|reseller|value[- ]added/i;   // reseller paper only — bare 'software'/'maintenance' matches services primes
+const PRIME_BLOCK = /NORTHROP|LOCKHEED|BOEING|RAYTHEON|RTX CORP|GENERAL DYNAMICS|L3 ?HARRIS|BAE SYSTEMS|LEIDOS|BOOZ ALLEN|\bSAIC\b|\bCACI\b|PERATON|MANTECH|ACCENTURE|DELOITTE|\bIBM\b|\bKBR\b|JACOBS|MITRE|AEROSPACE CORP|HUNTINGTON INGALLS|AMENTUM|PARSONS|MAXIMUS|GUIDEHOUSE|ICF INTERNATIONAL/;
 
 function isChannel(v) {
   const n = norm(v.name);
   if (CHANNEL_NAMES.some(c => n.includes(c))) return true;
-  // Heuristic: mostly software/license paper across several awards = reseller behavior
+  if (PRIME_BLOCK.test(n)) return false;   // known integrators are never inferred as resellers
+  // Heuristic: mostly license/subscription paper across several awards = reseller behavior
   return v.awards >= 3 && v.swHits / v.awards >= 0.5 && v.subOut === 0;
 }
 
@@ -7312,6 +7322,34 @@ window.ChartCaptions = {
         el.innerHTML = `<strong>${esc(top[0])}</strong> is the biggest buyer: ${money(top[1])} (${Math.round(top[1]/Math.max(total,1)*100)}% of this market). Tap a block to drill in.`;
       }
     } catch (e) { el.innerHTML = ''; }
+  },
+};
+})();
+</script>
+
+
+<script>
+// ═══════════ v17: drilldown keeps every card in sync ═══════════
+(function () {
+'use strict';
+const A = () => (typeof App !== 'undefined' && App) ? App : window.App;
+window.SyncCards = {
+  refresh() {
+    const app = A();
+    if (!app || !app.searchData || !app.searchData.loaded) return;
+    if (window.PartnerFit) PartnerFit.render();
+    if (window.Deals) Deals.render();
+    if (window.ChartCaptions) ChartCaptions.update(app._chartView || 'treemap');
+    const ds = app.drillState || { level: 0 };
+    const clean = (typeof Utils !== 'undefined' && Utils.cleanAgency) ? Utils.cleanAgency : (x => x);
+    const label = ds.level >= 2 && ds.currentSubAgency ? clean(ds.currentSubAgency)
+                : ds.level >= 1 && ds.currentAgency ? clean(ds.currentAgency) : '';
+    for (const id of ['pfScope', 'dlScope']) {
+      const el = document.getElementById(id);
+      if (!el) continue;
+      el.textContent = label;
+      el.classList.toggle('on', !!label);
+    }
   },
 };
 })();
