@@ -1073,6 +1073,12 @@ a, button, input, select { touch-action: manipulation; }
 .ms-label { font-size: 12px; color: var(--text-secondary); }
 .ms-label strong { color: var(--text-primary); }
 
+
+/* Market Focus report button retired — dashboard + Mo plan now carry all of its
+   intelligence; live links share better than static PDFs. Delete the next line
+   to bring the button back. */
+#snapshotBtn { display: none !important; }
+
 </style>
 </head>
 <body>
@@ -3933,6 +3939,17 @@ const App = {
     if (this.territory) url.searchParams.set('territory', this.territory);
     else url.searchParams.delete('territory');
     const shareUrl = url.toString();
+    // Native share sheet on supporting devices (iOS/Android): one tap to text
+    // a colleague a live link. Desktop and unsupported browsers fall back to copy.
+    if (navigator.share) {
+      const q = this.displayQuery || this.currentQuery || 'Federal market';
+      navigator.share({
+        title: `fedhoo \u2014 ${q}`,
+        text: `Federal market: ${q}`,
+        url: shareUrl,
+      }).catch(() => {});   // user cancelled the sheet — not an error
+      return;
+    }
     navigator.clipboard.writeText(shareUrl).then(() => {
       this.toast('Link copied to clipboard', 'ok', 2000);
       if (btn) {
@@ -4148,7 +4165,8 @@ const App = {
     // Show question label, clear previous answer
     const sheetQuestionLabel = DOM.get('sheetQuestionLabel');
     if (sheetQuestionLabel) {
-      sheetQuestionLabel.textContent = message;
+      sheetQuestionLabel.textContent = this._displayQuestion || message;
+      this._displayQuestion = null;
       sheetQuestionLabel.classList.remove('hidden');
     }
     const aiContainer = DOM.get('aiContentContainer');
@@ -4899,13 +4917,13 @@ const App = {
         && this._moAutoQuery !== this.currentQuery) {
       this._moAutoQuery = this.currentQuery;
       DOM.hide('sheetLensPrompt');
-      const lbl = DOM.get('sheetQuestionLabel');
-      if (lbl) lbl.textContent = 'Market action plan';
-      this.sendArtiChat('Give me your action plan for this market. '
-        + '1) Partner routes: who should I team with or sell through — name the specific channel holders and primes in this data and one reason each. '
-        + '2) Expiring contracts: the two or three I should chase first, with vendor, agency, dollars, and timing. '
-        + '3) Agency focus: which single agency deserves my next 30 days and why. '
-        + 'Use only names and figures from the data. Keep it tight — no preamble. End with one concrete next move.');
+      this._displayQuestion = 'Market action plan';
+      this.sendArtiChat('Write a market action plan in EXACTLY this format \u2014 no intro, no restating the request, 130 words maximum total:\n'
+        + '**Partner routes**\n\u2022 **Name** \u2014 reason in 12 words or fewer (max 3 bullets, channel holders before primes, names from this data only)\n'
+        + '**Chase these expirations**\n\u2022 **Vendor** $amount at Agency, ends Mon YYYY \u2014 angle in 8 words or fewer (max 3 bullets)\n'
+        + '**Agency focus**\nOne sentence: the single agency for the next 30 days and why.\n'
+        + '**Next move**\nOne imperative sentence.\n'
+        + 'Round dollars ($40.0M not $39,951,717.39). Never write paragraphs.');
     } else {
       setTimeout(() => DOM.get(this._sellerLens ? 'chatInput' : 'sheetLensInput')?.focus(), 350);
     }
@@ -7265,7 +7283,8 @@ document.addEventListener('click', (ev) => {
   const pf = ev.target.closest('[data-pfask]');
   if (pf) {
     const app = A(), q = app.displayQuery || app.currentQuery || 'this market';
-    app.sendArtiChat(`How do I build a partner relationship with ${pf.dataset.pfask} in the ${q} market? Where do they have agency traction, and what's my best first approach?`);
+    app._displayQuestion = `Partnering with ${pf.dataset.pfask}`;
+    app.sendArtiChat(`How do I build a partner relationship with ${pf.dataset.pfask} in the ${q} market? Where do they have agency traction, and what's my best first approach? Answer in 3 short bullets and one next step \u2014 no paragraphs, 90 words max.`);
     return;
   }
   const dl = ev.target.closest('[data-dlask]');
@@ -7274,7 +7293,8 @@ document.addEventListener('click', (ev) => {
     if (!r) return;
     const app = A();
     const end = r.end ? ` ending ${new Date(r.end).toISOString().slice(0,10)}` : '';
-    app.sendArtiChat(`Tell me about the ${r.v} ${money(r.amt)} contract at ${r.ag}${end}. How could I position to win the recompete or team on it?`);
+    app._displayQuestion = `${r.v} \u00B7 ${money(r.amt)} at ${r.ag}`;
+    app.sendArtiChat(`Tell me about the ${r.v} ${money(r.amt)} contract at ${r.ag}${end}. How could I position to win the recompete or team on it? Answer in 3 short bullets and one next step \u2014 no paragraphs, 90 words max.`);
   }
 });
 })();
