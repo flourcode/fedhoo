@@ -1089,6 +1089,18 @@ a, button, input, select { touch-action: manipulation; }
 .fx-body a { color: var(--accent); font-weight: 700; text-decoration: none; }
 .fx-body a:hover { text-decoration: underline; }
 
+
+/* ── v25: how it works + book a session ── */
+.hw-steps { list-style: none; margin: 0; padding: 0; }
+.hw-step { display: flex; gap: 14px; padding: 10px 0; font-size: 12.5px; color: var(--text-secondary); line-height: 1.6; }
+.hw-step strong { color: var(--text-primary); }
+.hw-num { flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; background: var(--accent-dim, rgba(70,68,110,0.10)); color: var(--accent); font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
+.hw-book { margin-top: 16px; padding: 16px 18px; background: var(--accent-dim, rgba(70,68,110,0.08)); border-radius: 14px; }
+.hw-book-title { font-size: 14px; font-weight: 800; color: var(--text-primary); margin-bottom: 4px; }
+.hw-book-body { font-size: 12.5px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px; }
+.hw-book-btn { display: block; text-align: center; font-size: 13px; font-weight: 800; color: #fff; background: var(--btn-bg, #46446E); border-radius: 12px; padding: 11px 16px; text-decoration: none; }
+.hw-book-btn:active { transform: scale(0.985); }
+
 </style>
 </head>
 <body>
@@ -1466,6 +1478,30 @@ a, button, input, select { touch-action: manipulation; }
           <div class="fx-title">One honest caveat</div>
           <div class="fx-body">An end date is <strong>not an RFP</strong>. Expiring paper can renew quietly, exercise option years, or recompete — verify on <a href="https://sam.gov/search/" target="_blank" rel="noopener">SAM.gov</a> before you build a pipeline on it. Subaward data also lags prime awards by months.</div>
         </div>
+      </div>
+    </div>
+
+    <!-- HOW IT WORKS + BOOK A SESSION -->
+    <div class="app-card wide result-panel" id="howItWorks">
+      <div class="fx-title" style="margin-bottom:12px;">How fedhoo works</div>
+      <ol class="hw-steps">
+        <li class="hw-step">
+          <span class="hw-num">1</span>
+          <div><strong>Search any market.</strong> A keyword, company, agency, or NAICS code — in seconds you see the total obligated value, who’s buying, who’s winning, and what’s expiring. Or skip the syntax and ask Mo in plain English.</div>
+        </li>
+        <li class="hw-step">
+          <span class="hw-num">2</span>
+          <div><strong>Read the signals.</strong> The treemap shows where money concentrates, Partner Fit ranks your channel and teaming routes with agency traction, and the Contracts card surfaces renewals, bridge awards, and maturing paper — sortable by ending soon, newest, or largest. Drill into any agency and every card follows.</div>
+        </li>
+        <li class="hw-step">
+          <span class="hw-num">3</span>
+          <div><strong>Get Mo’s take.</strong> Tap the Mo button for an instant action plan — partner routes, the expirations to chase, and the agency worth your next 30 days — then ask follow-ups. Every answer is grounded in the exact data on your screen.</div>
+        </li>
+      </ol>
+      <div class="hw-book">
+        <div class="hw-book-title">Need help reading your market?</div>
+        <div class="hw-book-body">Bring a territory or a target account. We’ll pull the data together on a call — how to read the signals, size the market, and prep for your next meeting in minutes.</div>
+        <a class="hw-book-btn" href="https://calendly.com/markflournoy/chat-with-mark" target="_blank" rel="noopener">Book a session with Mark</a>
       </div>
     </div>
 
