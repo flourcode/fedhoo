@@ -1079,6 +1079,16 @@ a, button, input, select { touch-action: manipulation; }
    to bring the button back. */
 #snapshotBtn { display: none !important; }
 
+
+/* ── v24: footer explainer ── */
+.fx-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 26px; }
+@media (max-width: 640px) { .fx-grid { grid-template-columns: 1fr; } }
+.fx-title { font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 5px; }
+.fx-body { font-size: 12.5px; color: var(--text-secondary); line-height: 1.6; }
+.fx-body strong { color: var(--text-primary); }
+.fx-body a { color: var(--accent); font-weight: 700; text-decoration: none; }
+.fx-body a:hover { text-decoration: underline; }
+
 </style>
 </head>
 <body>
@@ -1435,6 +1445,28 @@ a, button, input, select { touch-action: manipulation; }
         <button class="export-btn" id="exportCsvBtnRecent" onclick="App.exportCSV()" title="Export all contracts as CSV">Export CSV</button>
       </div>
       <div class="contract-list" id="contractsList"></div>
+    </div>
+
+    <!-- FOOTER EXPLAINER — what the user is looking at -->
+    <div class="app-card wide result-panel" id="footerExplainer">
+      <div class="fx-grid">
+        <div class="fx-item">
+          <div class="fx-title">What you’re looking at</div>
+          <div class="fx-body">The <strong>100 largest contract awards</strong> matching your search — definitive contracts, purchase orders, task orders, and BPA calls awarded or funded in the <strong>last 12 months</strong>, filtered to paper that’s still active today. Data comes straight from USASpending.gov.</div>
+        </div>
+        <div class="fx-item">
+          <div class="fx-title">Why the totals look big</div>
+          <div class="fx-body">Dollar figures are the <strong>lifetime obligated value</strong> of multi-year contracts — not one year’s spend. And with a top-100 scope, you’re seeing the heaviest hitters in this market, not every transaction in the database.</div>
+        </div>
+        <div class="fx-item">
+          <div class="fx-title">How to search</div>
+          <div class="fx-body">This is a database, not Google — keep terms literal. <strong>AND</strong> intersects (<em>DHS AND Splunk</em>), <strong>commas</strong> mean or (<em>cloud, cyber</em>), and agencies resolve automatically (<em>VA, DISA, Air Force</em>). Or just ask Mo in plain English.</div>
+        </div>
+        <div class="fx-item">
+          <div class="fx-title">One honest caveat</div>
+          <div class="fx-body">An end date is <strong>not an RFP</strong>. Expiring paper can renew quietly, exercise option years, or recompete — verify on <a href="https://sam.gov/search/" target="_blank" rel="noopener">SAM.gov</a> before you build a pipeline on it. Subaward data also lags prime awards by months.</div>
+        </div>
+      </div>
     </div>
 
     <!-- BIO CARD — always shown at the bottom of results -->
@@ -7583,6 +7615,9 @@ window.MatchScope = {
 };
 })();
 </script>
+
+
+
 
 </body>
 </html>
