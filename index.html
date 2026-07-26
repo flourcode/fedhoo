@@ -1101,6 +1101,16 @@ a, button, input, select { touch-action: manipulation; }
 .hw-book-btn { display: block; text-align: center; font-size: 13px; font-weight: 800; color: #fff; background: var(--btn-bg, #46446E); border-radius: 12px; padding: 11px 16px; text-decoration: none; }
 .hw-book-btn:active { transform: scale(0.985); }
 
+
+/* ── v26: partner fit explainer ── */
+.fx-wide { grid-column: 1 / -1; padding-top: 4px; border-top: 1px solid var(--border-inner, var(--border)); }
+.fx-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; margin-top: 8px; }
+@media (max-width: 640px) { .fx-cols { grid-template-columns: 1fr; } }
+.fx-tier { font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 9999px; }
+.fx-tier.go   { background: var(--go-bg);   color: var(--go-text); }
+.fx-tier.warn { background: var(--warn-bg); color: var(--warn-text); }
+.fx-tier.dim  { background: var(--chip-bg, var(--bg-app)); color: var(--text-tertiary); border: 1px solid var(--border); }
+
 </style>
 </head>
 <body>
@@ -1473,6 +1483,16 @@ a, button, input, select { touch-action: manipulation; }
         <div class="fx-item">
           <div class="fx-title">How to search</div>
           <div class="fx-body">This is a database, not Google — keep terms literal. <strong>AND</strong> intersects (<em>DHS AND Splunk</em>), <strong>commas</strong> mean or (<em>cloud, cyber</em>), and agencies resolve automatically (<em>VA, DISA, Air Force</em>). Or just ask Mo in plain English.</div>
+        </div>
+        <div class="fx-item fx-wide">
+          <div class="fx-title">How Partner Fit scores work</div>
+          <div class="fx-body">Every vendor in your search is scored 0–100 as a partner, on one of two routes:</div>
+          <div class="fx-cols">
+            <div class="fx-body"><strong>Channel &amp; resellers</strong> (Carahsoft, CDW, SHI and peers, plus inferred license-heavy resellers) — <strong>30 pts</strong> award velocity (active order flow), <strong>25</strong> agency breadth (doors already open), <strong>25</strong> renewal paper expiring within 18 months (your displacement windows), <strong>20</strong> weight in this market. No sub-flow expected — they hold the contract; you sell through them.</div>
+            <div class="fx-body"><strong>Primes</strong> — <strong>30 pts</strong> sub-flow generosity (share of their dollars flowing to subs), <strong>15</strong> sub bench breadth, <strong>25</strong> expiring paper within 18 months, <strong>15</strong> market share, <strong>15</strong> contract-vehicle awards. A prime that keeps everything in-house scores low on purpose — they rarely team.</div>
+          </div>
+          <div class="fx-body" style="margin-top:8px;"><span class="fx-tier go">60+</span> strong route in &nbsp;<span class="fx-tier warn">35–59</span> workable &nbsp;<span class="fx-tier dim">&lt;35</span> long shot &nbsp;·&nbsp; The <strong>Traction</strong> line shows which agencies each partner already opens, by dollars.</div>
+          <div class="fx-body" style="margin-top:8px;"><strong>Why it matters for entering a new market:</strong> you almost never win a new federal market cold. You enter through someone already inside — a prime that genuinely flows work to subs, or a channel holder with the vehicle and the renewal calendar. Partner Fit ranks who that someone should be, and the expiring-paper weighting tells you <em>when</em> to call.</div>
         </div>
         <div class="fx-item">
           <div class="fx-title">One honest caveat</div>
