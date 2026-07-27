@@ -8050,6 +8050,18 @@ function fiveContracts(d) {
   const sa = secondAg && d.rows.map(c=>({c, amt: parseFloat(c['Award Amount'])||0}))
     .filter(x => x.c['Awarding Agency'] === secondAg).sort((a,b)=>b.amt-a.amt)[0];
   add(sa, `The second front. The biggest bet at ${esc(clean(secondAg||''))} \u2014 concentration risk cuts both ways.`);
+  // Backfill: themed picks can legitimately miss (no award in 90 days, no
+  // license paper) — top up with the largest remaining contracts so the
+  // section always delivers five.
+  if (picks.length < 5) {
+    const ranked = d.rows.map(c => ({ c, amt: parseFloat(c['Award Amount']) || 0 }))
+      .sort((a, b) => b.amt - a.amt);
+    for (const r of ranked) {
+      if (picks.length >= 5) break;
+      if (!picks.some(p => p.c === r.c))
+        picks.push({ ...r, why: 'The heavyweight. One of the five largest obligations here \u2014 the incumbency you\u2019ll be selling against.' });
+    }
+  }
   return picks.slice(0, 5).map((p, i) => {
     const c = p.c, en = c._endTs || Date.parse(c['End Date']);
     return `<div class="fc"><div class="fc-head">${i+1}. ${esc(c['Recipient Name'])} \u00B7 ${money(parseFloat(c['Award Amount'])||0)}</div>
@@ -8058,7 +8070,7 @@ function fiveContracts(d) {
   }).join('');
 }
 
-function facts(d) {
+function facts(d, part) {
   const leader = d.vs[0], top3 = d.vs.slice(0,3).reduce((s,[,v])=>s+v,0);
   const conc = Math.round(top3 / Math.max(d.total,1) * 100);
   const out = [];
@@ -8070,7 +8082,8 @@ function facts(d) {
   if (d.newest) out.push(`The newest award landed in the last 90 days: ${money(d.newest.amt)} to <strong>${esc(d.newest.c['Recipient Name'])}</strong>. This market is buying now, not someday.`);
   if (d.saTotal > 0) out.push(`<strong>${money(d.saTotal)}</strong> (${Math.round(d.saTotal/Math.max(d.total,1)*100)}%) moves through set-asides${d.saTypes.length ? ' \u2014 led by ' + esc(d.saTypes.slice(0,2).map(([t])=>t).join(' and ').toLowerCase()) : ''}. For small businesses, the side door is real.`);
   if (d.entrants > 0 && d.vs.length >= 4) out.push(`${d.entrants} of ${d.vs.length} vendors entered within the last three years. ${d.entrants/d.vs.length >= 0.3 ? 'The door is open.' : 'Entry happens, but slowly.'}`);
-  return out.map(f => `<p class="fact">${f}</p>`).join('');
+  const chosen = part === 'more' ? out.slice(3) : part === 'lead' ? out.slice(0, 3) : out;
+  return chosen.map(f => `<p class="fact">${f}</p>`).join('');
 }
 
 function partnersHtml(d) {
@@ -8147,16 +8160,17 @@ function buildHtml(d) {
   <p class="dek">${d.agencyQ ? 'What the spending record says about the incumbents, the money in motion, and the way in.' : 'What the spending record says about the buyers, the winners, and the way in.'}</p>
   <div class="date"><span class="date-text">${today} \u00B7 fedhoo</span><button class="share-report" onclick="__shareReport()">Share this report \u2197</button><a class="share-report live-link" href="${'https://fedhoo.com/?q=' + encodeURIComponent((A().originalQuery || A().currentQuery || '').toLowerCase())}">Explore live on fedhoo \u2197</a></div>
   <div class="hero">${money(d.total)}</div>
-  ${facts(d)}
-  ${whatBuys(d)}
+  ${facts(d, 'lead')}
   <h2>Where the money flows</h2>
   <div class="chart chart-desktop">${sankey(d)}</div>
   <div class="chart-mobile">${flowBars(d)}</div>
   <div class="chart-cap">Active contract dollars, ${d.axisOffice ? 'buying office' : 'buying agency'} \u2192 prime contractor. Top 100 awards funded in the last 12 months. Source: USASpending.gov</div>
+  ${whatBuys(d)}
   ${d.subs && d.subs.length >= 3 && sankey3(d) ? `<h2>How the work flows down</h2>
   <div class="chart chart-desktop">${sankey3(d)}</div>
   <div class="chart-mobile">${subBars(d)}</div>
   <div class="chart-cap">Prime \u2192 subcontractor flows from reported subawards. Subaward reporting lags prime awards by months \u2014 treat as a floor, not a census. Source: USASpending.gov</div>` : ''}
+  ${(() => { const m = facts(d, 'more'); return m ? '<h2>The undercurrents</h2>' + m : ''; })()}
   ${expTimeline(d)}
   <h2>This market in five contracts</h2>
   ${fiveContracts(d)}
