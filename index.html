@@ -7770,27 +7770,50 @@ function sankey(d) {
   // once for long names before ellipsizing.
   const GUTTER = x1 - 28;   // symmetric on both sides
   const _mctx = document.createElement('canvas').getContext('2d');
-  function fitLabel(text) {
-    const t = String(text || '');
-    for (const size of [21, 18]) {
+  // Single-line label: bold name + inline muted amount. Name is fitted to the
+  // gutter minus the measured width of its own amount suffix.
+  function fitLabel(text, amt) {
+    const t = String(text || ''), suffix = ' \u00B7 ' + amt;
+    _mctx.font = '400 15px system-ui, -apple-system, sans-serif';
+    const sw = _mctx.measureText(suffix).width;
+    for (const size of [20, 17]) {
       _mctx.font = '800 ' + size + 'px system-ui, -apple-system, sans-serif';
-      if (_mctx.measureText(t).width <= GUTTER) return { t, size };
+      if (_mctx.measureText(t).width + sw <= GUTTER) return { t, size };
     }
-    _mctx.font = '800 18px system-ui, -apple-system, sans-serif';
+    _mctx.font = '800 17px system-ui, -apple-system, sans-serif';
     let s = t;
-    while (s.length > 3 && _mctx.measureText(s + '\u2026').width > GUTTER) s = s.slice(0, -1);
-    return { t: s + '\u2026', size: 18 };
+    while (s.length > 3 && _mctx.measureText(s + '\u2026').width + sw > GUTTER) s = s.slice(0, -1);
+    return { t: s + '\u2026', size: 17 };
+  }
+  // Collision dodge: each label sits at its node's center OR just below the
+  // previous label, whichever is lower — the standard sankey labeling pass.
+  const PITCH = 27;
+  function labelYs(nodesArr, posMap) {
+    let prev = -Infinity;
+    const m = new Map();
+    for (const n of nodesArr) {
+      const p = posMap.get(n);
+      const y = Math.max(p.y + p.h / 2 + 6, prev + PITCH);
+      m.set(n, y); prev = y;
+    }
+    return m;
+  }
+  const aLab = labelYs(aNodes, aPos), vLab = labelYs(vNodes, vPos);
+  function labelText(x, y, anchor, name, amt) {
+    const f = fitLabel(name, amt);
+    return `<text x="${x}" y="${y}" ${anchor ? 'text-anchor="end"' : ''} font-weight="800" font-size="${f.size}" fill="#2B2A24">${esc(f.t)}<tspan font-weight="400" font-size="15" fill="#8A8570"> \u00B7 ${amt}</tspan></text>`;
   }
   let nodes = '';
   for (const n of aNodes) { const p = aPos.get(n);
     nodes += `<rect x="${x1}" y="${p.y}" width="${NW}" height="${p.h}" rx="3" fill="${color.get(n)}"/>`
-      + (() => { const f = fitLabel(clean(n)); return `<text x="${x1-14}" y="${p.y + p.h/2 + 1}" text-anchor="end" font-weight="800" font-size="${f.size}" fill="#2B2A24">${esc(f.t)}</text>`; })()
-      + `<text x="${x1-14}" y="${p.y + p.h/2 + 24}" text-anchor="end" font-size="16" fill="#8A8570">${money(agSum.get(n))}</text>`; }
+      + labelText(x1 - 14, aLab.get(n), true, clean(n), money(agSum.get(n))); }
   for (const n of vNodes) { const p = vPos.get(n);
     nodes += `<rect x="${x2}" y="${p.y}" width="${NW}" height="${p.h}" rx="3" fill="#5A5748"/>`
-      + (() => { const f = fitLabel(n); return `<text x="${x2+NW+14}" y="${p.y + p.h/2 + 1}" font-weight="800" font-size="${f.size}" fill="#2B2A24">${esc(f.t)}</text>`; })()
-      + `<text x="${x2+NW+14}" y="${p.y + p.h/2 + 24}" font-size="16" fill="#8A8570">${money(vSum.get(n))}</text>`; }
-  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;">
+      + labelText(x2 + NW + 14, vLab.get(n), false, n, money(vSum.get(n))); }
+  // Bottom label may have been pushed past the diagram — grow the canvas to fit
+  const maxLab = Math.max(...[...aLab.values(), ...vLab.values()]) + 20;
+  const HH = Math.max(H, maxLab);
+  return `<svg viewBox="0 0 ${W} ${HH}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;">
     <text x="${x1}" y="16" text-anchor="end" font-size="17" font-weight="700" fill="#8A8570">${d.scope ? 'Office' : 'Buyer'}</text>
     <text x="${x2+NW}" y="16" text-anchor="end" font-size="17" font-weight="700" fill="#8A8570">Prime</text>
     ${ribbons}${nodes}</svg>`;
@@ -7865,7 +7888,7 @@ function buildHtml(d) {
 <title>Who\u2019s buying ${qUp}? \u2014 fedhoo</title>
 <style>
   body { margin: 0; background: #EFEAD8; color: #2B2A24; font-family: Georgia, 'Times New Roman', serif; }
-  .wrap { max-width: 760px; margin: 0 auto; padding: 56px 28px 80px; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 56px 28px 80px; }
   .kicker { font-family: system-ui, -apple-system, sans-serif; font-weight: 800; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: #8A8570; }
   h1 { font-family: system-ui, -apple-system, sans-serif; font-weight: 900; font-size: clamp(38px, 7vw, 58px); line-height: 1.02; letter-spacing: -0.02em; margin: 10px 0 6px; }
   .dek { font-size: 20px; color: #5A5748; margin: 0 0 8px; }
@@ -7874,9 +7897,7 @@ function buildHtml(d) {
   .fact { font-size: 18px; line-height: 1.65; margin: 0 0 26px; }
   .fact strong { color: #46446E; }
   h2 { font-family: system-ui, sans-serif; font-weight: 900; font-size: 27px; letter-spacing: -0.01em; margin: 52px 0 18px; }
-  .chart { background: #E9E3CD; border-radius: 10px; padding: 26px 18px; margin: 30px 0 8px;
-    width: min(94vw, 1120px); position: relative; left: 50%; transform: translateX(-50%); box-sizing: border-box; }
-  .chart-cap { width: min(94vw, 1120px); position: relative; left: 50%; transform: translateX(-50%); box-sizing: border-box; }
+  .chart { background: #E9E3CD; border-radius: 10px; padding: 26px 18px; margin: 30px 0 8px; box-sizing: border-box; }
   .chart-mobile { display: none; }
   .fb { margin: 0 0 18px; }
   .fb-label { font-family: system-ui, sans-serif; font-weight: 800; font-size: 15px; line-height: 1.35; margin-bottom: 6px; }
