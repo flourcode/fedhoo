@@ -7716,6 +7716,26 @@ function gather() {
     if (st >= d90 && (!newest || st > newest.st)) newest = { c, amt, st };
   }
   const entrants = [...vFirst.values()].filter(t => t >= y3).length;
+  // set-asides
+  const saByType = new Map(); let saTotal = 0;
+  for (const c of rows) {
+    const t = String(c['Type of Set Aside'] || '').trim();
+    if (!t || /^(NONE|NO SET ASIDE USED\.?)$/i.test(t)) continue;
+    const amt = parseFloat(c['Award Amount']) || 0;
+    saTotal += amt; saByType.set(t, (saByType.get(t)||0) + amt);
+  }
+  // subaward triples: agency (via each prime's dominant agency) -> prime -> sub
+  const subs = (app._subawardData || []).map(s => ({
+    p: s['Prime Recipient Name'] || '', sub: s['Sub-Awardee Name'] || '',
+    amt: parseFloat(s['Sub-Award Amount']) || 0 })).filter(s => s.p && s.sub && s.amt > 0);
+  const primeAg = new Map();
+  for (const c of rows) {
+    const v = c['Recipient Name'] || '', a = agKey(c), amt = parseFloat(c['Award Amount']) || 0;
+    if (!primeAg.has(v)) primeAg.set(v, new Map());
+    const m = primeAg.get(v); m.set(a, (m.get(a)||0) + amt);
+  }
+  const domAg = (v) => { const m = primeAg.get(v); if (!m) return null;
+    return [...m.entries()].sort((a,b)=>b[1]-a[1])[0][0]; };
   const ags = [...byAg.entries()].sort((a,b)=>b[1]-a[1]);
   const vs = [...byV.entries()].sort((a,b)=>b[1]-a[1]);
   const pfd = window.PartnerFit && PartnerFit._last;
@@ -7724,6 +7744,8 @@ function gather() {
     newest, biggest, soonest, entrants,
     partners: pfd ? [...(pfd.channel||[]).slice(0,2).map(v=>({v,route:'Channel'})), ...(pfd.primes||[]).slice(0,3).map(v=>({v,route:'Prime'}))].slice(0,4) : [],
     q: app.displayQuery || app.currentQuery || 'this market',
+    saTotal, saTypes: [...saByType.entries()].sort((a,b)=>b[1]-a[1]),
+    subs, domAg,
     scope };
 }
 
@@ -7774,7 +7796,7 @@ function sankey(d) {
   // gutter minus the measured width of its own amount suffix.
   function fitLabel(text, amt) {
     const t = String(text || ''), suffix = ' \u00B7 ' + amt;
-    _mctx.font = '400 15px system-ui, -apple-system, sans-serif';
+    _mctx.font = '700 16px system-ui, -apple-system, sans-serif';
     const sw = _mctx.measureText(suffix).width;
     for (const size of [20, 17]) {
       _mctx.font = '800 ' + size + 'px system-ui, -apple-system, sans-serif';
@@ -7801,7 +7823,7 @@ function sankey(d) {
   const aLab = labelYs(aNodes, aPos), vLab = labelYs(vNodes, vPos);
   function labelText(x, y, anchor, name, amt) {
     const f = fitLabel(name, amt);
-    return `<text x="${x}" y="${y}" ${anchor ? 'text-anchor="end"' : ''} font-weight="800" font-size="${f.size}" fill="#2B2A24">${esc(f.t)}<tspan font-weight="400" font-size="15" fill="#8A8570"> \u00B7 ${amt}</tspan></text>`;
+    return `<text x="${x}" y="${y}" ${anchor ? 'text-anchor="end"' : ''} font-weight="800" font-size="${f.size}" fill="#2B2A24">${esc(f.t)}<tspan font-weight="700" font-size="16" fill="#5A5748"> \u00B7 ${amt}</tspan></text>`;
   }
   let nodes = '';
   for (const n of aNodes) { const p = aPos.get(n);
@@ -7813,9 +7835,9 @@ function sankey(d) {
   // Bottom label may have been pushed past the diagram — grow the canvas to fit
   const maxLab = Math.max(...[...aLab.values(), ...vLab.values()]) + 20;
   const HH = Math.max(H, maxLab);
-  return `<svg viewBox="0 0 ${W} ${HH}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;">
-    <text x="${x1}" y="16" text-anchor="end" font-size="17" font-weight="700" fill="#8A8570">${d.scope ? 'Office' : 'Buyer'}</text>
-    <text x="${x2+NW}" y="16" text-anchor="end" font-size="17" font-weight="700" fill="#8A8570">Prime</text>
+  return `<svg viewBox="0 0 ${W} ${HH}" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, sans-serif" style="width:100%;height:auto;display:block;">
+    <text x="${x1}" y="16" text-anchor="end" font-size="17" font-weight="800" fill="#5A5748">${d.scope ? 'Office' : 'Buyer'}</text>
+    <text x="${x2+NW}" y="16" text-anchor="end" font-size="17" font-weight="800" fill="#5A5748">Prime</text>
     ${ribbons}${nodes}</svg>`;
 }
 
@@ -7832,6 +7854,105 @@ function flowBars(d) {
       <div class="fb-track"><div class="fb-bar" style="width:${pct}%"></div><span class="fb-amt">${money(f.amt)}</span></div>
     </div>`;
   }).join('');
+}
+
+// Agency -> Prime -> Subcontractor, three columns. Primes sized by
+// max(inflow, outflow); only primes with reported subawards appear.
+function sankey3(d) {
+  if (!d.subs || d.subs.length < 3) return '';
+  const bySub = new Map();
+  for (const s of d.subs) { const k = s.p + '\u0001' + s.sub; bySub.set(k, (bySub.get(k)||0) + s.amt); }
+  const pOut = new Map();
+  for (const [k, amt] of bySub) { const p = k.split('\u0001')[0]; pOut.set(p, (pOut.get(p)||0) + amt); }
+  const primes = [...pOut.entries()].sort((a,b)=>b[1]-a[1]).slice(0, 5).map(([p])=>p);
+  const links = [...bySub.entries()].map(([k, amt]) => { const [p, sub] = k.split('\u0001'); return { p, sub, amt }; })
+    .filter(l => primes.includes(l.p)).sort((a,b)=>b.amt-a.amt).slice(0, 10);
+  if (links.length < 3) return '';
+  const subSum = new Map(), agSum2 = new Map(), agLinks = [];
+  for (const l of links) subSum.set(l.sub, (subSum.get(l.sub)||0) + l.amt);
+  for (const p of primes) {
+    const ag = d.domAg(p) || 'Other';
+    const amt = links.filter(l => l.p === p).reduce((s,l)=>s+l.amt, 0);
+    agSum2.set(ag, (agSum2.get(ag)||0) + amt);
+    agLinks.push({ ag, p, amt });
+  }
+  const subsN = [...subSum.entries()].sort((a,b)=>b[1]-a[1]).map(([s])=>s);
+  const agsN = [...agSum2.entries()].sort((a,b)=>b[1]-a[1]).map(([a])=>a);
+  const pIn = new Map(agLinks.map(l => [l.p, l.amt]));
+  const W = 1240, GAP = 16;
+  const rowsMax = Math.max(agsN.length, primes.length, subsN.length);
+  const H = 86 + rowsMax * 66;
+  const totalF = links.reduce((s,l)=>s+l.amt, 0) || 1;
+  const S = (H - 50 - GAP * (rowsMax - 1)) / totalF;
+  const xA = 250, xP = 608, xS = 966, NW = 22;
+  const place = (names, sums) => { let y = 44; const m = new Map();
+    for (const n of names) { const h = Math.max(6, (sums.get(n)||0) * S); m.set(n, { y, h, off: 0, off2: 0 }); y += h + GAP; } return m; };
+  const pSize = new Map(primes.map(p => [p, Math.max(pIn.get(p)||0, pOut.get(p)||0)]));
+  const aP = place(agsN, agSum2), pP = place(primes, pSize), sP = place(subsN, subSum);
+  const COL = ['#9C7A9E','#6FA3BF','#D65F4C','#1F4A44','#C2A15C','#7B78C0'];
+  const aCol = new Map(agsN.map((n,i)=>[n, COL[i % COL.length]]));
+  const rib = (x1,y1,x2,y2,h,fill) => { const mx=(x1+x2)/2;
+    return `<path d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2} L${x2},${y2+h} C${mx},${y2+h} ${mx},${y1+h} ${x1},${y1+h} Z" fill="${fill}" opacity="0.5"/>`; };
+  let out = '';
+  for (const l of agLinks.sort((a,b)=>agsN.indexOf(a.ag)-agsN.indexOf(b.ag))) {
+    const a = aP.get(l.ag), p = pP.get(l.p), h = Math.max(3, l.amt * S);
+    out += rib(xA+NW, a.y + a.off, xP, p.y + p.off, h, aCol.get(l.ag)); a.off += h; p.off += h;
+  }
+  for (const l of links.sort((a,b)=>primes.indexOf(a.p)-primes.indexOf(b.p))) {
+    const p = pP.get(l.p), s = sP.get(l.sub), h = Math.max(3, l.amt * S);
+    out += rib(xP+NW, p.y + p.off2, xS, s.y + s.off, h, '#5A5748'); p.off2 += h; s.off += h;
+  }
+  const _m = document.createElement('canvas').getContext('2d');
+  const GUT = 220;
+  const lab = (x, y, anchor, name, amt) => {
+    const suffix = ' \u00B7 ' + amt;
+    _m.font = '700 15px system-ui, sans-serif'; const sw = _m.measureText(suffix).width;
+    let t = String(name), size = 18;
+    _m.font = '800 18px system-ui, sans-serif';
+    if (_m.measureText(t).width + sw > GUT) { size = 16; _m.font = '800 16px system-ui, sans-serif';
+      while (t.length > 3 && _m.measureText(t + '\u2026').width + sw > GUT) t = t.slice(0, -1); if (t !== name) t += '\u2026'; }
+    return `<text x="${x}" y="${y}" ${anchor ? 'text-anchor="end"' : ''} font-weight="800" font-size="${size}" fill="#2B2A24">${esc(t)}<tspan font-weight="700" font-size="15" fill="#5A5748"> \u00B7 ${amt}</tspan></text>`;
+  };
+  const dodge = (names, pos) => { let prev = -Infinity; const m = new Map();
+    for (const n of names) { const p = pos.get(n); const y = Math.max(p.y + p.h/2 + 5, prev + 25); m.set(n, y); prev = y; } return m; };
+  const aL = dodge(agsN, aP), pL = dodge(primes, pP), sL = dodge(subsN, sP);
+  for (const n of agsN) { const p = aP.get(n);
+    out += `<rect x="${xA}" y="${p.y}" width="${NW}" height="${p.h}" rx="3" fill="${aCol.get(n)}"/>` + lab(xA - 12, aL.get(n), true, clean(n), money(agSum2.get(n))); }
+  for (const n of primes) { const p = pP.get(n);
+    out += `<rect x="${xP}" y="${p.y}" width="${NW}" height="${p.h}" rx="3" fill="#7A7566"/>`
+      + `<text x="${xP + NW/2}" y="${p.y - 7}" text-anchor="middle" font-weight="800" font-size="14" fill="#5A5748">${esc(String(n).length > 22 ? String(n).slice(0,21) + '\u2026' : n)}</text>`; }
+  for (const n of subsN) { const p = sP.get(n);
+    out += `<rect x="${xS}" y="${p.y}" width="${NW}" height="${p.h}" rx="3" fill="#5A5748"/>` + lab(xS + NW + 12, sL.get(n), false, n, money(subSum.get(n))); }
+  const maxL = Math.max(...[...aL.values(), ...sL.values()]) + 18;
+  return `<svg viewBox="0 0 ${W} ${Math.max(H, maxL)}" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, sans-serif" style="width:100%;height:auto;display:block;">
+    <text x="${xA}" y="14" text-anchor="end" font-size="16" font-weight="800" fill="#5A5748">${d.scope ? 'Office' : 'Agency'}</text>
+    <text x="${xP + NW/2}" y="14" text-anchor="middle" font-size="16" font-weight="800" fill="#5A5748">Prime</text>
+    <text x="${xS + NW}" y="14" text-anchor="end" font-size="16" font-weight="800" fill="#5A5748">Subcontractor</text>
+    ${out}</svg>`;
+}
+function subBars(d) {
+  if (!d.subs || d.subs.length < 3) return '';
+  const bySub = new Map();
+  for (const s of d.subs) { const k = s.p + '\u0001' + s.sub; bySub.set(k, (bySub.get(k)||0) + s.amt); }
+  const top = [...bySub.entries()].map(([k,amt])=>{const [p,sub]=k.split('\u0001');return {p,sub,amt};})
+    .sort((a,b)=>b.amt-a.amt).slice(0, 6);
+  const max = top[0] ? top[0].amt : 1;
+  return top.map(f => `<div class="fb">
+    <div class="fb-label">${esc(f.p)} <span class="fb-arrow">\u2192</span> ${esc(f.sub)}</div>
+    <div class="fb-track"><div class="fb-bar" style="width:${Math.max(24, Math.round(f.amt/max*100))}%"></div><span class="fb-amt">${money(f.amt)}</span></div>
+  </div>`).join('');
+}
+// The next 18 months — expiration timeline (soonest first, bar = time left)
+function expTimeline(d) {
+  const now = Date.now(), cut = now + 548*864e5;
+  const items = d.rows.map(c => ({ c, en: c._endTs || Date.parse(c['End Date']) || 0, amt: parseFloat(c['Award Amount'])||0 }))
+    .filter(x => x.en > now && x.en <= cut && x.amt >= 250000)
+    .sort((a,b) => a.en - b.en).slice(0, 6);
+  if (items.length < 2) return '';
+  return '<h2>The next 18 months</h2><p class="fact">Every bar is a contract running out \u2014 the shorter the bar, the sooner the conversation.</p>'
+    + items.map(x => { const days = Math.ceil((x.en - now)/864e5);
+      return `<div class="fb"><div class="fb-label">${mon(x.en)} \u00B7 ${esc(x.c['Recipient Name'])} <span class="fb-arrow">at</span> ${esc(clean(x.c['Awarding Agency']||''))}</div>
+        <div class="fb-track"><div class="fb-bar tl-bar" style="width:${Math.max(6, Math.round(days/548*100))}%"></div><span class="fb-amt">${money(x.amt)} \u00B7 ${days}d</span></div></div>`; }).join('');
 }
 
 function fiveContracts(d) {
@@ -7865,6 +7986,7 @@ function facts(d) {
   out.push(`<strong>${esc(leader[0])}</strong> leads with ${Math.round(leader[1]/Math.max(d.total,1)*100)}% of ${d.scope ? esc(d.scope) + '\u2019s ' + esc(d.q) + ' spend' : 'the money'}. The top three vendors hold ${conc}% \u2014 ${conc >= 60 ? 'a concentrated market where the way in is usually through an incumbent, not around one' : 'a fragmented field with room to win directly'}.`);
   if (d.expTotal > 0) out.push(`<strong>${money(d.expTotal)}</strong> \u2014 ${Math.round(d.expTotal/Math.max(d.total,1)*100)}% of the market \u2014 expires within 18 months. ${d.scope ? 'That is ' + esc(d.scope) + '\u2019s renewal calendar \u2014 and your opening.' : 'In federal sales, expirations are the calendar of opportunity.'}`);
   if (d.newest) out.push(`The newest award landed in the last 90 days: ${money(d.newest.amt)} to <strong>${esc(d.newest.c['Recipient Name'])}</strong>. This market is buying now, not someday.`);
+  if (d.saTotal > 0) out.push(`<strong>${money(d.saTotal)}</strong> (${Math.round(d.saTotal/Math.max(d.total,1)*100)}%) moves through set-asides${d.saTypes.length ? ' \u2014 led by ' + esc(d.saTypes.slice(0,2).map(([t])=>t).join(' and ').toLowerCase()) : ''}. For small businesses, the side door is real.`);
   if (d.entrants > 0 && d.vs.length >= 4) out.push(`${d.entrants} of ${d.vs.length} vendors entered within the last three years. ${d.entrants/d.vs.length >= 0.3 ? 'The door is open.' : 'Entry happens, but slowly.'}`);
   return out.map(f => `<p class="fact">${f}</p>`).join('');
 }
@@ -7910,6 +8032,7 @@ function buildHtml(d) {
   .fb:nth-child(5) .fb-bar { background: #C2A15C; }
   .fb:nth-child(6) .fb-bar { background: #7B78C0; }
   .fb-amt { font-family: system-ui, sans-serif; font-weight: 800; font-size: 15px; color: #2B2A24; white-space: nowrap; }
+  .tl-bar { background: #46446E !important; opacity: 0.8; }
   @media (max-width: 640px) {
     .chart-desktop { display: none; }
     .chart-mobile { display: block; margin: 26px 0 8px; }
@@ -7925,18 +8048,24 @@ function buildHtml(d) {
   .foot a { color: #46446E; font-weight: 800; text-decoration: none; }
   .share-report { font-family: system-ui, sans-serif; font-weight: 800; font-size: 13px; color: #46446E; background: none; border: 1.5px solid #46446E; border-radius: 999px; padding: 4px 14px; cursor: pointer; }
   .share-report:active { transform: scale(0.97); }
+  .live-link { display: inline-block; text-decoration: none; background: #46446E; color: #EFEAD8; }
   @media print { body { background: #EFEAD8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; } .share-report { display: none; } }
 </style></head><body><div class="wrap">
   <div class="kicker">Federal markets, explained${d.scope ? ' \u00B7 ' + esc(d.scope) : ''}</div>
   <h1>Who\u2019s buying ${qUp}${d.scope ? ' at ' + esc(d.scope) : ''}?</h1>
   <p class="dek">What the spending record says about the buyers, the winners, and the way in.</p>
-  <div class="date">${today} \u00B7 fedhoo \u00B7 <button class="share-report" onclick="__shareReport()">Share this report \u2197</button></div>
+  <div class="date">${today} \u00B7 fedhoo \u00B7 <button class="share-report" onclick="__shareReport()">Share this report \u2197</button> <a class="share-report live-link" href="${'https://fedhoo.com/?q=' + encodeURIComponent((A().originalQuery || A().currentQuery || '').toLowerCase())}">Explore live on fedhoo \u2197</a></div>
   <div class="hero">${money(d.total)}</div>
   ${facts(d)}
   <h2>Where the money flows</h2>
   <div class="chart chart-desktop">${sankey(d)}</div>
   <div class="chart-mobile">${flowBars(d)}</div>
   <div class="chart-cap">Active contract dollars, ${d.scope ? 'buying office' : 'buying agency'} \u2192 prime contractor. Top 100 awards funded in the last 12 months. Source: USASpending.gov</div>
+  ${d.subs && d.subs.length >= 3 && sankey3(d) ? `<h2>How the work flows down</h2>
+  <div class="chart chart-desktop">${sankey3(d)}</div>
+  <div class="chart-mobile">${subBars(d)}</div>
+  <div class="chart-cap">Prime \u2192 subcontractor flows from reported subawards. Subaward reporting lags prime awards by months \u2014 treat as a floor, not a census. Source: USASpending.gov</div>` : ''}
+  ${expTimeline(d)}
   <h2>This market in five contracts</h2>
   ${fiveContracts(d)}
   ${partnersHtml(d)}
