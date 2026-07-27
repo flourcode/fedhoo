@@ -7688,6 +7688,29 @@ const esc = (s) => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;
 const clean = (a) => (typeof Utils !== 'undefined' && Utils.cleanAgency) ? Utils.cleanAgency(a) : a;
 const PAL = ['#9C7A9E','#6FA3BF','#D65F4C','#1F4A44','#C2A15C','#7B78C0','#3D3B45','#8FA98F'];
 const mon = (ts) => new Date(ts).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+// ── smart casing: acronyms upper, brands mixed, ordinary words plain ──
+const SPECIAL = { fedramp:'FedRAMP', devsecops:'DevSecOps', devops:'DevOps', govcloud:'GovCloud',
+  vmware:'VMware', mcafee:'McAfee', servicenow:'ServiceNow', javascript:'JavaScript', github:'GitHub' };
+const ACRO_EXTRA = ['aws','saic','sbom','ibm','sap','ai','ml','iot','rpa','vdi','sase','soc','siem',
+  'edr','xdr','mdr','erp','crm','hcm','api','cui','cmmc','rmf','ato','it','ot','5g','gis',
+  'osint','sigint','c2','jadc2','pki','icam','zta','hpc','llm','genai','cots','gots','idiq','bpa','oasis','sewp','gwac'];
+function _acroSet() {
+  const s = new Set(ACRO_EXTRA);
+  try { for (const k of Object.keys(Utils.agencyAliases || {})) s.add(k); } catch (e) {}
+  try { for (const k of Object.keys(Utils.subAgencyAliases || {})) s.add(k); } catch (e) {}
+  return s;
+}
+function smartCase(q, mode) {   // mode 'head' | 'prose'
+  const acro = _acroSet();
+  return String(q || '').split(/\s+/).map(w => {
+    if (/[A-Z]/.test(w)) return w;                      // user typed caps — respect it
+    const lw = w.toLowerCase();
+    if (SPECIAL[lw]) return SPECIAL[lw];
+    if (acro.has(lw)) return lw.toUpperCase();
+    return mode === 'head' ? w.charAt(0).toUpperCase() + w.slice(1) : lw;
+  }).join(' ');
+}
+
 
 function gather() {
   const app = A();
@@ -7766,6 +7789,8 @@ function gather() {
     saTotal, saTypes: [...saByType.entries()].sort((a,b)=>b[1]-a[1]),
     subs, domAg,
     agencyQ, axisOffice: useSub,
+    qHead: smartCase(app.displayQuery || app.currentQuery || 'this market', 'head'),
+    qProse: smartCase(app.displayQuery || app.currentQuery || 'this market', 'prose'),
     scope };
 }
 
@@ -8005,9 +8030,9 @@ function facts(d) {
   const conc = Math.round(top3 / Math.max(d.total,1) * 100);
   const out = [];
   out.push(d.scope
-    ? `<strong>${esc(d.scope)}</strong> has <strong>${money(d.total)}</strong> in active ${d.agencyQ ? '' : esc(d.q) + ' '}contracts \u2014 ${d.rows.length} awards across ${d.ags.length} ${d.axisOffice ? `buying office${d.ags.length===1?'':'s'}` : `agenc${d.ags.length===1?'y':'ies'}`} and ${d.vs.length} vendors, counting the largest deals funded in the last 12 months.`
-    : `The federal government has <strong>${money(d.total)}</strong> in active ${esc(d.q)} contracts \u2014 ${d.rows.length} awards across ${d.ags.length} agencies and ${d.vs.length} vendors, counting the largest deals funded in the last 12 months.`);
-  out.push(`<strong>${esc(leader[0])}</strong> leads with ${Math.round(leader[1]/Math.max(d.total,1)*100)}% of ${d.scope ? esc(d.scope) + '\u2019s ' + (d.agencyQ ? '' : esc(d.q) + ' ') + 'spend' : 'the money'}. The top three vendors hold ${conc}% \u2014 ${conc >= 60 ? 'a concentrated market where the way in is usually through an incumbent, not around one' : 'a fragmented field with room to win directly'}.`);
+    ? `<strong>${esc(d.scope)}</strong> has <strong>${money(d.total)}</strong> in active ${d.agencyQ ? '' : esc(d.qProse) + ' '}contracts \u2014 ${d.rows.length} awards across ${d.ags.length} ${d.axisOffice ? `buying office${d.ags.length===1?'':'s'}` : `agenc${d.ags.length===1?'y':'ies'}`} and ${d.vs.length} vendors, counting the largest deals funded in the last 12 months.`
+    : `The federal government has <strong>${money(d.total)}</strong> in active ${esc(d.qProse)} contracts \u2014 ${d.rows.length} awards across ${d.ags.length} agencies and ${d.vs.length} vendors, counting the largest deals funded in the last 12 months.`);
+  out.push(`<strong>${esc(leader[0])}</strong> leads with ${Math.round(leader[1]/Math.max(d.total,1)*100)}% of ${d.scope ? esc(d.scope) + '\u2019s ' + (d.agencyQ ? '' : esc(d.qProse) + ' ') + 'spend' : 'the money'}. The top three vendors hold ${conc}% \u2014 ${conc >= 60 ? 'a concentrated market where the way in is usually through an incumbent, not around one' : 'a fragmented field with room to win directly'}.`);
   if (d.expTotal > 0) out.push(`<strong>${money(d.expTotal)}</strong> \u2014 ${Math.round(d.expTotal/Math.max(d.total,1)*100)}% of the market \u2014 expires within 18 months. ${d.scope ? 'That is ' + esc(d.scope) + '\u2019s renewal calendar \u2014 and your opening.' : 'In federal sales, expirations are the calendar of opportunity.'}`);
   if (d.newest) out.push(`The newest award landed in the last 90 days: ${money(d.newest.amt)} to <strong>${esc(d.newest.c['Recipient Name'])}</strong>. This market is buying now, not someday.`);
   if (d.saTotal > 0) out.push(`<strong>${money(d.saTotal)}</strong> (${Math.round(d.saTotal/Math.max(d.total,1)*100)}%) moves through set-asides${d.saTypes.length ? ' \u2014 led by ' + esc(d.saTypes.slice(0,2).map(([t])=>t).join(' and ').toLowerCase()) : ''}. For small businesses, the side door is real.`);
@@ -8028,7 +8053,7 @@ function partnersHtml(d) {
 
 function buildHtml(d) {
   const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-  const qUp = esc(d.q).replace(/\b\w/g, ch => ch.toUpperCase());
+  const qUp = esc(d.qHead || d.q);
   const url = 'https://fedhoo.com/?q=' + encodeURIComponent((A().originalQuery || A().currentQuery || '').toLowerCase());
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Who\u2019s buying ${qUp}? \u2014 fedhoo</title>
