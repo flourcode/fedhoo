@@ -7758,6 +7758,17 @@ function gather() {
     if (st >= d90 && (!newest || st > newest.st)) newest = { c, amt, st };
   }
   const entrants = [...vFirst.values()].filter(t => t >= y3).length;
+  // what the money buys: PSC (product/service code) is the government's own
+  // taxonomy of WHAT was purchased; NAICS description as fallback
+  const catAmts = new Map();
+  for (const c of rows) {
+    const psc = c['PSC'], nai = c['NAICS'];
+    const cat = (psc && typeof psc === 'object' && psc.description) ? psc.description
+              : (nai && typeof nai === 'object' && nai.description) ? nai.description
+              : (psc && typeof psc === 'object' && psc.code) ? 'PSC ' + psc.code
+              : (typeof psc === 'string' && psc) ? 'PSC ' + psc : null;
+    if (cat) catAmts.set(cat, (catAmts.get(cat) || 0) + (parseFloat(c['Award Amount']) || 0));
+  }
   // set-asides
   const saByType = new Map(); let saTotal = 0;
   for (const c of rows) {
@@ -7788,6 +7799,7 @@ function gather() {
     q: app.displayQuery || app.currentQuery || 'this market',
     saTotal, saTypes: [...saByType.entries()].sort((a,b)=>b[1]-a[1]),
     subs, domAg,
+    cats: [...catAmts.entries()].sort((a,b)=>b[1]-a[1]),
     agencyQ, axisOffice: useSub,
     qHead: smartCase(app.displayQuery || app.currentQuery || 'this market', 'head'),
     qProse: smartCase(app.displayQuery || app.currentQuery || 'this market', 'prose'),
@@ -8004,6 +8016,27 @@ function expTimeline(d) {
     })();
 }
 
+// "What they're buying" — dollars by product/service category
+function catCase(s) {
+  let t = String(s || '');
+  if (t === t.toUpperCase()) { t = t.toLowerCase(); t = t.charAt(0).toUpperCase() + t.slice(1); }
+  t = t.replace(/^It(?=[\s&\/,-])/, 'IT').replace(/\bit\b(?= and| \/)/gi, 'IT');
+  return t.length > 72 ? t.slice(0, 71) + '\u2026' : t;
+}
+function whatBuys(d) {
+  if (!d.cats || d.cats.length < 2) return '';
+  const top = d.cats.slice(0, 6);
+  const max = top[0][1] || 1;
+  const [tn, tv] = top[0];
+  const head = d.agencyQ ? `What ${esc(d.qHead)} is buying` : 'What the money buys';
+  return `<h2>${head}</h2>
+  <p class="fact">The biggest line is <strong>${esc(catCase(tn))}</strong> at ${money(tv)} \u2014 ${Math.round(tv/Math.max(d.total,1)*100)}% of the dollars. Categories below are the government\u2019s own product\u2013service classifications.</p>`
+  + top.map(([n, amt]) => `<div class="fb">
+      <div class="fb-label">${esc(catCase(n))}</div>
+      <div class="fb-track"><div class="fb-bar" style="width:${Math.max(10, Math.round(amt/max*100))}%"></div><span class="fb-amt">${money(amt)} \u00B7 ${Math.round(amt/Math.max(d.total,1)*100)}%</span></div>
+    </div>`).join('');
+}
+
 function fiveContracts(d) {
   const picks = [];
   const add = (item, why) => { if (item && !picks.some(p => p.c === item.c)) picks.push({ ...item, why }); };
@@ -8115,6 +8148,7 @@ function buildHtml(d) {
   <div class="date"><span class="date-text">${today} \u00B7 fedhoo</span><button class="share-report" onclick="__shareReport()">Share this report \u2197</button><a class="share-report live-link" href="${'https://fedhoo.com/?q=' + encodeURIComponent((A().originalQuery || A().currentQuery || '').toLowerCase())}">Explore live on fedhoo \u2197</a></div>
   <div class="hero">${money(d.total)}</div>
   ${facts(d)}
+  ${whatBuys(d)}
   <h2>Where the money flows</h2>
   <div class="chart chart-desktop">${sankey(d)}</div>
   <div class="chart-mobile">${flowBars(d)}</div>
