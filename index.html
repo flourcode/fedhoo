@@ -7741,7 +7741,7 @@ function sankey(d) {
   for (const f of fl) { agSum.set(f.a, (agSum.get(f.a)||0)+f.amt); vSum.set(f.v, (vSum.get(f.v)||0)+f.amt); }
   const aNodes = [...agTop.filter(a=>agSum.has(a)), ...(agSum.has('Other')?['Other']:[])];
   const vNodes = [...vTop.filter(v=>vSum.has(v)), ...(vSum.has('Other')?['Other']:[])];
-  const W = 1000, H = 90 + Math.max(aNodes.length, vNodes.length) * 74, GAP = 16;
+  const W = 1240, H = 90 + Math.max(aNodes.length, vNodes.length) * 74, GAP = 16;
   const flowTotal = fl.reduce((s,f)=>s+f.amt, 0) || 1;
   const usable = H - 60 - GAP * (Math.max(aNodes.length, vNodes.length) - 1);
   const S = usable / flowTotal;
@@ -7749,7 +7749,7 @@ function sankey(d) {
     for (const n of nodes) { const h = Math.max(6, (sums.get(n)||0) * S);
       m.set(n, { y, h, off: 0 }); y += h + GAP; } return m; };
   const aPos = pos(aNodes, agSum), vPos = pos(vNodes, vSum);
-  const x1 = 232, x2 = 768, NW = 22;
+  const x1 = 286, x2 = 930, NW = 24;
   const color = new Map(aNodes.map((n,i)=>[n, n==='Other' ? '#C9C4B2' : PAL[i % PAL.length]]));
   let ribbons = '';
   fl.sort((p,q) => aNodes.indexOf(p.a) - aNodes.indexOf(q.a) || q.amt - p.amt);
@@ -7761,14 +7761,30 @@ function sankey(d) {
     const mx = (x1 + NW + x2) / 2;
     ribbons += `<path d="M${x1+NW},${ya} C${mx},${ya} ${mx},${yv} ${x2},${yv} L${x2},${yv+h} C${mx},${yv+h} ${mx},${ya+h} ${x1+NW},${ya+h} Z" fill="${color.get(f.a)}" opacity="0.5"/>`;
   }
+  // best practice: never clip — fit labels to the gutter via a computed
+  // character budget (gutter px / avg glyph width), stepping the font down
+  // once for long names before ellipsizing.
+  const GUTTER = x1 - 28;   // symmetric on both sides
+  const _mctx = document.createElement('canvas').getContext('2d');
+  function fitLabel(text) {
+    const t = String(text || '');
+    for (const size of [21, 18]) {
+      _mctx.font = '800 ' + size + 'px system-ui, -apple-system, sans-serif';
+      if (_mctx.measureText(t).width <= GUTTER) return { t, size };
+    }
+    _mctx.font = '800 18px system-ui, -apple-system, sans-serif';
+    let s = t;
+    while (s.length > 3 && _mctx.measureText(s + '\u2026').width > GUTTER) s = s.slice(0, -1);
+    return { t: s + '\u2026', size: 18 };
+  }
   let nodes = '';
   for (const n of aNodes) { const p = aPos.get(n);
     nodes += `<rect x="${x1}" y="${p.y}" width="${NW}" height="${p.h}" rx="3" fill="${color.get(n)}"/>`
-      + `<text x="${x1-14}" y="${p.y + p.h/2 + 1}" text-anchor="end" font-weight="800" font-size="21" fill="#2B2A24">${esc(clean(n)).slice(0,26)}</text>`
+      + (() => { const f = fitLabel(clean(n)); return `<text x="${x1-14}" y="${p.y + p.h/2 + 1}" text-anchor="end" font-weight="800" font-size="${f.size}" fill="#2B2A24">${esc(f.t)}</text>`; })()
       + `<text x="${x1-14}" y="${p.y + p.h/2 + 24}" text-anchor="end" font-size="16" fill="#8A8570">${money(agSum.get(n))}</text>`; }
   for (const n of vNodes) { const p = vPos.get(n);
     nodes += `<rect x="${x2}" y="${p.y}" width="${NW}" height="${p.h}" rx="3" fill="#5A5748"/>`
-      + `<text x="${x2+NW+14}" y="${p.y + p.h/2 + 1}" font-weight="800" font-size="21" fill="#2B2A24">${esc(n).slice(0,24)}</text>`
+      + (() => { const f = fitLabel(n); return `<text x="${x2+NW+14}" y="${p.y + p.h/2 + 1}" font-weight="800" font-size="${f.size}" fill="#2B2A24">${esc(f.t)}</text>`; })()
       + `<text x="${x2+NW+14}" y="${p.y + p.h/2 + 24}" font-size="16" fill="#8A8570">${money(vSum.get(n))}</text>`; }
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;">
     <text x="${x1}" y="16" font-size="17" font-weight="700" fill="#8A8570">Buyer</text>
@@ -7837,7 +7853,9 @@ function buildHtml(d) {
   .fact { font-size: 18px; line-height: 1.65; margin: 0 0 26px; }
   .fact strong { color: #46446E; }
   h2 { font-family: system-ui, sans-serif; font-weight: 900; font-size: 27px; letter-spacing: -0.01em; margin: 52px 0 18px; }
-  .chart { background: #E9E3CD; border-radius: 10px; padding: 26px 18px; margin: 30px 0 8px; }
+  .chart { background: #E9E3CD; border-radius: 10px; padding: 26px 18px; margin: 30px 0 8px;
+    width: min(94vw, 1120px); position: relative; left: 50%; transform: translateX(-50%); box-sizing: border-box; }
+  .chart-cap { width: min(94vw, 1120px); position: relative; left: 50%; transform: translateX(-50%); box-sizing: border-box; }
   .chart-cap { font-family: system-ui, sans-serif; font-size: 13px; color: #8A8570; margin: 8px 4px 0; }
   .fc { border-top: 2px solid #D9D2B8; padding: 18px 0; }
   .fc-head { font-family: system-ui, sans-serif; font-weight: 800; font-size: 19px; }
