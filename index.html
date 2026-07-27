@@ -3398,6 +3398,7 @@ const App = {
         if (window.Deals) Deals.render();
         if (window.ChartCaptions) ChartCaptions.update(App._chartView || 'treemap');
         if (window.MatchScope) MatchScope.init();
+        if (this._reportIntent) { this._reportIntent = false; setTimeout(() => window.Editorial && Editorial.showInline(), 400); }
         if (window.__pipelineIntent) { window.__pipelineIntent = false; setTimeout(() => DOM.get('dealsCard')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 600); }
       DOM.show('bioCard');
 
@@ -6537,6 +6538,7 @@ ${gemData.next_steps.map((step, i) => `<div class="ns-item"><span class="ns-num"
       const params = new URLSearchParams(window.location.search);
       const q = params.get('q');
       const t = params.get('territory');
+      if (params.get('report') === '1') this._reportIntent = true;
       if (t && this.SECTORS[t]) this.setTerritory(t);
       const lastQuery = localStorage.getItem('fedhoo_last_query');
 
@@ -7894,12 +7896,14 @@ function buildHtml(d) {
   .route { font-family: system-ui, sans-serif; font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #46446E; border: 1.5px solid #46446E; border-radius: 999px; padding: 2px 10px; vertical-align: 3px; margin-left: 8px; }
   .foot { margin-top: 64px; border-top: 3px solid #2B2A24; padding-top: 18px; font-family: system-ui, sans-serif; font-size: 14px; color: #5A5748; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
   .foot a { color: #46446E; font-weight: 800; text-decoration: none; }
-  @media print { body { background: #EFEAD8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+  .share-report { font-family: system-ui, sans-serif; font-weight: 800; font-size: 13px; color: #46446E; background: none; border: 1.5px solid #46446E; border-radius: 999px; padding: 4px 14px; cursor: pointer; }
+  .share-report:active { transform: scale(0.97); }
+  @media print { body { background: #EFEAD8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; } .share-report { display: none; } }
 </style></head><body><div class="wrap">
   <div class="kicker">Federal markets, explained${d.scope ? ' \u00B7 ' + esc(d.scope) : ''}</div>
   <h1>Who\u2019s buying ${qUp}?</h1>
   <p class="dek">What the spending record says about the buyers, the winners, and the way in.</p>
-  <div class="date">${today} \u00B7 fedhoo</div>
+  <div class="date">${today} \u00B7 fedhoo \u00B7 <button class="share-report" onclick="__shareReport()">Share this report \u2197</button></div>
   <div class="hero">${money(d.total)}</div>
   ${facts(d)}
   <h2>Where the money flows</h2>
@@ -7913,11 +7917,34 @@ function buildHtml(d) {
     <span>Every figure traces to a public award record on USASpending.gov.</span>
     <span>Live version: <a href="${url}">${url.replace('https://','')}</a></span>
   </div>
-</div></body></html>`;
+</div>
+<script>
+  var __reportUrl = ${JSON.stringify('https://fedhoo.com/?q=' + encodeURIComponent((A().originalQuery || A().currentQuery || '').toLowerCase()) + '&report=1')};
+  function __shareReport() {
+    if (navigator.share) { navigator.share({ title: document.title, url: __reportUrl }).catch(function(){}); return; }
+    var done = function () { var b = document.querySelector('.share-report'); if (b) { b.textContent = 'Link copied \u2713'; setTimeout(function(){ b.textContent = 'Share this report \u2197'; }, 2200); } };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(__reportUrl).then(done);
+    else { window.prompt('Copy this link:', __reportUrl); }
+  }
+<\/script></body></html>`;
 }
 
 window.Editorial = {
   html() { const d = gather(); return d ? buildHtml(d) : null; },
+  showInline() {
+    const h = this.html();
+    if (!h) return;
+    let ov = document.getElementById('editorialOverlay');
+    if (ov) ov.remove();
+    ov = document.createElement('div');
+    ov.id = 'editorialOverlay';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#EFEAD8;';
+    ov.innerHTML = '<button aria-label="Back to dashboard" style="position:fixed;top:14px;right:14px;z-index:10000;width:40px;height:40px;border-radius:50%;border:1.5px solid #46446E;background:#EFEAD8;color:#46446E;font-size:19px;font-weight:800;cursor:pointer;font-family:system-ui,sans-serif;">\u2715</button>'
+      + '<iframe style="width:100%;height:100%;border:0;display:block;" title="Market report"></iframe>';
+    ov.querySelector('button').onclick = () => ov.remove();
+    ov.querySelector('iframe').srcdoc = h;
+    document.body.appendChild(ov);
+  },
   open() {
     const app = A();
     const h = this.html();
