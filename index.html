@@ -1074,10 +1074,7 @@ a, button, input, select { touch-action: manipulation; }
 .ms-label strong { color: var(--text-primary); }
 
 
-/* Market Focus report button retired — dashboard + Mo plan now carry all of its
-   intelligence; live links share better than static PDFs. Delete the next line
-   to bring the button back. */
-#snapshotBtn { display: none !important; }
+/* snapshotBtn now opens the editorial market report (v27). */
 
 
 /* ── v24: footer explainer ── */
@@ -1219,7 +1216,7 @@ a, button, input, select { touch-action: manipulation; }
           <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
         </svg>
       </button>
-      <button class="hdr-icon-circle hidden" id="snapshotBtn" onclick="App.generateSnapshot()" title="Market Focus report" aria-label="Generate Market Focus report">
+      <button class="hdr-icon-circle hidden" id="snapshotBtn" onclick="Editorial.open()" title="Market report — who’s buying this?" aria-label="Open the editorial market report">
         <svg class="snap-icon-default" width="16" height="16" viewBox="0 0 640 640" fill="currentColor" aria-hidden="true">
           <path d="M128 128C128 92.7 156.7 64 192 64L341.5 64C358.5 64 374.8 70.7 386.8 82.7L493.3 189.3C505.3 201.3 512 217.6 512 234.6L512 512C512 547.3 483.3 576 448 576L192 576C156.7 576 128 547.3 128 512L128 128zM336 122.5L336 216C336 229.3 346.7 240 360 240L453.5 240L336 122.5zM303 505C312.4 514.4 327.6 514.4 336.9 505L400.9 441C410.3 431.6 410.3 416.4 400.9 407.1C391.5 397.8 376.3 397.7 367 407.1L344 430.1L344 344C344 330.7 333.3 320 320 320C306.7 320 296 330.7 296 344L296 430.1L273 407.1C263.6 397.7 248.4 397.7 239.1 407.1C229.8 416.5 229.7 431.7 239.1 441L303.1 505z"/>
         </svg>
@@ -7674,6 +7671,215 @@ window.MatchScope = {
 
 
 
+
+
+<script>
+// ═══════════ EDITORIAL REPORT — "Who's buying X, explained" ═══════════
+// Post Factum-style narrative document, computed entirely from the live search.
+(function () {
+'use strict';
+const A = () => (typeof App !== 'undefined' && App) ? App : window.App;
+const money = (n) => { const x = Number(n)||0;
+  if (x>=1e9) return '$'+(x/1e9).toFixed(1)+'B';
+  if (x>=1e6) return '$'+(x/1e6).toFixed(1)+'M';
+  if (x>=1e3) return '$'+(x/1e3).toFixed(0)+'K';
+  return '$'+Math.round(x); };
+const esc = (s) => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const clean = (a) => (typeof Utils !== 'undefined' && Utils.cleanAgency) ? Utils.cleanAgency(a) : a;
+const PAL = ['#9C7A9E','#6FA3BF','#D65F4C','#1F4A44','#C2A15C','#7B78C0','#3D3B45','#8FA98F'];
+const mon = (ts) => new Date(ts).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+
+function gather() {
+  const app = A();
+  const rows = (app && app.searchData && app.searchData.active) || [];
+  if (rows.length < 3) return null;
+  const now = Date.now(), d90 = now - 90*864e5, y3 = now - 3*365.25*864e5, cut = now + 548*864e5;
+  let total = 0, expTotal = 0;
+  const byAg = new Map(), byV = new Map(), flows = new Map(), offices = new Set();
+  let newest = null, biggest = null, soonest = null;
+  const vFirst = new Map();
+  for (const c of rows) {
+    const amt = parseFloat(c['Award Amount']) || 0; total += amt;
+    const ag = c['Awarding Agency'] || 'Other', v = c['Recipient Name'] || 'Unknown';
+    if (c['Awarding Sub Agency']) offices.add(c['Awarding Sub Agency']);
+    byAg.set(ag, (byAg.get(ag)||0) + amt);
+    byV.set(v, (byV.get(v)||0) + amt);
+    const k = ag + '\u0001' + v;
+    flows.set(k, (flows.get(k)||0) + amt);
+    const st = Date.parse(c['Start Date']) || 0, en = c._endTs || Date.parse(c['End Date']) || 0;
+    if (st) vFirst.set(v, Math.min(vFirst.get(v) || Infinity, st));
+    if (en > now && en <= cut) { expTotal += amt; if (!soonest || en < soonest.en) soonest = { c, en, amt }; }
+    if (!biggest || amt > biggest.amt) biggest = { c, amt, en };
+    if (st >= d90 && (!newest || st > newest.st)) newest = { c, amt, st };
+  }
+  const entrants = [...vFirst.values()].filter(t => t >= y3).length;
+  const ags = [...byAg.entries()].sort((a,b)=>b[1]-a[1]);
+  const vs = [...byV.entries()].sort((a,b)=>b[1]-a[1]);
+  const pfd = window.PartnerFit && PartnerFit._last;
+  return { rows, total, expTotal, byAg, byV, ags, vs, offices: offices.size,
+    flows: [...flows.entries()].map(([k,amt])=>{const [ag,v]=k.split('\u0001');return {ag,v,amt};}).sort((a,b)=>b.amt-a.amt),
+    newest, biggest, soonest, entrants,
+    partners: pfd ? [...(pfd.channel||[]).slice(0,2).map(v=>({v,route:'Channel'})), ...(pfd.primes||[]).slice(0,3).map(v=>({v,route:'Prime'}))].slice(0,4) : [],
+    q: app.displayQuery || app.currentQuery || 'this market',
+    scope: (app.drillState && app.drillState.level > 0 && app.drillState.currentAgency) ? clean(app.drillState.currentAgency) : null };
+}
+
+// ── SVG sankey: agencies -> vendors, Post Factum style ─────────────
+function sankey(d) {
+  const TOPA = 5, TOPV = 6;
+  const agTop = d.ags.slice(0, TOPA).map(([n]) => n);
+  const vTop = d.vs.slice(0, TOPV).map(([n]) => n);
+  const fl = [];
+  const agSum = new Map(), vSum = new Map();
+  for (const f of d.flows) {
+    const a = agTop.includes(f.ag) ? f.ag : 'Other';
+    const v = vTop.includes(f.v) ? f.v : 'Other';
+    const k = a + '\u0001' + v;
+    const ex = fl.find(x => x.k === k);
+    if (ex) ex.amt += f.amt; else fl.push({ k, a, v, amt: f.amt });
+  }
+  for (const f of fl) { agSum.set(f.a, (agSum.get(f.a)||0)+f.amt); vSum.set(f.v, (vSum.get(f.v)||0)+f.amt); }
+  const aNodes = [...agTop.filter(a=>agSum.has(a)), ...(agSum.has('Other')?['Other']:[])];
+  const vNodes = [...vTop.filter(v=>vSum.has(v)), ...(vSum.has('Other')?['Other']:[])];
+  const W = 1000, H = 90 + Math.max(aNodes.length, vNodes.length) * 74, GAP = 16;
+  const flowTotal = fl.reduce((s,f)=>s+f.amt, 0) || 1;
+  const usable = H - 60 - GAP * (Math.max(aNodes.length, vNodes.length) - 1);
+  const S = usable / flowTotal;
+  const pos = (nodes, sums) => { let y = 30; const m = new Map();
+    for (const n of nodes) { const h = Math.max(6, (sums.get(n)||0) * S);
+      m.set(n, { y, h, off: 0 }); y += h + GAP; } return m; };
+  const aPos = pos(aNodes, agSum), vPos = pos(vNodes, vSum);
+  const x1 = 232, x2 = 768, NW = 22;
+  const color = new Map(aNodes.map((n,i)=>[n, n==='Other' ? '#C9C4B2' : PAL[i % PAL.length]]));
+  let ribbons = '';
+  fl.sort((p,q) => aNodes.indexOf(p.a) - aNodes.indexOf(q.a) || q.amt - p.amt);
+  for (const f of fl) {
+    const ap = aPos.get(f.a), vp = vPos.get(f.v);
+    const h = Math.max(3, f.amt * S);
+    const ya = ap.y + ap.off, yv = vp.y + vp.off;
+    ap.off += h; vp.off += h;
+    const mx = (x1 + NW + x2) / 2;
+    ribbons += `<path d="M${x1+NW},${ya} C${mx},${ya} ${mx},${yv} ${x2},${yv} L${x2},${yv+h} C${mx},${yv+h} ${mx},${ya+h} ${x1+NW},${ya+h} Z" fill="${color.get(f.a)}" opacity="0.5"/>`;
+  }
+  let nodes = '';
+  for (const n of aNodes) { const p = aPos.get(n);
+    nodes += `<rect x="${x1}" y="${p.y}" width="${NW}" height="${p.h}" rx="3" fill="${color.get(n)}"/>`
+      + `<text x="${x1-14}" y="${p.y + p.h/2 + 1}" text-anchor="end" font-weight="800" font-size="21" fill="#2B2A24">${esc(clean(n)).slice(0,26)}</text>`
+      + `<text x="${x1-14}" y="${p.y + p.h/2 + 24}" text-anchor="end" font-size="16" fill="#8A8570">${money(agSum.get(n))}</text>`; }
+  for (const n of vNodes) { const p = vPos.get(n);
+    nodes += `<rect x="${x2}" y="${p.y}" width="${NW}" height="${p.h}" rx="3" fill="#5A5748"/>`
+      + `<text x="${x2+NW+14}" y="${p.y + p.h/2 + 1}" font-weight="800" font-size="21" fill="#2B2A24">${esc(n).slice(0,24)}</text>`
+      + `<text x="${x2+NW+14}" y="${p.y + p.h/2 + 24}" font-size="16" fill="#8A8570">${money(vSum.get(n))}</text>`; }
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;">
+    <text x="${x1}" y="16" font-size="17" font-weight="700" fill="#8A8570">Buyer</text>
+    <text x="${x2+NW}" y="16" text-anchor="end" font-size="17" font-weight="700" fill="#8A8570">Prime</text>
+    ${ribbons}${nodes}</svg>`;
+}
+
+function fiveContracts(d) {
+  const picks = [];
+  const add = (item, why) => { if (item && !picks.some(p => p.c === item.c)) picks.push({ ...item, why }); };
+  add(d.biggest, 'The anchor. The largest single obligation in this market \u2014 whoever holds it sets the competitive weather.');
+  add(d.soonest, 'The clock. The next expiration on the calendar \u2014 renewal, option year, or your opening.');
+  add(d.newest, 'The pulse. Awarded within the last 90 days \u2014 proof this market is buying right now.');
+  const rn = d.rows.map(c => ({ c, amt: parseFloat(c['Award Amount'])||0 }))
+    .filter(x => /licen[sc]|subscription|saas|renewal/i.test(x.c['Description']||'')).sort((a,b)=>b.amt-a.amt)[0];
+  add(rn, 'The recurring buy. License and subscription paper re-buys on cycle \u2014 the most predictable revenue in federal.');
+  const secondAg = d.ags[1] && d.ags[1][0];
+  const sa = secondAg && d.rows.map(c=>({c, amt: parseFloat(c['Award Amount'])||0}))
+    .filter(x => x.c['Awarding Agency'] === secondAg).sort((a,b)=>b.amt-a.amt)[0];
+  add(sa, `The second front. The biggest bet at ${esc(clean(secondAg||''))} \u2014 concentration risk cuts both ways.`);
+  return picks.slice(0, 5).map((p, i) => {
+    const c = p.c, en = c._endTs || Date.parse(c['End Date']);
+    return `<div class="fc"><div class="fc-head">${i+1}. ${esc(c['Recipient Name'])} \u00B7 ${money(parseFloat(c['Award Amount'])||0)}</div>
+      <div class="fc-meta">${esc(clean(c['Awarding Agency']||''))}${en ? ' \u00B7 runs to ' + mon(en) : ''}${c['Description'] ? ' \u00B7 ' + esc(String(c['Description']).slice(0, 90)) : ''}</div>
+      <div class="fc-why">${p.why}</div></div>`;
+  }).join('');
+}
+
+function facts(d) {
+  const leader = d.vs[0], top3 = d.vs.slice(0,3).reduce((s,[,v])=>s+v,0);
+  const conc = Math.round(top3 / Math.max(d.total,1) * 100);
+  const out = [];
+  out.push(`The federal government has <strong>${money(d.total)}</strong> in active ${esc(d.q)} contracts \u2014 ${d.rows.length} awards across ${d.ags.length} agencies and ${d.vs.length} vendors, counting the largest deals funded in the last 12 months.`);
+  out.push(`<strong>${esc(leader[0])}</strong> leads with ${Math.round(leader[1]/Math.max(d.total,1)*100)}% of the money. The top three vendors hold ${conc}% \u2014 ${conc >= 60 ? 'a concentrated market where the way in is usually through an incumbent, not around one' : 'a fragmented field with room to win directly'}.`);
+  if (d.expTotal > 0) out.push(`<strong>${money(d.expTotal)}</strong> \u2014 ${Math.round(d.expTotal/Math.max(d.total,1)*100)}% of the market \u2014 expires within 18 months. In federal sales, expirations are the calendar of opportunity.`);
+  if (d.newest) out.push(`The newest award landed in the last 90 days: ${money(d.newest.amt)} to <strong>${esc(d.newest.c['Recipient Name'])}</strong>. This market is buying now, not someday.`);
+  if (d.entrants > 0 && d.vs.length >= 4) out.push(`${d.entrants} of ${d.vs.length} vendors entered within the last three years. ${d.entrants/d.vs.length >= 0.3 ? 'The door is open.' : 'Entry happens, but slowly.'}`);
+  return out.map(f => `<p class="fact">${f}</p>`).join('');
+}
+
+function partnersHtml(d) {
+  if (!d.partners.length) return '';
+  return `<h2>Who gets you in</h2>
+    <p class="fact">You rarely win a new federal market cold. You enter through someone already inside \u2014 and the data says who.</p>`
+    + d.partners.map((p, i) => {
+      const topAg = Object.entries(p.v.agencyAmts || {}).sort((a,b)=>b[1]-a[1])[0];
+      return `<div class="fc"><div class="fc-head">${i+1}. ${esc(p.v.name)} <span class="route">${p.route}</span></div>
+        <div class="fc-why">${p.route === 'Channel' ? 'Holds the contracts \u2014 you sell through them.' : 'Prime \u2014 team as a sub or supplier.'} Fit score ${p.v.score}.${topAg ? ` Strongest at ${esc(clean(topAg[0]))} (${money(topAg[1])}).` : ''}</div></div>`;
+    }).join('');
+}
+
+function buildHtml(d) {
+  const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  const qUp = esc(d.q).replace(/\b\w/g, ch => ch.toUpperCase());
+  const url = 'https://fedhoo.com/?q=' + encodeURIComponent((A().originalQuery || A().currentQuery || '').toLowerCase());
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Who\u2019s buying ${qUp}? \u2014 fedhoo</title>
+<style>
+  body { margin: 0; background: #EFEAD8; color: #2B2A24; font-family: Georgia, 'Times New Roman', serif; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 56px 28px 80px; }
+  .kicker { font-family: system-ui, -apple-system, sans-serif; font-weight: 800; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: #8A8570; }
+  h1 { font-family: system-ui, -apple-system, sans-serif; font-weight: 900; font-size: clamp(38px, 7vw, 58px); line-height: 1.02; letter-spacing: -0.02em; margin: 10px 0 6px; }
+  .dek { font-size: 20px; color: #5A5748; margin: 0 0 8px; }
+  .date { font-family: system-ui, sans-serif; font-size: 13px; color: #8A8570; margin-bottom: 34px; }
+  .hero { font-family: system-ui, sans-serif; font-weight: 900; font-size: clamp(56px, 11vw, 92px); color: #46446E; letter-spacing: -0.02em; margin: 6px 0 40px; }
+  .fact { font-size: 18px; line-height: 1.65; margin: 0 0 26px; }
+  .fact strong { color: #46446E; }
+  h2 { font-family: system-ui, sans-serif; font-weight: 900; font-size: 27px; letter-spacing: -0.01em; margin: 52px 0 18px; }
+  .chart { background: #E9E3CD; border-radius: 10px; padding: 26px 18px; margin: 30px 0 8px; }
+  .chart-cap { font-family: system-ui, sans-serif; font-size: 13px; color: #8A8570; margin: 8px 4px 0; }
+  .fc { border-top: 2px solid #D9D2B8; padding: 18px 0; }
+  .fc-head { font-family: system-ui, sans-serif; font-weight: 800; font-size: 19px; }
+  .fc-meta { font-family: system-ui, sans-serif; font-size: 14px; color: #8A8570; margin: 4px 0 8px; }
+  .fc-why { font-size: 16.5px; line-height: 1.55; color: #44423A; }
+  .route { font-family: system-ui, sans-serif; font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #46446E; border: 1.5px solid #46446E; border-radius: 999px; padding: 2px 10px; vertical-align: 3px; margin-left: 8px; }
+  .foot { margin-top: 64px; border-top: 3px solid #2B2A24; padding-top: 18px; font-family: system-ui, sans-serif; font-size: 14px; color: #5A5748; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+  .foot a { color: #46446E; font-weight: 800; text-decoration: none; }
+  @media print { body { background: #EFEAD8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style></head><body><div class="wrap">
+  <div class="kicker">Federal markets, explained${d.scope ? ' \u00B7 ' + esc(d.scope) : ''}</div>
+  <h1>Who\u2019s buying ${qUp}?</h1>
+  <p class="dek">What the spending record says about the buyers, the winners, and the way in.</p>
+  <div class="date">${today} \u00B7 fedhoo</div>
+  <div class="hero">${money(d.total)}</div>
+  ${facts(d)}
+  <h2>Where the money flows</h2>
+  <div class="chart">${sankey(d)}</div>
+  <div class="chart-cap">Active contract dollars, buying agency \u2192 prime contractor. Top 100 awards funded in the last 12 months. Source: USASpending.gov</div>
+  <h2>This market in five contracts</h2>
+  ${fiveContracts(d)}
+  ${partnersHtml(d)}
+  <div class="foot">
+    <span>Every figure traces to a public award record on USASpending.gov.</span>
+    <span>Live version: <a href="${url}">${url.replace('https://','')}</a></span>
+  </div>
+</div></body></html>`;
+}
+
+window.Editorial = {
+  html() { const d = gather(); return d ? buildHtml(d) : null; },
+  open() {
+    const app = A();
+    const h = this.html();
+    if (!h) { app.toast && app.toast('Run a search first \u2014 the report is built from live data.', 'warning'); return; }
+    const w = window.open('', '_blank');
+    if (!w) { app.toast && app.toast('Popup blocked \u2014 allow popups for the report.', 'warning'); return; }
+    w.document.write(h); w.document.close();
+  },
+};
+})();
+</script>
 
 </body>
 </html>
