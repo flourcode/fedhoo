@@ -7693,6 +7693,9 @@ function gather() {
   const app = A();
   const rows = (app && app.searchData && app.searchData.active) || [];
   if (rows.length < 3) return null;
+  const scope = (app.drillState && app.drillState.level > 0 && app.drillState.currentAgency) ? clean(app.drillState.currentAgency) : null;
+  // Inside a single agency, the meaningful left axis is the buying office
+  const agKey = (c) => scope ? (c['Awarding Sub Agency'] || c['Awarding Agency'] || 'Other') : (c['Awarding Agency'] || 'Other');
   const now = Date.now(), d90 = now - 90*864e5, y3 = now - 3*365.25*864e5, cut = now + 548*864e5;
   let total = 0, expTotal = 0;
   const byAg = new Map(), byV = new Map(), flows = new Map(), offices = new Set();
@@ -7700,7 +7703,7 @@ function gather() {
   const vFirst = new Map();
   for (const c of rows) {
     const amt = parseFloat(c['Award Amount']) || 0; total += amt;
-    const ag = c['Awarding Agency'] || 'Other', v = c['Recipient Name'] || 'Unknown';
+    const ag = agKey(c), v = c['Recipient Name'] || 'Unknown';
     if (c['Awarding Sub Agency']) offices.add(c['Awarding Sub Agency']);
     byAg.set(ag, (byAg.get(ag)||0) + amt);
     byV.set(v, (byV.get(v)||0) + amt);
@@ -7721,11 +7724,12 @@ function gather() {
     newest, biggest, soonest, entrants,
     partners: pfd ? [...(pfd.channel||[]).slice(0,2).map(v=>({v,route:'Channel'})), ...(pfd.primes||[]).slice(0,3).map(v=>({v,route:'Prime'}))].slice(0,4) : [],
     q: app.displayQuery || app.currentQuery || 'this market',
-    scope: (app.drillState && app.drillState.level > 0 && app.drillState.currentAgency) ? clean(app.drillState.currentAgency) : null };
+    scope };
 }
 
 // ── SVG sankey: agencies -> vendors, Post Factum style ─────────────
 function sankey(d) {
+  // d.ags are offices when scoped (see gather)
   const TOPA = 5, TOPV = 6;
   const agTop = d.ags.slice(0, TOPA).map(([n]) => n);
   const vTop = d.vs.slice(0, TOPV).map(([n]) => n);
@@ -7787,7 +7791,7 @@ function sankey(d) {
       + (() => { const f = fitLabel(n); return `<text x="${x2+NW+14}" y="${p.y + p.h/2 + 1}" font-weight="800" font-size="${f.size}" fill="#2B2A24">${esc(f.t)}</text>`; })()
       + `<text x="${x2+NW+14}" y="${p.y + p.h/2 + 24}" font-size="16" fill="#8A8570">${money(vSum.get(n))}</text>`; }
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;">
-    <text x="${x1}" y="16" font-size="17" font-weight="700" fill="#8A8570">Buyer</text>
+    <text x="${x1}" y="16" text-anchor="end" font-size="17" font-weight="700" fill="#8A8570">${d.scope ? 'Office' : 'Buyer'}</text>
     <text x="${x2+NW}" y="16" text-anchor="end" font-size="17" font-weight="700" fill="#8A8570">Prime</text>
     ${ribbons}${nodes}</svg>`;
 }
@@ -7832,9 +7836,11 @@ function facts(d) {
   const leader = d.vs[0], top3 = d.vs.slice(0,3).reduce((s,[,v])=>s+v,0);
   const conc = Math.round(top3 / Math.max(d.total,1) * 100);
   const out = [];
-  out.push(`The federal government has <strong>${money(d.total)}</strong> in active ${esc(d.q)} contracts \u2014 ${d.rows.length} awards across ${d.ags.length} agencies and ${d.vs.length} vendors, counting the largest deals funded in the last 12 months.`);
-  out.push(`<strong>${esc(leader[0])}</strong> leads with ${Math.round(leader[1]/Math.max(d.total,1)*100)}% of the money. The top three vendors hold ${conc}% \u2014 ${conc >= 60 ? 'a concentrated market where the way in is usually through an incumbent, not around one' : 'a fragmented field with room to win directly'}.`);
-  if (d.expTotal > 0) out.push(`<strong>${money(d.expTotal)}</strong> \u2014 ${Math.round(d.expTotal/Math.max(d.total,1)*100)}% of the market \u2014 expires within 18 months. In federal sales, expirations are the calendar of opportunity.`);
+  out.push(d.scope
+    ? `<strong>${esc(d.scope)}</strong> has <strong>${money(d.total)}</strong> in active ${esc(d.q)} contracts \u2014 ${d.rows.length} awards across ${d.ags.length} buying office${d.ags.length===1?'':'s'} and ${d.vs.length} vendors, counting the largest deals funded in the last 12 months.`
+    : `The federal government has <strong>${money(d.total)}</strong> in active ${esc(d.q)} contracts \u2014 ${d.rows.length} awards across ${d.ags.length} agencies and ${d.vs.length} vendors, counting the largest deals funded in the last 12 months.`);
+  out.push(`<strong>${esc(leader[0])}</strong> leads with ${Math.round(leader[1]/Math.max(d.total,1)*100)}% of ${d.scope ? esc(d.scope) + '\u2019s ' + esc(d.q) + ' spend' : 'the money'}. The top three vendors hold ${conc}% \u2014 ${conc >= 60 ? 'a concentrated market where the way in is usually through an incumbent, not around one' : 'a fragmented field with room to win directly'}.`);
+  if (d.expTotal > 0) out.push(`<strong>${money(d.expTotal)}</strong> \u2014 ${Math.round(d.expTotal/Math.max(d.total,1)*100)}% of the market \u2014 expires within 18 months. ${d.scope ? 'That is ' + esc(d.scope) + '\u2019s renewal calendar \u2014 and your opening.' : 'In federal sales, expirations are the calendar of opportunity.'}`);
   if (d.newest) out.push(`The newest award landed in the last 90 days: ${money(d.newest.amt)} to <strong>${esc(d.newest.c['Recipient Name'])}</strong>. This market is buying now, not someday.`);
   if (d.entrants > 0 && d.vs.length >= 4) out.push(`${d.entrants} of ${d.vs.length} vendors entered within the last three years. ${d.entrants/d.vs.length >= 0.3 ? 'The door is open.' : 'Entry happens, but slowly.'}`);
   return out.map(f => `<p class="fact">${f}</p>`).join('');
@@ -7901,7 +7907,7 @@ function buildHtml(d) {
   @media print { body { background: #EFEAD8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; } .share-report { display: none; } }
 </style></head><body><div class="wrap">
   <div class="kicker">Federal markets, explained${d.scope ? ' \u00B7 ' + esc(d.scope) : ''}</div>
-  <h1>Who\u2019s buying ${qUp}?</h1>
+  <h1>Who\u2019s buying ${qUp}${d.scope ? ' at ' + esc(d.scope) : ''}?</h1>
   <p class="dek">What the spending record says about the buyers, the winners, and the way in.</p>
   <div class="date">${today} \u00B7 fedhoo \u00B7 <button class="share-report" onclick="__shareReport()">Share this report \u2197</button></div>
   <div class="hero">${money(d.total)}</div>
@@ -7909,7 +7915,7 @@ function buildHtml(d) {
   <h2>Where the money flows</h2>
   <div class="chart chart-desktop">${sankey(d)}</div>
   <div class="chart-mobile">${flowBars(d)}</div>
-  <div class="chart-cap">Active contract dollars, buying agency \u2192 prime contractor. Top 100 awards funded in the last 12 months. Source: USASpending.gov</div>
+  <div class="chart-cap">Active contract dollars, ${d.scope ? 'buying office' : 'buying agency'} \u2192 prime contractor. Top 100 awards funded in the last 12 months. Source: USASpending.gov</div>
   <h2>This market in five contracts</h2>
   ${fiveContracts(d)}
   ${partnersHtml(d)}
