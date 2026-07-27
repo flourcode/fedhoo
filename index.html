@@ -7800,6 +7800,7 @@ function gather() {
     saTotal, saTypes: [...saByType.entries()].sort((a,b)=>b[1]-a[1]),
     subs, domAg,
     cats: [...catAmts.entries()].sort((a,b)=>b[1]-a[1]),
+    terr: (app.territory && app.SECTORS && app.SECTORS[app.territory]) ? (app.SECTORS[app.territory].label || app.territory) : null,
     agencyQ, axisOffice: useSub,
     qHead: smartCase(app.displayQuery || app.currentQuery || 'this market', 'head'),
     qProse: smartCase(app.displayQuery || app.currentQuery || 'this market', 'prose'),
@@ -8100,9 +8101,9 @@ function partnersHtml(d) {
 function buildHtml(d) {
   const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
   const qUp = esc(d.qHead || d.q);
-  const url = 'https://fedhoo.com/?q=' + encodeURIComponent((A().originalQuery || A().currentQuery || '').toLowerCase());
+  const url = 'https://fedhoo.com/?q=' + encodeURIComponent((A().originalQuery || A().currentQuery || '').toLowerCase()) + (A().territory ? '&territory=' + encodeURIComponent(A().territory) : '');
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${d.agencyQ ? `What\u2019s ${qUp} buying?` : `Who\u2019s buying ${qUp}?`} \u00B7 Follow the Fed Money \u2014 fedhoo</title>
+<title>${d.agencyQ ? `What\u2019s ${qUp} buying?` : `Who\u2019s buying ${qUp}${d.terr && !d.scope ? ' in ' + esc(d.terr) : ''}?`} \u00B7 Follow the Fed Money \u2014 fedhoo</title>
 <style>
   body { margin: 0; background: #EFEAD8; color: #2B2A24; font-family: Georgia, 'Times New Roman', serif; }
   .wrap { max-width: 1100px; margin: 0 auto; padding: 56px 28px 80px; }
@@ -8156,9 +8157,9 @@ function buildHtml(d) {
   @media print { body { background: #EFEAD8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; } .share-report { display: none; } }
 </style></head><body><div class="wrap">
   <div class="kicker">Follow the Fed Money${d.scope && !d.agencyQ ? ' \u00B7 ' + esc(d.scope) : ''}</div>
-  <h1>${d.agencyQ ? `What\u2019s ${qUp} buying?` : `Who\u2019s buying ${qUp}${d.scope ? ' at ' + esc(d.scope) : ''}?`}</h1>
+  <h1>${d.agencyQ ? `What\u2019s ${qUp} buying?` : `Who\u2019s buying ${qUp}${d.scope ? ' at ' + esc(d.scope) : d.terr ? ' in ' + esc(d.terr) : ''}?`}</h1>
   <p class="dek">${d.agencyQ ? 'What the spending record says about the incumbents, the money in motion, and the way in.' : 'What the spending record says about the buyers, the winners, and the way in.'}</p>
-  <div class="date"><span class="date-text">${today} \u00B7 fedhoo</span><button class="share-report" onclick="__shareReport()">Share this report \u2197</button><a class="share-report live-link" href="${'https://fedhoo.com/?q=' + encodeURIComponent((A().originalQuery || A().currentQuery || '').toLowerCase())}">Explore live on fedhoo \u2197</a></div>
+  <div class="date"><span class="date-text">${today} \u00B7 fedhoo</span><button class="share-report" onclick="__shareReport()">Share this report \u2197</button><a class="share-report live-link" href="${'https://fedhoo.com/?q=' + encodeURIComponent((A().originalQuery || A().currentQuery || '').toLowerCase()) + (A().territory ? '&territory=' + encodeURIComponent(A().territory) : '')}">Explore live on fedhoo \u2197</a></div>
   <div class="hero">${money(d.total)}</div>
   ${facts(d, 'lead')}
   <h2>Where the money flows</h2>
@@ -8189,7 +8190,7 @@ function buildHtml(d) {
   </div>
 </div>
 <script>
-  var __reportUrl = ${JSON.stringify('https://fedhoo.com/?q=' + encodeURIComponent((A().originalQuery || A().currentQuery || '').toLowerCase()) + '&report=1')};
+  var __reportUrl = ${JSON.stringify('https://fedhoo.com/?q=' + encodeURIComponent((A().originalQuery || A().currentQuery || '').toLowerCase()) + (A().territory ? '&territory=' + encodeURIComponent(A().territory) : '') + '&report=1')};
   function __shareReport() {
     if (navigator.share) { navigator.share({ title: document.title, url: __reportUrl }).catch(function(){}); return; }
     var done = function () { var b = document.querySelector('.share-report'); if (b) { b.textContent = 'Link copied \u2713'; setTimeout(function(){ b.textContent = 'Share this report \u2197'; }, 2200); } };
