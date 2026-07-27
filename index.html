@@ -8063,7 +8063,9 @@ function buildHtml(d) {
   .kicker { font-family: system-ui, -apple-system, sans-serif; font-weight: 800; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: #8A8570; }
   h1 { font-family: system-ui, -apple-system, sans-serif; font-weight: 900; font-size: clamp(38px, 7vw, 58px); line-height: 1.02; letter-spacing: -0.02em; margin: 10px 0 6px; }
   .dek { font-size: 20px; color: #5A5748; margin: 0 0 8px; }
-  .date { font-family: system-ui, sans-serif; font-size: 13px; color: #8A8570; margin-bottom: 34px; }
+  .date { font-family: system-ui, sans-serif; font-size: 13px; color: #8A8570; margin-bottom: 34px;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; }
+  .date .share-report { margin: 0; }
   .hero { font-family: system-ui, sans-serif; font-weight: 900; font-size: clamp(56px, 11vw, 92px); color: #46446E; letter-spacing: -0.02em; margin: 6px 0 40px; }
   .fact { font-size: 18px; line-height: 1.65; margin: 0 0 26px; }
   .fact strong { color: #46446E; }
@@ -8098,8 +8100,8 @@ function buildHtml(d) {
   .share-report { font-family: system-ui, sans-serif; font-weight: 800; font-size: 13px; color: #46446E; background: none; border: 1.5px solid #46446E; border-radius: 999px; padding: 4px 14px; cursor: pointer; }
   .share-report:active { transform: scale(0.97); }
   .live-link { display: inline-block; text-decoration: none; background: #46446E; color: #EFEAD8; }
-  .bio { display: flex; gap: 18px; align-items: flex-start; margin-top: 64px; padding: 24px; background: #E9E3CD; border-radius: 10px; }
-  .bio img { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 2.5px solid #46446E; }
+  .bio { display: flow-root; margin-top: 64px; padding: 24px; background: #E9E3CD; border-radius: 10px; }
+  .bio img { float: left; width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 2.5px solid #46446E; margin: 2px 18px 10px 0; }
   .bio-name { font-family: system-ui, sans-serif; font-weight: 900; font-size: 19px; margin-bottom: 5px; }
   .bio-text { font-size: 16px; line-height: 1.6; color: #44423A; margin-bottom: 14px; }
   .bio-btn { display: inline-block; font-family: system-ui, sans-serif; font-weight: 800; font-size: 14px; color: #EFEAD8; background: #46446E; border-radius: 999px; padding: 9px 20px; text-decoration: none; }
@@ -8110,7 +8112,7 @@ function buildHtml(d) {
   <div class="kicker">Federal markets, explained${d.scope ? ' \u00B7 ' + esc(d.scope) : ''}</div>
   <h1>${d.agencyQ ? `What\u2019s ${qUp} buying?` : `Who\u2019s buying ${qUp}${d.scope ? ' at ' + esc(d.scope) : ''}?`}</h1>
   <p class="dek">${d.agencyQ ? 'What the spending record says about the incumbents, the money in motion, and the way in.' : 'What the spending record says about the buyers, the winners, and the way in.'}</p>
-  <div class="date">${today} \u00B7 fedhoo \u00B7 <button class="share-report" onclick="__shareReport()">Share this report \u2197</button> <a class="share-report live-link" href="${'https://fedhoo.com/?q=' + encodeURIComponent((A().originalQuery || A().currentQuery || '').toLowerCase())}">Explore live on fedhoo \u2197</a></div>
+  <div class="date"><span class="date-text">${today} \u00B7 fedhoo</span><button class="share-report" onclick="__shareReport()">Share this report \u2197</button><a class="share-report live-link" href="${'https://fedhoo.com/?q=' + encodeURIComponent((A().originalQuery || A().currentQuery || '').toLowerCase())}">Explore live on fedhoo \u2197</a></div>
   <div class="hero">${money(d.total)}</div>
   ${facts(d)}
   <h2>Where the money flows</h2>
