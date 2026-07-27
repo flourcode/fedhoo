@@ -7693,9 +7693,28 @@ function gather() {
   const app = A();
   const rows = (app && app.searchData && app.searchData.active) || [];
   if (rows.length < 3) return null;
-  const scope = (app.drillState && app.drillState.level > 0 && app.drillState.currentAgency) ? clean(app.drillState.currentAgency) : null;
-  // Inside a single agency, the meaningful left axis is the buying office
-  const agKey = (c) => scope ? (c['Awarding Sub Agency'] || c['Awarding Agency'] || 'Other') : (c['Awarding Agency'] || 'Other');
+  let scope = (app.drillState && app.drillState.level > 0 && app.drillState.currentAgency) ? clean(app.drillState.currentAgency) : null;
+  let agencyQ = false;
+  if (!scope) {
+    // "DISA" / "DHS" as the search term = an agency-scoped report, phrased as one
+    const ql = String(app.displayQuery || app.currentQuery || '').toLowerCase().trim();
+    const AL = (typeof Utils !== 'undefined' && Utils.agencyAliases) || {};
+    const SAL = (typeof Utils !== 'undefined' && Utils.subAgencyAliases) || {};
+    let det = null;
+    if (AL[ql]) det = AL[ql];
+    else if (SAL[ql] && SAL[ql].name) det = SAL[ql].name;
+    else for (const v of Object.values(AL)) { if (String(v).toLowerCase() === ql) { det = v; break; } }
+    if (det) { scope = clean(det); agencyQ = true; }
+  }
+  // Flow axis: offices when drilled; for agency queries, offices only if they
+  // actually differentiate (data-driven — no taxonomy assumptions)
+  let useSub = !!(app.drillState && app.drillState.level > 0 && app.drillState.currentAgency);
+  if (agencyQ) {
+    const t = new Set(), s2 = new Set();
+    for (const c of rows) { if (c['Awarding Agency']) t.add(c['Awarding Agency']); if (c['Awarding Sub Agency']) s2.add(c['Awarding Sub Agency']); }
+    useSub = s2.size >= 2 && (t.size <= 1 || s2.size > t.size);
+  }
+  const agKey = (c) => useSub ? (c['Awarding Sub Agency'] || c['Awarding Agency'] || 'Other') : (c['Awarding Agency'] || 'Other');
   const now = Date.now(), d90 = now - 90*864e5, y3 = now - 3*365.25*864e5, cut = now + 548*864e5;
   let total = 0, expTotal = 0;
   const byAg = new Map(), byV = new Map(), flows = new Map(), offices = new Set();
@@ -7746,6 +7765,7 @@ function gather() {
     q: app.displayQuery || app.currentQuery || 'this market',
     saTotal, saTypes: [...saByType.entries()].sort((a,b)=>b[1]-a[1]),
     subs, domAg,
+    agencyQ, axisOffice: useSub,
     scope };
 }
 
@@ -7836,7 +7856,7 @@ function sankey(d) {
   const maxLab = Math.max(...[...aLab.values(), ...vLab.values()]) + 20;
   const HH = Math.max(H, maxLab);
   return `<svg viewBox="0 0 ${W} ${HH}" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, sans-serif" style="width:100%;height:auto;display:block;">
-    <text x="${x1}" y="16" text-anchor="end" font-size="17" font-weight="800" fill="#5A5748">${d.scope ? 'Office' : 'Buyer'}</text>
+    <text x="${x1}" y="16" text-anchor="end" font-size="17" font-weight="800" fill="#5A5748">${d.axisOffice ? 'Office' : 'Buyer'}</text>
     <text x="${x2+NW}" y="16" text-anchor="end" font-size="17" font-weight="800" fill="#5A5748">Prime</text>
     ${ribbons}${nodes}</svg>`;
 }
@@ -7925,7 +7945,7 @@ function sankey3(d) {
     out += `<rect x="${xS}" y="${p.y}" width="${NW}" height="${p.h}" rx="3" fill="#5A5748"/>` + lab(xS + NW + 12, sL.get(n), false, n, money(subSum.get(n))); }
   const maxL = Math.max(...[...aL.values(), ...sL.values()]) + 18;
   return `<svg viewBox="0 0 ${W} ${Math.max(H, maxL)}" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, sans-serif" style="width:100%;height:auto;display:block;">
-    <text x="${xA}" y="14" text-anchor="end" font-size="16" font-weight="800" fill="#5A5748">${d.scope ? 'Office' : 'Agency'}</text>
+    <text x="${xA}" y="14" text-anchor="end" font-size="16" font-weight="800" fill="#5A5748">${d.axisOffice ? 'Office' : 'Agency'}</text>
     <text x="${xP + NW/2}" y="14" text-anchor="middle" font-size="16" font-weight="800" fill="#5A5748">Prime</text>
     <text x="${xS + NW}" y="14" text-anchor="end" font-size="16" font-weight="800" fill="#5A5748">Subcontractor</text>
     ${out}</svg>`;
@@ -7985,9 +8005,9 @@ function facts(d) {
   const conc = Math.round(top3 / Math.max(d.total,1) * 100);
   const out = [];
   out.push(d.scope
-    ? `<strong>${esc(d.scope)}</strong> has <strong>${money(d.total)}</strong> in active ${esc(d.q)} contracts \u2014 ${d.rows.length} awards across ${d.ags.length} buying office${d.ags.length===1?'':'s'} and ${d.vs.length} vendors, counting the largest deals funded in the last 12 months.`
+    ? `<strong>${esc(d.scope)}</strong> has <strong>${money(d.total)}</strong> in active ${d.agencyQ ? '' : esc(d.q) + ' '}contracts \u2014 ${d.rows.length} awards across ${d.ags.length} ${d.axisOffice ? `buying office${d.ags.length===1?'':'s'}` : `agenc${d.ags.length===1?'y':'ies'}`} and ${d.vs.length} vendors, counting the largest deals funded in the last 12 months.`
     : `The federal government has <strong>${money(d.total)}</strong> in active ${esc(d.q)} contracts \u2014 ${d.rows.length} awards across ${d.ags.length} agencies and ${d.vs.length} vendors, counting the largest deals funded in the last 12 months.`);
-  out.push(`<strong>${esc(leader[0])}</strong> leads with ${Math.round(leader[1]/Math.max(d.total,1)*100)}% of ${d.scope ? esc(d.scope) + '\u2019s ' + esc(d.q) + ' spend' : 'the money'}. The top three vendors hold ${conc}% \u2014 ${conc >= 60 ? 'a concentrated market where the way in is usually through an incumbent, not around one' : 'a fragmented field with room to win directly'}.`);
+  out.push(`<strong>${esc(leader[0])}</strong> leads with ${Math.round(leader[1]/Math.max(d.total,1)*100)}% of ${d.scope ? esc(d.scope) + '\u2019s ' + (d.agencyQ ? '' : esc(d.q) + ' ') + 'spend' : 'the money'}. The top three vendors hold ${conc}% \u2014 ${conc >= 60 ? 'a concentrated market where the way in is usually through an incumbent, not around one' : 'a fragmented field with room to win directly'}.`);
   if (d.expTotal > 0) out.push(`<strong>${money(d.expTotal)}</strong> \u2014 ${Math.round(d.expTotal/Math.max(d.total,1)*100)}% of the market \u2014 expires within 18 months. ${d.scope ? 'That is ' + esc(d.scope) + '\u2019s renewal calendar \u2014 and your opening.' : 'In federal sales, expirations are the calendar of opportunity.'}`);
   if (d.newest) out.push(`The newest award landed in the last 90 days: ${money(d.newest.amt)} to <strong>${esc(d.newest.c['Recipient Name'])}</strong>. This market is buying now, not someday.`);
   if (d.saTotal > 0) out.push(`<strong>${money(d.saTotal)}</strong> (${Math.round(d.saTotal/Math.max(d.total,1)*100)}%) moves through set-asides${d.saTypes.length ? ' \u2014 led by ' + esc(d.saTypes.slice(0,2).map(([t])=>t).join(' and ').toLowerCase()) : ''}. For small businesses, the side door is real.`);
@@ -8063,15 +8083,15 @@ function buildHtml(d) {
   @media print { body { background: #EFEAD8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; } .share-report { display: none; } }
 </style></head><body><div class="wrap">
   <div class="kicker">Federal markets, explained${d.scope ? ' \u00B7 ' + esc(d.scope) : ''}</div>
-  <h1>Who\u2019s buying ${qUp}${d.scope ? ' at ' + esc(d.scope) : ''}?</h1>
-  <p class="dek">What the spending record says about the buyers, the winners, and the way in.</p>
+  <h1>${d.agencyQ ? `What\u2019s ${qUp} buying?` : `Who\u2019s buying ${qUp}${d.scope ? ' at ' + esc(d.scope) : ''}?`}</h1>
+  <p class="dek">${d.agencyQ ? 'What the spending record says about the incumbents, the money in motion, and the way in.' : 'What the spending record says about the buyers, the winners, and the way in.'}</p>
   <div class="date">${today} \u00B7 fedhoo \u00B7 <button class="share-report" onclick="__shareReport()">Share this report \u2197</button> <a class="share-report live-link" href="${'https://fedhoo.com/?q=' + encodeURIComponent((A().originalQuery || A().currentQuery || '').toLowerCase())}">Explore live on fedhoo \u2197</a></div>
   <div class="hero">${money(d.total)}</div>
   ${facts(d)}
   <h2>Where the money flows</h2>
   <div class="chart chart-desktop">${sankey(d)}</div>
   <div class="chart-mobile">${flowBars(d)}</div>
-  <div class="chart-cap">Active contract dollars, ${d.scope ? 'buying office' : 'buying agency'} \u2192 prime contractor. Top 100 awards funded in the last 12 months. Source: USASpending.gov</div>
+  <div class="chart-cap">Active contract dollars, ${d.axisOffice ? 'buying office' : 'buying agency'} \u2192 prime contractor. Top 100 awards funded in the last 12 months. Source: USASpending.gov</div>
   ${d.subs && d.subs.length >= 3 && sankey3(d) ? `<h2>How the work flows down</h2>
   <div class="chart chart-desktop">${sankey3(d)}</div>
   <div class="chart-mobile">${subBars(d)}</div>
