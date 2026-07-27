@@ -1216,7 +1216,7 @@ a, button, input, select { touch-action: manipulation; }
           <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
         </svg>
       </button>
-      <button class="hdr-icon-circle hidden" id="snapshotBtn" onclick="Editorial.open()" title="Market report — who’s buying this?" aria-label="Open the editorial market report">
+      <button class="hdr-icon-circle hidden" id="snapshotBtn" onclick="Editorial.open()" title="Follow the Fed Money — generate the report" aria-label="Generate a Follow the Fed Money report for this search">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6Z"/></svg>
         <svg class="snap-icon-loading hidden" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
           <path d="M21 12a9 9 0 1 1-6.22-8.56"/>
@@ -8056,7 +8056,7 @@ function buildHtml(d) {
   const qUp = esc(d.qHead || d.q);
   const url = 'https://fedhoo.com/?q=' + encodeURIComponent((A().originalQuery || A().currentQuery || '').toLowerCase());
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Who\u2019s buying ${qUp}? \u2014 fedhoo</title>
+<title>${d.agencyQ ? `What\u2019s ${qUp} buying?` : `Who\u2019s buying ${qUp}?`} \u00B7 Follow the Fed Money \u2014 fedhoo</title>
 <style>
   body { margin: 0; background: #EFEAD8; color: #2B2A24; font-family: Georgia, 'Times New Roman', serif; }
   .wrap { max-width: 1100px; margin: 0 auto; padding: 56px 28px 80px; }
@@ -8109,7 +8109,7 @@ function buildHtml(d) {
   @media print { .bio-btn { border: 1.5px solid #46446E; } }
   @media print { body { background: #EFEAD8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; } .share-report { display: none; } }
 </style></head><body><div class="wrap">
-  <div class="kicker">Federal markets, explained${d.scope ? ' \u00B7 ' + esc(d.scope) : ''}</div>
+  <div class="kicker">Follow the Fed Money${d.scope && !d.agencyQ ? ' \u00B7 ' + esc(d.scope) : ''}</div>
   <h1>${d.agencyQ ? `What\u2019s ${qUp} buying?` : `Who\u2019s buying ${qUp}${d.scope ? ' at ' + esc(d.scope) : ''}?`}</h1>
   <p class="dek">${d.agencyQ ? 'What the spending record says about the incumbents, the money in motion, and the way in.' : 'What the spending record says about the buyers, the winners, and the way in.'}</p>
   <div class="date"><span class="date-text">${today} \u00B7 fedhoo</span><button class="share-report" onclick="__shareReport()">Share this report \u2197</button><a class="share-report live-link" href="${'https://fedhoo.com/?q=' + encodeURIComponent((A().originalQuery || A().currentQuery || '').toLowerCase())}">Explore live on fedhoo \u2197</a></div>
