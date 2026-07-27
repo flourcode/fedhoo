@@ -7950,9 +7950,13 @@ function expTimeline(d) {
     .sort((a,b) => a.en - b.en).slice(0, 6);
   if (items.length < 2) return '';
   return '<h2>The next 18 months</h2><p class="fact">Every bar is a contract running out \u2014 the shorter the bar, the sooner the conversation.</p>'
-    + items.map(x => { const days = Math.ceil((x.en - now)/864e5);
-      return `<div class="fb"><div class="fb-label">${mon(x.en)} \u00B7 ${esc(x.c['Recipient Name'])} <span class="fb-arrow">at</span> ${esc(clean(x.c['Awarding Agency']||''))}</div>
-        <div class="fb-track"><div class="fb-bar tl-bar" style="width:${Math.max(6, Math.round(days/548*100))}%"></div><span class="fb-amt">${money(x.amt)} \u00B7 ${days}d</span></div></div>`; }).join('');
+    + (() => {
+      const withDays = items.map(x => ({ ...x, days: Math.ceil((x.en - now)/864e5) }));
+      const maxD = Math.max(...withDays.map(x => x.days));   // scale to the range shown
+      return withDays.map(x =>
+        `<div class="fb"><div class="fb-label">${mon(x.en)} \u00B7 ${esc(x.c['Recipient Name'])} <span class="fb-arrow">at</span> ${esc(clean(x.c['Awarding Agency']||''))}</div>
+        <div class="fb-track"><div class="fb-bar tl-bar" style="width:${Math.max(7, Math.round(x.days/Math.max(maxD,1)*100))}%"></div><span class="fb-amt">${money(x.amt)} \u00B7 ${x.days}d</span></div></div>`).join('');
+    })();
 }
 
 function fiveContracts(d) {
@@ -8044,11 +8048,18 @@ function buildHtml(d) {
   .fc-meta { font-family: system-ui, sans-serif; font-size: 14px; color: #8A8570; margin: 4px 0 8px; }
   .fc-why { font-size: 16.5px; line-height: 1.55; color: #44423A; }
   .route { font-family: system-ui, sans-serif; font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #46446E; border: 1.5px solid #46446E; border-radius: 999px; padding: 2px 10px; vertical-align: 3px; margin-left: 8px; }
-  .foot { margin-top: 64px; border-top: 3px solid #2B2A24; padding-top: 18px; font-family: system-ui, sans-serif; font-size: 14px; color: #5A5748; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+  .foot { margin-top: 28px; border-top: 3px solid #2B2A24; padding-top: 18px; font-family: system-ui, sans-serif; font-size: 14px; color: #5A5748; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
   .foot a { color: #46446E; font-weight: 800; text-decoration: none; }
   .share-report { font-family: system-ui, sans-serif; font-weight: 800; font-size: 13px; color: #46446E; background: none; border: 1.5px solid #46446E; border-radius: 999px; padding: 4px 14px; cursor: pointer; }
   .share-report:active { transform: scale(0.97); }
   .live-link { display: inline-block; text-decoration: none; background: #46446E; color: #EFEAD8; }
+  .bio { display: flex; gap: 18px; align-items: flex-start; margin-top: 64px; padding: 24px; background: #E9E3CD; border-radius: 10px; }
+  .bio img { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 2.5px solid #46446E; }
+  .bio-name { font-family: system-ui, sans-serif; font-weight: 900; font-size: 19px; margin-bottom: 5px; }
+  .bio-text { font-size: 16px; line-height: 1.6; color: #44423A; margin-bottom: 14px; }
+  .bio-btn { display: inline-block; font-family: system-ui, sans-serif; font-weight: 800; font-size: 14px; color: #EFEAD8; background: #46446E; border-radius: 999px; padding: 9px 20px; text-decoration: none; }
+  .bio-btn:active { transform: scale(0.98); }
+  @media print { .bio-btn { border: 1.5px solid #46446E; } }
   @media print { body { background: #EFEAD8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; } .share-report { display: none; } }
 </style></head><body><div class="wrap">
   <div class="kicker">Federal markets, explained${d.scope ? ' \u00B7 ' + esc(d.scope) : ''}</div>
@@ -8069,6 +8080,14 @@ function buildHtml(d) {
   <h2>This market in five contracts</h2>
   ${fiveContracts(d)}
   ${partnersHtml(d)}
+  <div class="bio">
+    <img src="https://fedhoo.com/images/oldmark.jpg" alt="Mark Flournoy" onerror="this.style.display='none'">
+    <div class="bio-body">
+      <div class="bio-name">Hi, I\u2019m Mark</div>
+      <div class="bio-text">Retired federal sales \u2014 AWS, F5, Red Hat, DISA COTR, 20 years Marines. I built fedhoo because I spent too many years pulling this data by hand before pipeline reviews. No pitch \u2014 if you want to look at your territory together, grab 20 minutes.</div>
+      <a class="bio-btn" href="https://calendly.com/markflournoy/chat-with-mark" target="_blank" rel="noopener">Chat with Mark \u2197</a>
+    </div>
+  </div>
   <div class="foot">
     <span>Every figure traces to a public award record on USASpending.gov.</span>
     <span>Live version: <a href="${url}">${url.replace('https://','')}</a></span>
