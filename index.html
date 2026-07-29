@@ -7938,27 +7938,41 @@ function sankey3(d) {
   const links = [...bySub.entries()].map(([k, amt]) => { const [p, sub] = k.split('\u0001'); return { p, sub, amt }; })
     .filter(l => primes.includes(l.p)).sort((a,b)=>b.amt-a.amt).slice(0, 10);
   if (links.length < 3) return '';
-  const subSum = new Map(), agSum2 = new Map(), agLinks = [];
-  for (const l of links) subSum.set(l.sub, (subSum.get(l.sub)||0) + l.amt);
-  for (const p of primes) {
+  // Only nodes that survived the top-10 link slice appear, sized by DRAWN
+  // flows only — no phantom $0 agencies, no nodes taller than their ribbons.
+  const alive = new Set(links.map(l => l.p));
+  const drawnPrimes = primes.filter(p => alive.has(p));
+  const subSum = new Map(), pOutDrawn = new Map();
+  for (const l of links) {
+    subSum.set(l.sub, (subSum.get(l.sub)||0) + l.amt);
+    pOutDrawn.set(l.p, (pOutDrawn.get(l.p)||0) + l.amt);
+  }
+  const agSum2 = new Map(), agLinks = [];
+  for (const p of drawnPrimes) {
     const ag = d.domAg(p) || 'Other';
-    const amt = links.filter(l => l.p === p).reduce((s,l)=>s+l.amt, 0);
+    const amt = pOutDrawn.get(p) || 0;
     agSum2.set(ag, (agSum2.get(ag)||0) + amt);
     agLinks.push({ ag, p, amt });
   }
   const subsN = [...subSum.entries()].sort((a,b)=>b[1]-a[1]).map(([s])=>s);
-  const agsN = [...agSum2.entries()].sort((a,b)=>b[1]-a[1]).map(([a])=>a);
+  const agsN = [...agSum2.entries()].filter(([,v]) => v > 0).sort((a,b)=>b[1]-a[1]).map(([a])=>a);
   const pIn = new Map(agLinks.map(l => [l.p, l.amt]));
+  const pSize = new Map(drawnPrimes.map(p => [p, Math.max(pIn.get(p)||0, pOutDrawn.get(p)||0)]));
   const W = 1240, GAP = 16;
-  const rowsMax = Math.max(agsN.length, primes.length, subsN.length);
+  const rowsMax = Math.max(agsN.length, drawnPrimes.length, subsN.length);
   const H = 86 + rowsMax * 66;
-  const totalF = links.reduce((s,l)=>s+l.amt, 0) || 1;
-  const S = (H - 50 - GAP * (rowsMax - 1)) / totalF;
+  const colSum = m => [...m.values()].reduce((a,b)=>a+b,0);
+  const budget = n => H - 50 - GAP * (Math.max(n,1) - 1);
+  // Dynamic scale: the tallest column is the binding constraint, so every
+  // column always fits the canvas — nothing can clip.
+  const S = Math.min(
+    budget(agsN.length) / Math.max(colSum(agSum2), 1),
+    budget(drawnPrimes.length) / Math.max(colSum(pSize), 1),
+    budget(subsN.length) / Math.max(colSum(subSum), 1));
   const xA = 250, xP = 608, xS = 966, NW = 22;
   const place = (names, sums) => { let y = 44; const m = new Map();
     for (const n of names) { const h = Math.max(6, (sums.get(n)||0) * S); m.set(n, { y, h, off: 0, off2: 0 }); y += h + GAP; } return m; };
-  const pSize = new Map(primes.map(p => [p, Math.max(pIn.get(p)||0, pOut.get(p)||0)]));
-  const aP = place(agsN, agSum2), pP = place(primes, pSize), sP = place(subsN, subSum);
+  const aP = place(agsN, agSum2), pP = place(drawnPrimes, pSize), sP = place(subsN, subSum);
   const COL = ['#9C7A9E','#6FA3BF','#D65F4C','#1F4A44','#C2A15C','#7B78C0'];
   const aCol = new Map(agsN.map((n,i)=>[n, COL[i % COL.length]]));
   const rib = (x1,y1,x2,y2,h,fill) => { const mx=(x1+x2)/2;
@@ -7968,7 +7982,7 @@ function sankey3(d) {
     const a = aP.get(l.ag), p = pP.get(l.p), h = Math.max(3, l.amt * S);
     out += rib(xA+NW, a.y + a.off, xP, p.y + p.off, h, aCol.get(l.ag)); a.off += h; p.off += h;
   }
-  for (const l of links.sort((a,b)=>primes.indexOf(a.p)-primes.indexOf(b.p))) {
+  for (const l of links.sort((a,b)=>drawnPrimes.indexOf(a.p)-drawnPrimes.indexOf(b.p))) {
     const p = pP.get(l.p), s = sP.get(l.sub), h = Math.max(3, l.amt * S);
     out += rib(xP+NW, p.y + p.off2, xS, s.y + s.off, h, '#5A5748'); p.off2 += h; s.off += h;
   }
@@ -7985,10 +7999,10 @@ function sankey3(d) {
   };
   const dodge = (names, pos) => { let prev = -Infinity; const m = new Map();
     for (const n of names) { const p = pos.get(n); const y = Math.max(p.y + p.h/2 + 5, prev + 25); m.set(n, y); prev = y; } return m; };
-  const aL = dodge(agsN, aP), pL = dodge(primes, pP), sL = dodge(subsN, sP);
+  const aL = dodge(agsN, aP), pL = dodge(drawnPrimes, pP), sL = dodge(subsN, sP);
   for (const n of agsN) { const p = aP.get(n);
     out += `<rect x="${xA}" y="${p.y}" width="${NW}" height="${p.h}" rx="3" fill="${aCol.get(n)}"/>` + lab(xA - 12, aL.get(n), true, clean(n), money(agSum2.get(n))); }
-  for (const n of primes) { const p = pP.get(n);
+  for (const n of drawnPrimes) { const p = pP.get(n);
     out += `<rect x="${xP}" y="${p.y}" width="${NW}" height="${p.h}" rx="3" fill="#7A7566"/>`
       + `<text x="${xP + NW/2}" y="${p.y - 7}" text-anchor="middle" font-weight="800" font-size="14" fill="#5A5748">${esc(String(n).length > 22 ? String(n).slice(0,21) + '\u2026' : n)}</text>`; }
   for (const n of subsN) { const p = sP.get(n);
