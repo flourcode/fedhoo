@@ -3178,6 +3178,15 @@ const App = {
     }
     if (!query) return;
 
+    // Co-sell map via the search box: "aws cosell", "cosell azure", "gcp isv map"
+    const csm = query.trim().toLowerCase().match(
+      /^(?:co-?sell\s+(aws|azure|gcp|google(?:\s+cloud)?)|(aws|azure|gcp|google(?:\s+cloud)?)\s+(?:co-?sell(?:\s+map)?|isv\s+map|partner\s+map))$/);
+    if (csm && window.CoSell) {
+      const key = (csm[1] || csm[2]).replace(/google(\s+cloud)?/, 'gcp');
+      CoSell.run(key);
+      return;
+    }
+
     // #8: Request deduplication — skip if same query+territory already in flight or just completed
     const searchKey = `${query.toLowerCase()}|${this.territory || ''}`;
     if (searchKey === this._lastSearchKey && this.searchData.loaded) return;
