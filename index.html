@@ -1059,6 +1059,12 @@ a, button, input, select { touch-action: manipulation; }
 .chart-caption strong { color: var(--text-primary); }
 
 
+/* ── co-sell pill row ── */
+.cosell-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 7px 2px 0; }
+.cosell-row-label { font-size: 11.5px; font-weight: 700; color: var(--text-tertiary); letter-spacing: 0.02em; }
+.cosell-pill { font-size: 11.5px; font-weight: 800; color: var(--accent); background: none; border: 1.5px solid var(--accent); border-radius: 9999px; padding: 3px 12px; cursor: pointer; font-family: inherit; }
+.cosell-pill:hover { background: var(--accent); color: #fff; }
+.cosell-pill:active { transform: scale(0.97); }
 /* ── cloud marketplace chips ── */
 .cloud-chip { font-size: 10px; font-weight: 800; letter-spacing: 0.04em; color: var(--accent); background: var(--accent-dim, rgba(70,68,110,0.10)); border-radius: 9999px; padding: 1px 7px; }
 /* ── v17: scope chips ── */
@@ -1196,6 +1202,9 @@ a, button, input, select { touch-action: manipulation; }
           autocomplete="off" autocorrect="off" autocapitalize="none"
           enterkeyhint="search" aria-label="Search federal contracts by company, keyword, or NAICS code">
         </div>
+      </div>
+      <div class="cosell-row" aria-label="CSP co-sell maps">
+        <button class="cosell-pill" onclick="CoSell.run()">Federal SaaS leaderboard</button>
       </div>
       <div class="territory-dropdown" id="territoryDropdown" role="listbox" aria-label="Territory filter">
         <button class="territory-opt active" data-key="" onclick="App.setTerritory(null)" role="option" aria-selected="true">
@@ -1528,10 +1537,7 @@ a, button, input, select { touch-action: manipulation; }
         </li>
       </ol>
       <div class="hw-cosell" style="margin-top:14px;font-size:12.5px;color:var(--text-secondary);">
-        CSP co-sell maps — which SaaS vendors have federal paper, and who holds it:
-        <a href="/?cosell=aws" style="color:var(--accent);font-weight:800;text-decoration:none;">AWS</a> ·
-        <a href="/?cosell=azure" style="color:var(--accent);font-weight:800;text-decoration:none;">Azure</a> ·
-        <a href="/?cosell=gcp" style="color:var(--accent);font-weight:800;text-decoration:none;">Google Cloud</a>
+        <a href="/?cosell=1" style="color:var(--accent);font-weight:800;text-decoration:none;">The federal SaaS leaderboard ↗</a> — every major SaaS vendor's visible federal paper, stack-ranked.
       </div>
       <div class="hw-book">
         <div class="hw-book-title">Need help reading your market?</div>
@@ -3179,11 +3185,8 @@ const App = {
     if (!query) return;
 
     // Co-sell map via the search box: "aws cosell", "cosell azure", "gcp isv map"
-    const csm = query.trim().toLowerCase().match(
-      /^(?:co-?sell\s+(aws|azure|gcp|google(?:\s+cloud)?)|(aws|azure|gcp|google(?:\s+cloud)?)\s+(?:co-?sell(?:\s+map)?|isv\s+map|partner\s+map))$/);
-    if (csm && window.CoSell) {
-      const key = (csm[1] || csm[2]).replace(/google(\s+cloud)?/, 'gcp');
-      CoSell.run(key);
+    if (/^(saas\s+(leaderboard|leaders|map)|isv\s+(map|leaderboard)|co-?sell(\s+map)?)$/i.test(query.trim()) && window.CoSell) {
+      CoSell.run();
       return;
     }
 
@@ -8330,9 +8333,10 @@ window.cloudOf = function (desc) {
 </script>
 
 <script>
-// ═══ CSP CO-SELL MAP (Tier 3) — fedhoo.com/?cosell=aws|azure|gcp ═══
-// Scans a curated ISV list through the existing USASpending proxy, ranks
-// visible federal dollars, and renders a Follow the Money league table.
+// ═══ FEDERAL SAAS LEADERBOARD (Tier 3, honest edition) ═══
+// One map, stack-ranked by visible federal dollars. The CSP dimension comes
+// from marketplace tags in award descriptions — shown per vendor, not faked
+// as three different reports.
 (function () {
 'use strict';
 const A = () => (typeof App !== 'undefined' && App) ? App : window.App;
@@ -8344,8 +8348,7 @@ const money = (n) => { const x = Number(n)||0;
 const esc = (s) => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 const clean = (a) => (typeof Utils !== 'undefined' && Utils.cleanAgency) ? Utils.cleanAgency(a) : a;
 const CHANNEL_RE = /CARAHSOFT|CDW|SHI |SHI,|INSIGHT PUBLIC|DLT SOLUTIONS|IMMIX|THUNDERCAT|WORLD WIDE TECH|IRON BOW|RED RIVER|PRESIDIO|MYTHICS|EPLUS|FOUR POINTS|TD SYNNEX|INGRAM/i;
-const ISVS = ['Crowdstrike','Snowflake','Databricks','Palo Alto Networks','Zscaler','Okta','GitLab','Splunk','Elastic','Datadog','HashiCorp','Cloudflare','Wiz','MongoDB','Confluent','Sonatype','JFrog','SentinelOne','Akamai'];
-const CSP = { aws: 'AWS', azure: 'Azure', gcp: 'Google Cloud', google: 'Google Cloud' };
+const ISVS = ['Crowdstrike','Snowflake','Databricks','Palo Alto Networks','Zscaler','Okta','GitLab','Splunk','Elastic','Datadog','HashiCorp','Cloudflare','Wiz','MongoDB','Confluent','Sonatype','JFrog','SentinelOne','Akamai','ServiceNow','Salesforce','Workday','Atlassian','Smartsheet','Box','Zoom','Adobe','Palantir','Snyk','GitHub','Docker','Nutanix','Rubrik','Cohesity','Veeam','Commvault','Netskope','Proofpoint','Tenable','Rapid7','Qualys','Trellix','Fortinet','Dynatrace','New Relic','UiPath','DocuSign','Tableau','Alteryx','Informatica'];
 
 async function scanISV(name) {
   const app = A();
@@ -8363,40 +8366,46 @@ async function scanISV(name) {
   const data = await res.json();
   const rows = (data && data.results) || [];
   const now = Date.now();
-  let total = 0, mkt = 0, exp18 = 0;
-  const byAg = new Map(), byRe = new Map();
+  let total = 0, exp18 = 0, biggest = null;
+  const byAg = new Map(), byRe = new Map(), mkt = { 'AWS': 0, 'Azure': 0, 'Google Cloud': 0 };
   for (const c of rows) {
     const endTs = Date.parse(c['End Date']) || 0;
-    if (endTs && endTs < now) continue;                 // active paper only
+    if (endTs && endTs < now) continue;
     const amt = parseFloat(c['Award Amount']) || 0;
     total += amt;
     const ag = c['Awarding Agency'] || 'Other';
     byAg.set(ag, (byAg.get(ag)||0) + amt);
-    const re = c['Recipient Name'] || '';
-    byRe.set(re, (byRe.get(re)||0) + amt);
-    if (window.cloudOf && cloudOf(c['Description'])) mkt += amt;
+    byRe.set(c['Recipient Name'] || '', (byRe.get(c['Recipient Name'] || '')||0) + amt);
+    const csp = (window.cloudOf && cloudOf(c['Description'])) || null;
+    if (csp && mkt[csp] !== undefined) mkt[csp] += amt;
     if (endTs && endTs <= now + 548*864e5) exp18 += amt;
+    if (!biggest || amt > biggest.amt) biggest = { amt, ag, gid: c['generated_internal_id'] || null };
   }
   const topAg = [...byAg.entries()].sort((a,b)=>b[1]-a[1])[0];
   const resellers = [...byRe.entries()].filter(([n]) => CHANNEL_RE.test(n)).sort((a,b)=>b[1]-a[1]);
   const topRe = resellers[0] || [...byRe.entries()].sort((a,b)=>b[1]-a[1])[0];
-  return { name, total, awards: rows.length, mkt, exp18,
+  return { name, total, awards: rows.length, exp18, mkt, biggest,
            topAg: topAg ? { n: topAg[0], v: topAg[1] } : null,
            topRe: topRe ? { n: topRe[0], v: topRe[1], isChannel: !!resellers.length } : null };
 }
 
-function reportHtml(csp, results) {
+function reportHtml(results) {
   const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
   const ranked = results.filter(r => r && r.total > 0).sort((a,b) => b.total - a.total);
   const grand = ranked.reduce((s,r)=>s+r.total,0);
-  const rowsHtml = ranked.map((r, i) => `
+  const mktTot = { 'AWS': 0, 'Azure': 0, 'Google Cloud': 0 };
+  for (const r of ranked) for (const k in mktTot) mktTot[k] += r.mkt[k] || 0;
+  const mktLine = Object.entries(mktTot).filter(([,v])=>v>0).map(([k,v])=>`${k} ${money(v)}`).join(' \u00B7 ');
+  const rowsHtml = ranked.map((r, i) => {
+    const tags = Object.entries(r.mkt).filter(([,v])=>v>0).map(([k,v])=>`${k} ${money(v)}`).join(' \u00B7 ');
+    return `
     <div class="fc">
       <div class="fc-head">${i+1}. ${esc(r.name)} \u00B7 ${money(r.total)}</div>
       <div class="fc-meta">${r.awards} active awards${r.topAg ? ' \u00B7 biggest buyer: ' + esc(clean(r.topAg.n)) + ' (' + money(r.topAg.v) + ')' : ''}${r.topRe ? ' \u00B7 ' + (r.topRe.isChannel ? 'via ' : 'top holder: ') + esc(r.topRe.n) + ' (' + money(r.topRe.v) + ')' : ''}</div>
-      <div class="fc-why">${money(r.exp18)} expires within 18 months.${r.mkt > 0 ? ' ' + money(r.mkt) + ' is visibly marketplace paper.' : ''} <a class="rcpt" href="https://fedhoo.com/?q=${encodeURIComponent(r.name.toLowerCase())}">Full ${esc(r.name)} report \u2197</a></div>
-    </div>`).join('');
+      <div class="fc-why">${r.biggest ? 'Largest single award: ' + money(r.biggest.amt) + ' at ' + esc(clean(r.biggest.ag)) + (r.biggest.gid ? ' <a class="rcpt" href="https://www.usaspending.gov/award/' + encodeURIComponent(r.biggest.gid) + '" target="_blank" rel="noopener">Record \u2197</a>' : '') + '. ' : ''}${money(r.exp18)} expires within 18 months.${tags ? ' Marketplace-tagged: ' + tags + '.' : ''} <a class="rcpt" href="https://fedhoo.com/?q=${encodeURIComponent(r.name.toLowerCase())}">Full report \u2197</a></div>
+    </div>`; }).join('');
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>The ${csp} co-sell map \u00B7 Follow the Money \u2014 fedhoo</title>
+<title>The federal SaaS leaderboard \u00B7 Follow the Money \u2014 fedhoo</title>
 <style>
   body { margin: 0; background: #EFEAD8; color: #2B2A24; font-family: Georgia, serif; }
   .wrap { max-width: 900px; margin: 0 auto; padding: 56px 28px 80px; }
@@ -8415,38 +8424,41 @@ function reportHtml(csp, results) {
   .foot { margin-top: 56px; border-top: 3px solid #2B2A24; padding-top: 16px; font-family: system-ui, sans-serif; font-size: 14px; color: #5A5748; }
 </style></head><body><div class="wrap">
   <div class="kicker">Follow the Money</div>
-  <h1>The ${csp} co-sell map</h1>
-  <p class="dek">The SaaS vendors with visible federal contract dollars, ranked. Who buys them, who holds the paper, and what expires.</p>
+  <h1>The federal SaaS leaderboard</h1>
+  <p class="dek">${ISVS.length} SaaS vendors, stack-ranked by visible federal contract dollars. Who buys them, who holds the paper, what expires.</p>
   <div class="date">${today} \u00B7 fedhoo</div>
   <div class="hero">${money(grand)}</div>
-  <p class="fact">Across ${ranked.length} tracked ISVs, <strong>${money(grand)}</strong> in active federal contracts is visible in the public record. Most of it moves through resellers, so the vendor's own name rarely holds the paper. Marketplace figures come from award descriptions and understate the real number; treat every figure as a floor.</p>
+  <p class="fact">Across ${ranked.length} vendors with visible paper, <strong>${money(grand)}</strong> in active federal contracts shows in the public record. Most SaaS rides through resellers or inside integrator task orders, so every figure here is a floor.${mktLine ? ` Marketplace-tagged paper: <strong>${mktLine}</strong> \u2014 from award descriptions, also a floor.` : ''}</p>
   ${rowsHtml}
-  <div class="foot">Curated ISV list, top 60 awards each, last 12 months, active paper only. Every figure traces to USASpending.gov. Live at fedhoo.com</div>
+  <div class="foot">Vendor list is curated (${ISVS.length} names) \u2014 a vendor missing from this page was not scanned, not zero. Top 60 awards per vendor, last 12 months, active paper only. Every figure traces to USASpending.gov. Live at fedhoo.com</div>
 </div></body></html>`;
 }
 
 window.CoSell = {
-  async run(cspKey) {
-    const csp = CSP[String(cspKey).toLowerCase()] || 'AWS';
+  async run() {
     let ov = document.getElementById('cosellOverlay');
     if (ov) ov.remove();
     ov = document.createElement('div');
     ov.id = 'cosellOverlay';
     ov.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#EFEAD8;display:flex;align-items:center;justify-content:center;';
     ov.innerHTML = '<div style="font-family:system-ui,sans-serif;text-align:center;color:#5A5748;padding:24px;">'
-      + '<div style="font-weight:900;font-size:22px;color:#2B2A24;margin-bottom:10px;">Building the ' + esc(csp) + ' co-sell map</div>'
+      + '<div style="font-weight:900;font-size:22px;color:#2B2A24;margin-bottom:10px;">Building the federal SaaS leaderboard</div>'
       + '<div id="cosellStatus" style="font-size:14px;">Warming up\u2026</div></div>';
     document.body.appendChild(ov);
     const status = ov.querySelector('#cosellStatus');
-    const results = [];
-    for (let i = 0; i < ISVS.length; i++) {
-      status.textContent = `Scanning ${ISVS[i]} (${i+1}/${ISVS.length})\u2026`;
-      try { results.push(await scanISV(ISVS[i])); }
-      catch (e) { results.push(null); }
+    const results = new Array(ISVS.length).fill(null);
+    let done = 0;
+    const BATCH = 4;
+    for (let i = 0; i < ISVS.length; i += BATCH) {
+      const slice = ISVS.slice(i, i + BATCH);
+      await Promise.all(slice.map((name, j) =>
+        scanISV(name).then(r => { results[i + j] = r; })
+          .catch(() => {})
+          .finally(() => { done++; status.textContent = `Scanned ${done} of ${ISVS.length} vendors\u2026`; })));
     }
-    const html = reportHtml(csp, results);
+    const html = reportHtml(results);
     ov.innerHTML = '<button aria-label="Back" style="position:fixed;top:14px;right:14px;z-index:10000;width:40px;height:40px;border-radius:50%;border:1.5px solid #46446E;background:#EFEAD8;color:#46446E;font-size:19px;font-weight:800;cursor:pointer;font-family:system-ui,sans-serif;">\u2715</button>'
-      + '<iframe style="width:100%;height:100%;border:0;display:block;" title="Co-sell map"></iframe>';
+      + '<iframe style="width:100%;height:100%;border:0;display:block;" title="SaaS leaderboard"></iframe>';
     ov.querySelector('button').onclick = () => ov.remove();
     ov.querySelector('iframe').srcdoc = html;
   },
