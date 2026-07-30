@@ -3257,6 +3257,7 @@ const App = {
     const sheetAic = DOM.get('aiContentContainer'); if (sheetAic) sheetAic.innerHTML = '';
     const ql = DOM.get('sheetQuestionLabel'); if (ql) { ql.textContent = ''; ql.classList.add('hidden'); }
     document.getElementById('cosellCard')?.remove();
+    if (window.CoSellCard) CoSellCard.active = false;
     DOM.hide('expiringCard');
     DOM.hide('recentCard');
     DOM.hide('primesCard');
@@ -7551,6 +7552,7 @@ window.SyncCards = {
     if (!app || !app.searchData || !app.searchData.loaded) return;
     if (window.PartnerFit) PartnerFit.render();
     if (window.Deals) Deals.render();
+    if (window.CoSellCard) CoSellCard.render();
     if (window.ChartCaptions) ChartCaptions.update(app._chartView || 'treemap');
     const ds = app.drillState || { level: 0 };
     const clean = (typeof Utils !== 'undefined' && Utils.cleanAgency) ? Utils.cleanAgency : (x => x);
@@ -8369,36 +8371,72 @@ async function scanISV(name) {
   return ((data && data.results) || []).map(c => { c._isv = name; c._endTs = Date.parse(c['End Date']) || 0; return c; });
 }
 
-function leaderCardHtml(active) {
-  const by = new Map();
-  for (const c of active) {
-    if (!c._isv) continue;
-    let r = by.get(c._isv);
-    if (!r) { r = { total: 0, awards: 0, byAg: new Map(), byRe: new Map(), mkt: {} }; by.set(c._isv, r); }
-    const amt = parseFloat(c['Award Amount']) || 0;
-    r.total += amt; r.awards++;
-    r.byAg.set(c['Awarding Agency']||'Other', (r.byAg.get(c['Awarding Agency']||'Other')||0) + amt);
-    r.byRe.set(c['Recipient Name']||'', (r.byRe.get(c['Recipient Name']||'')||0) + amt);
-    const csp = (window.cloudOf && cloudOf(c['Description'])) || null;
-    if (csp) r.mkt[csp] = (r.mkt[csp]||0) + amt;
-  }
-  const ranked = [...by.entries()].filter(([,r]) => r.total > 0).sort((a,b) => b[1].total - a[1].total);
-  if (!ranked.length) return '';
-  const rows = ranked.map(([name, r], i) => {
-    const topAg = [...r.byAg.entries()].sort((a,b)=>b[1]-a[1])[0];
-    const chans = [...r.byRe.entries()].filter(([n]) => CHANNEL_RE.test(n)).sort((a,b)=>b[1]-a[1]);
-    const topRe = chans[0] || [...r.byRe.entries()].sort((a,b)=>b[1]-a[1])[0];
-    const tags = Object.entries(r.mkt).map(([k,v]) => `${k} ${money(v)}`).join(' \u00B7 ');
-    return `<div class="dl-row" style="cursor:default;">
-      <div class="dl-main">
-        <div class="dl-line1"><span class="dl-vendor">${i+1}. ${esc(name)}</span><span class="dl-amt">${money(r.total)}</span></div>
-        <div class="dl-line2">${r.awards} award${r.awards===1?'':'s'}${topAg ? ' \u00B7 top buyer: ' + esc(clean(topAg[0])) : ''}${topRe ? ' \u00B7 ' + (chans.length ? 'via ' : 'held by ') + esc(topRe[0]) : ''}${tags ? ' \u00B7 <span class="cloud-chip">' + tags + '</span>' : ''}</div>
-        <div class="pf-actions"><button class="pf-link" onclick="App.runSearch(${JSON.stringify(name.toLowerCase())})">Full market \u2192</button></div>
-      </div></div>`;
-  }).join('');
-  return `<div class="card-header"><div><div class="card-title">Federal SaaS leaderboard</div>
-    <div class="card-desc">${ranked.length} vendors with visible paper, ranked by active dollars. A vendor not listed was not scanned, not zero. Figures are floors \u2014 most SaaS rides through resellers and task orders.</div></div></div>${rows}`;
-}
+// ── Scoped leaderboard: ranks vendors within the CURRENT drill scope. ──
+// "I cover VA" = pick VA in the card (or tap it in the treemap) — the whole
+// app drills there and this card re-ranks to vendors with paper at VA.
+window.CoSellCard = {
+  active: false,
+  render() {
+    if (!this.active) return;
+    const app = A();
+    const card = document.getElementById('cosellCard');
+    if (!card || !app.searchData || !app.searchData.loaded) return;
+    const rows = app.searchData.active || [];
+    const ds = app.drillState || { level: 0 };
+    const scoped = ds.level >= 1 && ds.currentAgency;
+    const scopeLabel = ds.level >= 2 && ds.currentSubAgency ? clean(ds.currentSubAgency)
+                     : scoped ? clean(ds.currentAgency) : null;
+    // agency picker options from the BASELINE pool (so the list doesn't shrink as you drill)
+    const base = app.searchData.baseline || rows;
+    const agSum = new Map();
+    for (const c of base) { const a = c['Awarding Agency'] || 'Other';
+      agSum.set(a, (agSum.get(a)||0) + (parseFloat(c['Award Amount'])||0)); }
+    const agOpts = [...agSum.entries()].sort((a,b)=>b[1]-a[1]).slice(0, 20);
+    const now = Date.now(), cut = now + 548*864e5;
+    // rank vendors within scope
+    const by = new Map();
+    for (const c of rows) {
+      if (!c._isv) continue;
+      let r = by.get(c._isv);
+      if (!r) { r = { total: 0, awards: 0, exp: 0, byOff: new Map(), byRe: new Map(), mkt: {} }; by.set(c._isv, r); }
+      const amt = parseFloat(c['Award Amount']) || 0;
+      r.total += amt; r.awards++;
+      const endTs = c._endTs || Date.parse(c['End Date']) || 0;
+      if (endTs > now && endTs <= cut) r.exp += amt;
+      const off = scoped ? (c['Awarding Sub Agency'] || c['Awarding Agency'] || '') : (c['Awarding Agency'] || '');
+      r.byOff.set(off, (r.byOff.get(off)||0) + amt);
+      r.byRe.set(c['Recipient Name']||'', (r.byRe.get(c['Recipient Name']||'')||0) + amt);
+      const csp = (window.cloudOf && cloudOf(c['Description'])) || null;
+      if (csp) r.mkt[csp] = (r.mkt[csp]||0) + amt;
+    }
+    const ranked = [...by.entries()].filter(([,r]) => r.total > 0).sort((a,b) => b[1].total - a[1].total);
+    const cur = scoped ? (ds.currentAgency || '') : '';
+    const picker = `<select id="cosellPatch" onchange="CoSellCard.pick(this.value)" style="font: inherit; font-size: var(--text-xs); font-weight: 700; color: var(--accent); background: none; border: 1.5px solid var(--accent); border-radius: 9999px; padding: 3px 10px; max-width: 240px;">
+      <option value="">All agencies</option>
+      ${agOpts.map(([a]) => `<option value="${esc(a)}" ${a === cur ? 'selected' : ''}>${esc(clean(a))}</option>`).join('')}
+    </select>`;
+    const rowsHtml = ranked.length ? ranked.map(([name, r], i) => {
+      const topOff = [...r.byOff.entries()].sort((a,b)=>b[1]-a[1])[0];
+      const chans = [...r.byRe.entries()].filter(([n]) => CHANNEL_RE.test(n)).sort((a,b)=>b[1]-a[1]);
+      const topRe = chans[0] || [...r.byRe.entries()].sort((a,b)=>b[1]-a[1])[0];
+      const tags = Object.entries(r.mkt).map(([k,v]) => `${k} ${money(v)}`).join(' \u00B7 ');
+      return `<div class="dl-row" style="cursor:default;">
+        <div class="dl-main">
+          <div class="dl-line1"><span class="dl-vendor">${i+1}. ${esc(name)}</span><span class="dl-amt">${money(r.total)}</span></div>
+          <div class="dl-line2">${r.awards} award${r.awards===1?'':'s'}${r.exp > 0 ? ' \u00B7 <strong>' + money(r.exp) + ' expiring \u226418mo</strong>' : ''}${topOff && topOff[0] ? ' \u00B7 ' + (scoped ? 'office: ' : 'top buyer: ') + esc(clean(topOff[0])) : ''}${topRe ? ' \u00B7 ' + (chans.length ? 'via ' : 'held by ') + esc(topRe[0]) : ''}${tags ? ' \u00B7 <span class="cloud-chip">' + tags + '</span>' : ''}</div>
+          <div class="pf-actions"><button class="pf-link" onclick="App.runSearch(${JSON.stringify(name.toLowerCase())})">Full market \u2192</button></div>
+        </div></div>`;
+    }).join('') : `<div class="dl-line2" style="padding: 12px 4px;">No tracked SaaS paper visible ${scopeLabel ? 'at ' + esc(scopeLabel) : 'here'}. That means not visible in prime awards \u2014 check the sub map and Partner Fit for the route in.</div>`;
+    card.innerHTML = `<div class="card-header"><div style="flex:1;"><div class="card-title">SaaS co-sell${scopeLabel ? ' \u00B7 ' + esc(scopeLabel) : ''}</div>
+      <div class="card-desc">Your patch: ${picker}<span style="margin-left:8px;">Ranked by active dollars in scope. Figures are floors; a vendor not listed was not scanned.</span></div></div></div>${rowsHtml}`;
+  },
+  pick(agency) {
+    const app = A();
+    if (!agency) { app.resetDrill && app.resetDrill(); }
+    else { app.drillToAgency && app.drillToAgency(agency); }
+    // drill paths call SyncCards.refresh, which re-renders this card
+  },
+};
 
 window.CoSell = {
   async run() {
@@ -8454,7 +8492,7 @@ window.CoSell = {
                                  award_type_codes: ['A','B','C','D'], keywords: ISVS.slice(0, 8) };
       app.renderSubawards && app.renderSubawards();
     } catch (e) {}
-    // leaderboard card at the top of the grid
+    // scoped leaderboard card at the top of the grid (re-renders on every drill)
     try {
       let card = document.getElementById('cosellCard');
       const grid = document.getElementById('resultsGrid');
@@ -8464,7 +8502,8 @@ window.CoSell = {
         card.className = 'app-card wide';
         grid.insertBefore(card, grid.firstChild);
       }
-      if (card) card.innerHTML = leaderCardHtml(active);
+      window.CoSellCard.active = true;
+      CoSellCard.render();
     } catch (e) {}
     ov.remove();
     try { window.scrollTo({ top: 0 }); } catch (e) {}
