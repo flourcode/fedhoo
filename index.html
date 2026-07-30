@@ -3256,6 +3256,7 @@ const App = {
     this.closeArtiSheet();
     const sheetAic = DOM.get('aiContentContainer'); if (sheetAic) sheetAic.innerHTML = '';
     const ql = DOM.get('sheetQuestionLabel'); if (ql) { ql.textContent = ''; ql.classList.add('hidden'); }
+    document.getElementById('cosellCard')?.remove();
     DOM.hide('expiringCard');
     DOM.hide('recentCard');
     DOM.hide('primesCard');
@@ -7744,7 +7745,7 @@ function fyCloseLine() {
 }
 
 // ── smart casing: acronyms upper, brands mixed, ordinary words plain ──
-const SPECIAL = { fedramp:'FedRAMP', devsecops:'DevSecOps', devops:'DevOps', govcloud:'GovCloud',
+const SPECIAL = { saas:'SaaS', paas:'PaaS', iaas:'IaaS', fedramp:'FedRAMP', devsecops:'DevSecOps', devops:'DevOps', govcloud:'GovCloud',
   vmware:'VMware', mcafee:'McAfee', servicenow:'ServiceNow', javascript:'JavaScript', github:'GitHub' };
 const ACRO_EXTRA = ['aws','saic','sbom','ibm','sap','ai','ml','iot','rpa','vdi','sase','soc','siem',
   'edr','xdr','mdr','erp','crm','hcm','api','cui','cmmc','rmf','ato','it','ot','5g','gis',
@@ -8333,10 +8334,11 @@ window.cloudOf = function (desc) {
 </script>
 
 <script>
-// ═══ FEDERAL SAAS LEADERBOARD (Tier 3, honest edition) ═══
-// One map, stack-ranked by visible federal dollars. The CSP dimension comes
-// from marketplace tags in award descriptions — shown per vendor, not faked
-// as three different reports.
+// ═══ FEDERAL SAAS LEADERBOARD — integrated (Tier 3) ═══
+// The scan pools raw award rows into App.searchData and lets the normal
+// pipeline render: treemap, flow, sub map, Contracts, Partner Fit, and the
+// Follow the Money report all work on the pooled market. The leaderboard
+// itself is a card inside the results grid, not a separate page.
 (function () {
 'use strict';
 const A = () => (typeof App !== 'undefined' && App) ? App : window.App;
@@ -8354,113 +8356,118 @@ async function scanISV(name) {
   const app = A();
   const end = new Date(), start = new Date(); start.setFullYear(end.getFullYear() - 1);
   const iso = d => d.toISOString().split('T')[0];
+  const fields = (app && app.AWARD_FIELDS) || ['Award ID','Recipient Name','Awarding Agency','Awarding Sub Agency','Award Amount','Start Date','End Date','Description','generated_internal_id','NAICS','PSC','Type of Set Aside'];
   const body = {
     request_type: 'usaspending_proxy',
     endpoint: '/search/spending_by_award/',
     payload: { filters: { time_period: [{ start_date: iso(start), end_date: iso(end) }],
                           award_type_codes: ['A','B','C','D'], keywords: [name] },
-               fields: ['Award ID','Recipient Name','Awarding Agency','Awarding Sub Agency','Award Amount','Start Date','End Date','Description','generated_internal_id'],
-               limit: 60, sort: 'Award Amount', order: 'desc' } };
+               fields, limit: 60, sort: 'Award Amount', order: 'desc' } };
   const res = await fetch(app.PROXY_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-  if (!res.ok) return null;
+  if (!res.ok) return [];
   const data = await res.json();
-  const rows = (data && data.results) || [];
-  const now = Date.now();
-  let total = 0, exp18 = 0, biggest = null;
-  const byAg = new Map(), byRe = new Map(), mkt = { 'AWS': 0, 'Azure': 0, 'Google Cloud': 0 };
-  for (const c of rows) {
-    const endTs = Date.parse(c['End Date']) || 0;
-    if (endTs && endTs < now) continue;
-    const amt = parseFloat(c['Award Amount']) || 0;
-    total += amt;
-    const ag = c['Awarding Agency'] || 'Other';
-    byAg.set(ag, (byAg.get(ag)||0) + amt);
-    byRe.set(c['Recipient Name'] || '', (byRe.get(c['Recipient Name'] || '')||0) + amt);
-    const csp = (window.cloudOf && cloudOf(c['Description'])) || null;
-    if (csp && mkt[csp] !== undefined) mkt[csp] += amt;
-    if (endTs && endTs <= now + 548*864e5) exp18 += amt;
-    if (!biggest || amt > biggest.amt) biggest = { amt, ag, gid: c['generated_internal_id'] || null };
-  }
-  const topAg = [...byAg.entries()].sort((a,b)=>b[1]-a[1])[0];
-  const resellers = [...byRe.entries()].filter(([n]) => CHANNEL_RE.test(n)).sort((a,b)=>b[1]-a[1]);
-  const topRe = resellers[0] || [...byRe.entries()].sort((a,b)=>b[1]-a[1])[0];
-  return { name, total, awards: rows.length, exp18, mkt, biggest,
-           topAg: topAg ? { n: topAg[0], v: topAg[1] } : null,
-           topRe: topRe ? { n: topRe[0], v: topRe[1], isChannel: !!resellers.length } : null };
+  return ((data && data.results) || []).map(c => { c._isv = name; c._endTs = Date.parse(c['End Date']) || 0; return c; });
 }
 
-function reportHtml(results) {
-  const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-  const ranked = results.filter(r => r && r.total > 0).sort((a,b) => b.total - a.total);
-  const grand = ranked.reduce((s,r)=>s+r.total,0);
-  const mktTot = { 'AWS': 0, 'Azure': 0, 'Google Cloud': 0 };
-  for (const r of ranked) for (const k in mktTot) mktTot[k] += r.mkt[k] || 0;
-  const mktLine = Object.entries(mktTot).filter(([,v])=>v>0).map(([k,v])=>`${k} ${money(v)}`).join(' \u00B7 ');
-  const rowsHtml = ranked.map((r, i) => {
-    const tags = Object.entries(r.mkt).filter(([,v])=>v>0).map(([k,v])=>`${k} ${money(v)}`).join(' \u00B7 ');
-    return `
-    <div class="fc">
-      <div class="fc-head">${i+1}. ${esc(r.name)} \u00B7 ${money(r.total)}</div>
-      <div class="fc-meta">${r.awards} active awards${r.topAg ? ' \u00B7 biggest buyer: ' + esc(clean(r.topAg.n)) + ' (' + money(r.topAg.v) + ')' : ''}${r.topRe ? ' \u00B7 ' + (r.topRe.isChannel ? 'via ' : 'top holder: ') + esc(r.topRe.n) + ' (' + money(r.topRe.v) + ')' : ''}</div>
-      <div class="fc-why">${r.biggest ? 'Largest single award: ' + money(r.biggest.amt) + ' at ' + esc(clean(r.biggest.ag)) + (r.biggest.gid ? ' <a class="rcpt" href="https://www.usaspending.gov/award/' + encodeURIComponent(r.biggest.gid) + '" target="_blank" rel="noopener">Record \u2197</a>' : '') + '. ' : ''}${money(r.exp18)} expires within 18 months.${tags ? ' Marketplace-tagged: ' + tags + '.' : ''} <a class="rcpt" href="https://fedhoo.com/?q=${encodeURIComponent(r.name.toLowerCase())}">Full report \u2197</a></div>
-    </div>`; }).join('');
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>The federal SaaS leaderboard \u00B7 Follow the Money \u2014 fedhoo</title>
-<style>
-  body { margin: 0; background: #EFEAD8; color: #2B2A24; font-family: Georgia, serif; }
-  .wrap { max-width: 900px; margin: 0 auto; padding: 56px 28px 80px; }
-  .kicker { font-family: system-ui, sans-serif; font-weight: 800; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: #8A8570; }
-  h1 { font-family: system-ui, sans-serif; font-weight: 900; font-size: clamp(34px, 6vw, 52px); line-height: 1.05; margin: 10px 0 6px; }
-  .dek { font-size: 19px; color: #5A5748; margin: 0 0 8px; }
-  .date { font-family: system-ui, sans-serif; font-size: 13px; color: #8A8570; margin-bottom: 30px; }
-  .hero { font-family: system-ui, sans-serif; font-weight: 900; font-size: clamp(48px, 9vw, 80px); color: #46446E; margin: 6px 0 28px; }
-  .fact { font-size: 17.5px; line-height: 1.65; margin: 0 0 22px; }
-  .fact strong { color: #46446E; }
-  .fc { border-top: 2px solid #D9D2B8; padding: 16px 0; }
-  .fc-head { font-family: system-ui, sans-serif; font-weight: 800; font-size: 19px; }
-  .fc-meta { font-family: system-ui, sans-serif; font-size: 14px; color: #8A8570; margin: 4px 0 7px; }
-  .fc-why { font-size: 16px; line-height: 1.55; color: #44423A; }
-  .rcpt { font-family: system-ui, sans-serif; font-weight: 800; color: #46446E; text-decoration: none; }
-  .foot { margin-top: 56px; border-top: 3px solid #2B2A24; padding-top: 16px; font-family: system-ui, sans-serif; font-size: 14px; color: #5A5748; }
-</style></head><body><div class="wrap">
-  <div class="kicker">Follow the Money</div>
-  <h1>The federal SaaS leaderboard</h1>
-  <p class="dek">${ISVS.length} SaaS vendors, stack-ranked by visible federal contract dollars. Who buys them, who holds the paper, what expires.</p>
-  <div class="date">${today} \u00B7 fedhoo</div>
-  <div class="hero">${money(grand)}</div>
-  <p class="fact">Across ${ranked.length} vendors with visible paper, <strong>${money(grand)}</strong> in active federal contracts shows in the public record. Most SaaS rides through resellers or inside integrator task orders, so every figure here is a floor.${mktLine ? ` Marketplace-tagged paper: <strong>${mktLine}</strong> \u2014 from award descriptions, also a floor.` : ''}</p>
-  ${rowsHtml}
-  <div class="foot">Vendor list is curated (${ISVS.length} names) \u2014 a vendor missing from this page was not scanned, not zero. Top 60 awards per vendor, last 12 months, active paper only. Every figure traces to USASpending.gov. Live at fedhoo.com</div>
-</div></body></html>`;
+function leaderCardHtml(active) {
+  const by = new Map();
+  for (const c of active) {
+    if (!c._isv) continue;
+    let r = by.get(c._isv);
+    if (!r) { r = { total: 0, awards: 0, byAg: new Map(), byRe: new Map(), mkt: {} }; by.set(c._isv, r); }
+    const amt = parseFloat(c['Award Amount']) || 0;
+    r.total += amt; r.awards++;
+    r.byAg.set(c['Awarding Agency']||'Other', (r.byAg.get(c['Awarding Agency']||'Other')||0) + amt);
+    r.byRe.set(c['Recipient Name']||'', (r.byRe.get(c['Recipient Name']||'')||0) + amt);
+    const csp = (window.cloudOf && cloudOf(c['Description'])) || null;
+    if (csp) r.mkt[csp] = (r.mkt[csp]||0) + amt;
+  }
+  const ranked = [...by.entries()].filter(([,r]) => r.total > 0).sort((a,b) => b[1].total - a[1].total);
+  if (!ranked.length) return '';
+  const rows = ranked.map(([name, r], i) => {
+    const topAg = [...r.byAg.entries()].sort((a,b)=>b[1]-a[1])[0];
+    const chans = [...r.byRe.entries()].filter(([n]) => CHANNEL_RE.test(n)).sort((a,b)=>b[1]-a[1]);
+    const topRe = chans[0] || [...r.byRe.entries()].sort((a,b)=>b[1]-a[1])[0];
+    const tags = Object.entries(r.mkt).map(([k,v]) => `${k} ${money(v)}`).join(' \u00B7 ');
+    return `<div class="dl-row" style="cursor:default;">
+      <div class="dl-main">
+        <div class="dl-line1"><span class="dl-vendor">${i+1}. ${esc(name)}</span><span class="dl-amt">${money(r.total)}</span></div>
+        <div class="dl-line2">${r.awards} award${r.awards===1?'':'s'}${topAg ? ' \u00B7 top buyer: ' + esc(clean(topAg[0])) : ''}${topRe ? ' \u00B7 ' + (chans.length ? 'via ' : 'held by ') + esc(topRe[0]) : ''}${tags ? ' \u00B7 <span class="cloud-chip">' + tags + '</span>' : ''}</div>
+        <div class="pf-actions"><button class="pf-link" onclick="App.runSearch(${JSON.stringify(name.toLowerCase())})">Full market \u2192</button></div>
+      </div></div>`;
+  }).join('');
+  return `<div class="card-header"><div><div class="card-title">Federal SaaS leaderboard</div>
+    <div class="card-desc">${ranked.length} vendors with visible paper, ranked by active dollars. A vendor not listed was not scanned, not zero. Figures are floors \u2014 most SaaS rides through resellers and task orders.</div></div></div>${rows}`;
 }
 
 window.CoSell = {
   async run() {
+    const app = A();
     let ov = document.getElementById('cosellOverlay');
     if (ov) ov.remove();
     ov = document.createElement('div');
     ov.id = 'cosellOverlay';
-    ov.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#EFEAD8;display:flex;align-items:center;justify-content:center;';
-    ov.innerHTML = '<div style="font-family:system-ui,sans-serif;text-align:center;color:#5A5748;padding:24px;">'
-      + '<div style="font-weight:900;font-size:22px;color:#2B2A24;margin-bottom:10px;">Building the federal SaaS leaderboard</div>'
+    ov.style.cssText = 'position:fixed;inset:0;z-index:9999;background:var(--bg-app,#F4F3F8);display:flex;align-items:center;justify-content:center;';
+    ov.innerHTML = '<div style="font-family:inherit;text-align:center;color:var(--text-secondary);padding:24px;">'
+      + '<div style="font-weight:900;font-size:20px;color:var(--text-primary);margin-bottom:8px;">Building the federal SaaS leaderboard</div>'
       + '<div id="cosellStatus" style="font-size:14px;">Warming up\u2026</div></div>';
     document.body.appendChild(ov);
     const status = ov.querySelector('#cosellStatus');
-    const results = new Array(ISVS.length).fill(null);
+    const all = [];
     let done = 0;
     const BATCH = 4;
     for (let i = 0; i < ISVS.length; i += BATCH) {
       const slice = ISVS.slice(i, i + BATCH);
-      await Promise.all(slice.map((name, j) =>
-        scanISV(name).then(r => { results[i + j] = r; })
+      await Promise.all(slice.map(name =>
+        scanISV(name).then(rows => { all.push(...rows); })
           .catch(() => {})
           .finally(() => { done++; status.textContent = `Scanned ${done} of ${ISVS.length} vendors\u2026`; })));
     }
-    const html = reportHtml(results);
-    ov.innerHTML = '<button aria-label="Back" style="position:fixed;top:14px;right:14px;z-index:10000;width:40px;height:40px;border-radius:50%;border:1.5px solid #46446E;background:#EFEAD8;color:#46446E;font-size:19px;font-weight:800;cursor:pointer;font-family:system-ui,sans-serif;">\u2715</button>'
-      + '<iframe style="width:100%;height:100%;border:0;display:block;" title="SaaS leaderboard"></iframe>';
-    ov.querySelector('button').onclick = () => ov.remove();
-    ov.querySelector('iframe').srcdoc = html;
+    // pool + dedupe (an award can mention two ISVs; first scan wins)
+    const seen = new Set(), pool = [];
+    for (const c of all) {
+      const k = c['generated_internal_id'] || (c['Award ID'] + '|' + c['Award Amount']);
+      if (seen.has(k)) continue; seen.add(k);
+      pool.push(c);
+    }
+    pool.sort((a, b) => (parseFloat(b['Award Amount'])||0) - (parseFloat(a['Award Amount'])||0));
+
+    // hand the pooled market to the normal pipeline
+    try { app.currentQuery = 'saas'; app.originalQuery = 'saas'; app.displayQuery = 'SaaS'; } catch (e) {}
+    try { app.resetDrill && app.resetDrill(true); } catch (e) {}
+    const active = (typeof Utils !== 'undefined' && Utils.filterActiveContracts) ? Utils.filterActiveContracts(pool) : pool;
+    app.searchData = { raw: pool, active, baseline: active, filter: null, loaded: true };
+    try { app.analyzeMarket(active); } catch (e) {}
+    try {
+      if (app.UI && app.UI.marketCardTitle) app.UI.marketCardTitle.textContent = 'FEDERAL SAAS LEADERBOARD';
+      if (app.UI && app.UI.marketCardDesc) app.UI.marketCardDesc.textContent = 'Pooled from ' + ISVS.length + ' tracked vendors. Tap any agency or vendor to drill deeper.';
+    } catch (e) {}
+    try { DOM.show('resultsGrid'); DOM.show('shareBtn'); DOM.show('snapshotBtn'); } catch (e) {}
+    try { window.PartnerFit && PartnerFit.render(); } catch (e) {}
+    try { window.Deals && Deals.render(); } catch (e) {}
+    try { window.ChartCaptions && ChartCaptions.update(app._chartView || 'treemap'); } catch (e) {}
+    try { window.MatchScope && MatchScope.init(); } catch (e) {}
+    try {
+      const end = new Date(), start = new Date(); start.setFullYear(end.getFullYear() - 1);
+      const iso = d => d.toISOString().split('T')[0];
+      app._lastSearchFilters = { time_period: [{ start_date: iso(start), end_date: iso(end) }],
+                                 award_type_codes: ['A','B','C','D'], keywords: ISVS.slice(0, 8) };
+      app.renderSubawards && app.renderSubawards();
+    } catch (e) {}
+    // leaderboard card at the top of the grid
+    try {
+      let card = document.getElementById('cosellCard');
+      const grid = document.getElementById('resultsGrid');
+      if (!card && grid) {
+        card = document.createElement('div');
+        card.id = 'cosellCard';
+        card.className = 'app-card wide';
+        grid.insertBefore(card, grid.firstChild);
+      }
+      if (card) card.innerHTML = leaderCardHtml(active);
+    } catch (e) {}
+    ov.remove();
+    try { window.scrollTo({ top: 0 }); } catch (e) {}
   },
 };
 })();
