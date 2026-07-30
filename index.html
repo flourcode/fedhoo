@@ -7305,6 +7305,7 @@ function rowsFor(sort) {
       else { pat='maturing'; why='Long-run contract entering its final stretch.'; }
     }
     out.push({ id, amt, end, start, pat, why,
+      gid: c['generated_internal_id'] || null,
       v: c['Recipient Name']||'Unknown',
       ag: (c['Awarding Sub Agency'] && c['Awarding Sub Agency'] !== c['Awarding Agency']) ? c['Awarding Sub Agency'] : (c['Awarding Agency']||''),
       desc: String(c['Description']||'').slice(0,100) });
@@ -7339,7 +7340,10 @@ window.Deals = {
         + '<div class="dl-line1">' + esc(r.v) + ' \u00B7 <span class="dl-amt">' + money(r.amt) + '</span></div>'
         + '<div class="dl-line2">' + esc(r.ag) + ' \u2014 ' + dateBit + (r.desc ? ' \u00B7 ' + esc(r.desc) : '') + '</div>'
         + (r.why ? '<div class="dl-why">' + esc(r.why) + '</div>' : '')
-        + '<div class="pf-actions"><button class="pf-link" data-dlask="' + i + '">Ask Mo</button></div>'
+        + '<div class="pf-actions"><button class="pf-link" data-dlask="' + i + '">Ask Mo</button>'
+        + (r.gid ? '<a class="pf-link" href="https://www.usaspending.gov/award/' + encodeURIComponent(r.gid) + '" target="_blank" rel="noopener">Record \u2197</a>' : '')
+        + (r.pat !== 'active' ? '<a class="pf-link" href="https://sam.gov/search/?keywords=' + encodeURIComponent(r.v) + '" target="_blank" rel="noopener">SAM.gov \u2197</a>' : '')
+        + '</div>'
         + '</div></div>';
     }).join('');
     if (window.collapseRows) collapseRows(list, '.dl-row', 6, 'Deals');
@@ -7700,6 +7704,20 @@ const esc = (s) => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;
 const clean = (a) => (typeof Utils !== 'undefined' && Utils.cleanAgency) ? Utils.cleanAgency(a) : a;
 const PAL = ['#9C7A9E','#6FA3BF','#D65F4C','#1F4A44','#C2A15C','#7B78C0','#3D3B45','#8FA98F'];
 const mon = (ts) => new Date(ts).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+// Federal fiscal year: Oct 1 – Sep 30. This audience thinks in FY quarters.
+function fy(ts) { const d = new Date(ts); const y = d.getFullYear() + (d.getMonth() >= 9 ? 1 : 0);
+  const q = [2,2,2,3,3,3,4,4,4,1,1,1][d.getMonth()];
+  return { yy: String(y).slice(2), q }; }
+const fyq = (ts) => { const f = fy(ts); return `FY${f.yy} Q${f.q}`; };
+function fyCloseLine() {
+  const now = new Date();
+  const fyEnd = new Date(now.getFullYear() + (now.getMonth() >= 9 ? 1 : 0), 8, 30);
+  const days = Math.ceil((fyEnd - now) / 864e5);
+  if (days <= 150) return `FY${String(fyEnd.getFullYear()).slice(2)} closes in <strong>${days} days</strong>. Q4 money moves fast, and use-it-or-lose-it budgets get spent on whoever is already in the building.`;
+  if (days >= 320) return `FY${String(fyEnd.getFullYear()).slice(2)} just opened — new money is loading, and the buys planned now award in Q3–Q4.`;
+  return null;
+}
+
 // ── smart casing: acronyms upper, brands mixed, ordinary words plain ──
 const SPECIAL = { fedramp:'FedRAMP', devsecops:'DevSecOps', devops:'DevOps', govcloud:'GovCloud',
   vmware:'VMware', mcafee:'McAfee', servicenow:'ServiceNow', javascript:'JavaScript', github:'GitHub' };
@@ -7772,14 +7790,18 @@ function gather() {
   const entrants = [...vFirst.values()].filter(t => t >= y3).length;
   // what the money buys: PSC (product/service code) is the government's own
   // taxonomy of WHAT was purchased; NAICS description as fallback
-  const catAmts = new Map();
+  const catAmts = new Map(), catCode = new Map();
   for (const c of rows) {
     const psc = c['PSC'], nai = c['NAICS'];
-    const cat = (psc && typeof psc === 'object' && psc.description) ? psc.description
-              : (nai && typeof nai === 'object' && nai.description) ? nai.description
-              : (psc && typeof psc === 'object' && psc.code) ? 'PSC ' + psc.code
-              : (typeof psc === 'string' && psc) ? 'PSC ' + psc : null;
-    if (cat) catAmts.set(cat, (catAmts.get(cat) || 0) + (parseFloat(c['Award Amount']) || 0));
+    let cat = null, code = null;
+    if (psc && typeof psc === 'object' && psc.description) { cat = psc.description; code = psc.code || null; }
+    else if (nai && typeof nai === 'object' && nai.description) { cat = nai.description; code = nai.code || null; }
+    else if (psc && typeof psc === 'object' && psc.code) cat = 'PSC ' + psc.code;
+    else if (typeof psc === 'string' && psc) cat = 'PSC ' + psc;
+    if (cat) {
+      catAmts.set(cat, (catAmts.get(cat) || 0) + (parseFloat(c['Award Amount']) || 0));
+      if (code && !catCode.has(cat)) catCode.set(cat, code);
+    }
   }
   // set-asides
   const saByType = new Map(); let saTotal = 0;
@@ -7812,6 +7834,7 @@ function gather() {
     saTotal, saTypes: [...saByType.entries()].sort((a,b)=>b[1]-a[1]),
     subs, domAg,
     cats: [...catAmts.entries()].sort((a,b)=>b[1]-a[1]),
+    catCode,
     terr: (app.territory && app.SECTORS && app.SECTORS[app.territory]) ? (app.SECTORS[app.territory].label || app.territory) : null,
     agencyQ, axisOffice: useSub,
     qHead: smartCase(app.displayQuery || app.currentQuery || 'this market', 'head'),
@@ -8038,8 +8061,8 @@ function expTimeline(d) {
       const withDays = items.map(x => ({ ...x, days: Math.ceil((x.en - now)/864e5) }));
       const maxD = Math.max(...withDays.map(x => x.days));   // scale to the range shown
       return withDays.map(x =>
-        `<div class="fb"><div class="fb-label">${mon(x.en)} \u00B7 ${esc(x.c['Recipient Name'])} <span class="fb-arrow">at</span> ${esc(clean(x.c['Awarding Agency']||''))}</div>
-        <div class="fb-track"><div class="fb-bar tl-bar" style="width:${Math.max(7, Math.round(x.days/Math.max(maxD,1)*100))}%"></div><span class="fb-amt">${money(x.amt)} \u00B7 ${x.days}d</span></div></div>`).join('');
+        `<div class="fb"><div class="fb-label">${fyq(x.en)} \u00B7 ${mon(x.en)} \u00B7 ${esc(x.c['Recipient Name'])} <span class="fb-arrow">at</span> ${esc(clean(x.c['Awarding Agency']||''))}</div>
+        <div class="fb-track"><div class="fb-bar tl-bar" style="width:${Math.max(7, Math.round(x.days/Math.max(maxD,1)*100))}%"></div><span class="fb-amt">${money(x.amt)} \u00B7 ${x.days}d${x.c['generated_internal_id'] ? ` \u00B7 <a class="rcpt" href="https://www.usaspending.gov/award/${encodeURIComponent(x.c['generated_internal_id'])}" target="_blank" rel="noopener">\u2197</a>` : ''}</span></div></div>`).join('');
     })();
 }
 
@@ -8059,7 +8082,7 @@ function whatBuys(d) {
   return `<h2>${head}</h2>
   <p class="fact">The biggest line is <strong>${esc(catCase(tn))}</strong> at ${money(tv)} \u2014 ${Math.round(tv/Math.max(d.total,1)*100)}% of the dollars. Categories below are the government\u2019s own product\u2013service classifications.</p>`
   + top.map(([n, amt]) => `<div class="fb">
-      <div class="fb-label">${esc(catCase(n))}</div>
+      <div class="fb-label">${esc(catCase(n))}${d.catCode && d.catCode.get(n) ? ` <span class="cat-code">${esc(d.catCode.get(n))}</span>` : ''}</div>
       <div class="fb-track"><div class="fb-bar" style="width:${Math.max(10, Math.round(amt/max*100))}%"></div><span class="fb-amt">${money(amt)} \u00B7 ${Math.round(amt/Math.max(d.total,1)*100)}%</span></div>
     </div>`).join('');
 }
@@ -8092,7 +8115,7 @@ function fiveContracts(d) {
   return picks.slice(0, 5).map((p, i) => {
     const c = p.c, en = c._endTs || Date.parse(c['End Date']);
     return `<div class="fc"><div class="fc-head">${i+1}. ${esc(c['Recipient Name'])} \u00B7 ${money(parseFloat(c['Award Amount'])||0)}</div>
-      <div class="fc-meta">${esc(clean(c['Awarding Agency']||''))}${en ? ' \u00B7 runs to ' + mon(en) : ''}${c['Description'] ? ' \u00B7 ' + esc(String(c['Description']).slice(0, 90)) : ''}</div>
+      <div class="fc-meta">${c['generated_internal_id'] ? `<a class="rcpt" href="https://www.usaspending.gov/award/${encodeURIComponent(c['generated_internal_id'])}" target="_blank" rel="noopener">Record \u2197</a> \u00B7 <a class="rcpt" href="https://sam.gov/search/?keywords=${encodeURIComponent(c['Recipient Name']||'')}" target="_blank" rel="noopener">SAM.gov \u2197</a> \u00B7 ` : ''}${esc(clean(c['Awarding Agency']||''))}${en ? ' \u00B7 runs to ' + mon(en) + ' (' + fyq(en) + ')' : ''}${c['Description'] ? ' \u00B7 ' + esc(String(c['Description']).slice(0, 90)) : ''}</div>
       <div class="fc-why">${p.why}</div></div>`;
   }).join('');
 }
@@ -8109,6 +8132,8 @@ function facts(d, part) {
   if (d.newest) out.push(`The newest award landed in the last 90 days: ${money(d.newest.amt)} to <strong>${esc(d.newest.c['Recipient Name'])}</strong>. This market is buying now, not someday.`);
   if (d.saTotal > 0) out.push(`<strong>${money(d.saTotal)}</strong> (${Math.round(d.saTotal/Math.max(d.total,1)*100)}%) moves through set-asides${d.saTypes.length ? ' \u2014 led by ' + esc(d.saTypes.slice(0,2).map(([t])=>t).join(' and ').toLowerCase()) : ''}. For small businesses, the side door is real.`);
   if (d.entrants > 0 && d.vs.length >= 4) out.push(`${d.entrants} of ${d.vs.length} vendors entered within the last three years. ${d.entrants/d.vs.length >= 0.3 ? 'The door is open.' : 'Entry happens, but slowly.'}`);
+  const fyl = fyCloseLine();
+  if (fyl) out.push(fyl);
   const chosen = part === 'more' ? out.slice(3) : part === 'lead' ? out.slice(0, 3) : out;
   return chosen.map(f => `<p class="fact">${f}</p>`).join('');
 }
@@ -8156,6 +8181,10 @@ function buildHtml(d) {
   .fb:nth-child(5) .fb-bar { background: #C2A15C; }
   .fb:nth-child(6) .fb-bar { background: #7B78C0; }
   .fb-amt { font-family: system-ui, sans-serif; font-weight: 800; font-size: 15px; color: #2B2A24; white-space: nowrap; }
+  .rcpt { font-family: system-ui, sans-serif; font-weight: 800; color: #46446E; text-decoration: none; }
+  .rcpt:hover { text-decoration: underline; }
+  .cat-code { font-family: system-ui, sans-serif; font-weight: 700; font-size: 12px; color: #8A8570; letter-spacing: 0.03em; }
+  @media print { .rcpt { color: inherit; } }
   .tl-bar { background: #46446E !important; opacity: 0.8; }
   @media (max-width: 640px) {
     .chart-desktop { display: none; }
