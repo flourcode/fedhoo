@@ -1059,6 +1059,8 @@ a, button, input, select { touch-action: manipulation; }
 .chart-caption strong { color: var(--text-primary); }
 
 
+/* ── cloud marketplace chips ── */
+.cloud-chip { font-size: 10px; font-weight: 800; letter-spacing: 0.04em; color: var(--accent); background: var(--accent-dim, rgba(70,68,110,0.10)); border-radius: 9999px; padding: 1px 7px; }
 /* ── v17: scope chips ── */
 .scope-chip { font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); background: var(--accent-dim, rgba(70,68,110,0.10)); border-radius: 9999px; padding: 3px 9px; margin-left: 8px; vertical-align: 2px; display: none; }
 .scope-chip.on { display: inline-block; }
@@ -1525,6 +1527,12 @@ a, button, input, select { touch-action: manipulation; }
           <div><strong>Get Mo’s take.</strong> Tap the Mo button for an instant action plan — partner routes, the expirations to chase, and the agency worth your next 30 days — then ask follow-ups. Every answer is grounded in the exact data on your screen.</div>
         </li>
       </ol>
+      <div class="hw-cosell" style="margin-top:14px;font-size:12.5px;color:var(--text-secondary);">
+        CSP co-sell maps — which SaaS vendors have federal paper, and who holds it:
+        <a href="/?cosell=aws" style="color:var(--accent);font-weight:800;text-decoration:none;">AWS</a> ·
+        <a href="/?cosell=azure" style="color:var(--accent);font-weight:800;text-decoration:none;">Azure</a> ·
+        <a href="/?cosell=gcp" style="color:var(--accent);font-weight:800;text-decoration:none;">Google Cloud</a>
+      </div>
       <div class="hw-book">
         <div class="hw-book-title">Need help reading your market?</div>
         <div class="hw-book-body">Bring a territory or a target account. We’ll pull the data together on a call — how to read the signals, size the market, and prep for your next meeting in minutes.</div>
@@ -6551,6 +6559,11 @@ ${gemData.next_steps.map((step, i) => `<div class="ns-item"><span class="ns-num"
       const q = params.get('q');
       const t = params.get('territory');
       if (params.get('report') === '1') this._reportIntent = true;
+      const _cosell = params.get('cosell');
+      if (_cosell) {
+        setTimeout(() => window.CoSell && CoSell.run(_cosell), 600);
+        return;   // the map is the page; skip the default search
+      }
       if (t && this.SECTORS[t]) this.setTerritory(t);
       const lastQuery = localStorage.getItem('fedhoo_last_query');
 
@@ -7305,6 +7318,7 @@ function rowsFor(sort) {
       else { pat='maturing'; why='Long-run contract entering its final stretch.'; }
     }
     out.push({ id, amt, end, start, pat, why,
+      cloud: (window.cloudOf && cloudOf(c['Description'])) || null,
       gid: c['generated_internal_id'] || null,
       v: c['Recipient Name']||'Unknown',
       ag: (c['Awarding Sub Agency'] && c['Awarding Sub Agency'] !== c['Awarding Agency']) ? c['Awarding Sub Agency'] : (c['Awarding Agency']||''),
@@ -7338,7 +7352,7 @@ window.Deals = {
         + '<span class="dl-badge ' + (r.pat==='active'?'active-b':r.pat) + '">' + LABEL[r.pat] + '</span>'
         + '<div class="dl-body">'
         + '<div class="dl-line1">' + esc(r.v) + ' \u00B7 <span class="dl-amt">' + money(r.amt) + '</span></div>'
-        + '<div class="dl-line2">' + esc(r.ag) + ' \u2014 ' + dateBit + (r.desc ? ' \u00B7 ' + esc(r.desc) : '') + '</div>'
+        + '<div class="dl-line2">' + esc(r.ag) + ' \u2014 ' + dateBit + (r.cloud ? ' \u00B7 <span class="cloud-chip">' + r.cloud + ' Mktpl</span>' : '') + (r.desc ? ' \u00B7 ' + esc(r.desc) : '') + '</div>'
         + (r.why ? '<div class="dl-why">' + esc(r.why) + '</div>' : '')
         + '<div class="pf-actions"><button class="pf-link" data-dlask="' + i + '">Ask Mo</button>'
         + (r.gid ? '<a class="pf-link" href="https://www.usaspending.gov/award/' + encodeURIComponent(r.gid) + '" target="_blank" rel="noopener">Record \u2197</a>' : '')
@@ -7802,6 +7816,12 @@ function gather() {
       if (code && !catCode.has(cat)) catCode.set(cat, code);
     }
   }
+  // cloud-marketplace paper (Tier 2)
+  const mkt = new Map();
+  for (const c of rows) {
+    const csp = (window.cloudOf && cloudOf(c['Description'])) || null;
+    if (csp) mkt.set(csp, (mkt.get(csp) || 0) + (parseFloat(c['Award Amount']) || 0));
+  }
   // set-asides
   const saByType = new Map(); let saTotal = 0;
   for (const c of rows) {
@@ -7830,6 +7850,7 @@ function gather() {
     newest, biggest, soonest, entrants,
     partners: pfd ? [...(pfd.channel||[]).slice(0,2).map(v=>({v,route:'Channel'})), ...(pfd.primes||[]).slice(0,3).map(v=>({v,route:'Prime'}))].slice(0,4) : [],
     q: app.displayQuery || app.currentQuery || 'this market',
+    mkt: [...mkt.entries()].sort((a,b)=>b[1]-a[1]),
     saTotal, saTypes: [...saByType.entries()].sort((a,b)=>b[1]-a[1]),
     subs, domAg,
     cats: [...catAmts.entries()].sort((a,b)=>b[1]-a[1]),
@@ -8114,7 +8135,7 @@ function fiveContracts(d) {
   return picks.slice(0, 5).map((p, i) => {
     const c = p.c, en = c._endTs || Date.parse(c['End Date']);
     return `<div class="fc"><div class="fc-head">${i+1}. ${esc(c['Recipient Name'])} \u00B7 ${money(parseFloat(c['Award Amount'])||0)}</div>
-      <div class="fc-meta">${c['generated_internal_id'] ? `<a class="rcpt" href="https://www.usaspending.gov/award/${encodeURIComponent(c['generated_internal_id'])}" target="_blank" rel="noopener">Record \u2197</a> \u00B7 ` : ''}${esc(clean(c['Awarding Agency']||''))}${en ? ' \u00B7 runs to ' + mon(en) + ' (' + fyq(en) + ')' : ''}${c['Description'] ? ' \u00B7 ' + esc(String(c['Description']).slice(0, 90)) : ''}</div>
+      <div class="fc-meta">${(window.cloudOf && cloudOf(c['Description'])) ? `<span class="cloud-chip">${cloudOf(c['Description'])} Mktpl</span> \u00B7 ` : ''}${c['generated_internal_id'] ? `<a class="rcpt" href="https://www.usaspending.gov/award/${encodeURIComponent(c['generated_internal_id'])}" target="_blank" rel="noopener">Record \u2197</a> \u00B7 ` : ''}${esc(clean(c['Awarding Agency']||''))}${en ? ' \u00B7 runs to ' + mon(en) + ' (' + fyq(en) + ')' : ''}${c['Description'] ? ' \u00B7 ' + esc(String(c['Description']).slice(0, 90)) : ''}</div>
       <div class="fc-why">${p.why}</div></div>`;
   }).join('');
 }
@@ -8129,6 +8150,10 @@ function facts(d, part) {
   out.push(`<strong>${esc(leader[0])}</strong> leads with ${Math.round(leader[1]/Math.max(d.total,1)*100)}% of ${d.scope ? esc(d.scope) + '\u2019s ' + (d.agencyQ ? '' : esc(d.qProse) + ' ') + 'spend' : 'the money'}. The top three vendors hold ${conc}% \u2014 ${conc >= 60 ? 'a concentrated market where the way in is usually through an incumbent, not around one' : 'a fragmented field with room to win directly'}.`);
   if (d.expTotal > 0) out.push(`<strong>${money(d.expTotal)}</strong> \u2014 ${Math.round(d.expTotal/Math.max(d.total,1)*100)}% of the market \u2014 expires within 18 months. ${d.scope ? 'That\u2019s ' + esc(d.scope) + '\u2019s renewal calendar.' : 'That\u2019s the recompete calendar.'}`);
   if (d.newest) out.push(`The newest award landed in the last 90 days: ${money(d.newest.amt)} to <strong>${esc(d.newest.c['Recipient Name'])}</strong>. `);
+  if (d.mkt && d.mkt.length) {
+    const mtot = d.mkt.reduce((s,[,v])=>s+v,0);
+    out.push(`<strong>${money(mtot)}</strong> of this market is visibly cloud-marketplace paper \u2014 ${d.mkt.map(([k,v])=>`${k} ${money(v)}`).join(' \u00B7 ')}. Descriptions understate this; treat it as a floor.`);
+  }
   if (d.saTotal > 0) out.push(`<strong>${money(d.saTotal)}</strong> (${Math.round(d.saTotal/Math.max(d.total,1)*100)}%) moves through set-asides${d.saTypes.length ? ' \u2014 led by ' + esc(d.saTypes.slice(0,2).map(([t])=>t).join(' and ').toLowerCase()) : ''}.`);
   if (d.entrants > 0 && d.vs.length >= 4) out.push(`${d.entrants} of ${d.vs.length} vendors entered within the last three years. ${d.entrants/d.vs.length >= 0.3 ? 'New vendors are getting in.' : 'New entrants are rare.'}`);
   const fyl = fyCloseLine();
@@ -8183,6 +8208,7 @@ function buildHtml(d) {
   .rcpt { font-family: system-ui, sans-serif; font-weight: 800; color: #46446E; text-decoration: none; }
   .rcpt:hover { text-decoration: underline; }
   .cat-code { font-family: system-ui, sans-serif; font-weight: 700; font-size: 12px; color: #8A8570; letter-spacing: 0.03em; }
+  .cloud-chip { font-family: system-ui, sans-serif; font-size: 11px; font-weight: 800; letter-spacing: 0.04em; color: #46446E; border: 1.5px solid #46446E; border-radius: 9999px; padding: 1px 8px; }
   @media print { .rcpt { color: inherit; } }
   .tl-bar { background: #46446E !important; opacity: 0.8; }
   @media (max-width: 640px) {
@@ -8277,6 +8303,143 @@ window.Editorial = {
     const w = window.open('', '_blank');
     if (!w) { app.toast && app.toast('Popup blocked \u2014 allow popups for the report.', 'warning'); return; }
     w.document.write(h); w.document.close();
+  },
+};
+})();
+</script>
+
+
+<script>
+// ── cloud-marketplace detection (Tier 2) ──
+window.cloudOf = function (desc) {
+  const s = String(desc || '').toLowerCase();
+  if (/aws marketplace|amazon (web services )?marketplace|aws private offer|via aws/.test(s)) return 'AWS';
+  if (/azure marketplace|microsoft (azure )?marketplace|azure private offer/.test(s)) return 'Azure';
+  if (/(google cloud|gcp) marketplace|gcp private offer/.test(s)) return 'Google Cloud';
+  return null;
+};
+</script>
+
+<script>
+// ═══ CSP CO-SELL MAP (Tier 3) — fedhoo.com/?cosell=aws|azure|gcp ═══
+// Scans a curated ISV list through the existing USASpending proxy, ranks
+// visible federal dollars, and renders a Follow the Money league table.
+(function () {
+'use strict';
+const A = () => (typeof App !== 'undefined' && App) ? App : window.App;
+const money = (n) => { const x = Number(n)||0;
+  if (x>=1e9) return '$'+(x/1e9).toFixed(1)+'B';
+  if (x>=1e6) return '$'+(x/1e6).toFixed(1)+'M';
+  if (x>=1e3) return '$'+(x/1e3).toFixed(0)+'K';
+  return '$'+Math.round(x); };
+const esc = (s) => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const clean = (a) => (typeof Utils !== 'undefined' && Utils.cleanAgency) ? Utils.cleanAgency(a) : a;
+const CHANNEL_RE = /CARAHSOFT|CDW|SHI |SHI,|INSIGHT PUBLIC|DLT SOLUTIONS|IMMIX|THUNDERCAT|WORLD WIDE TECH|IRON BOW|RED RIVER|PRESIDIO|MYTHICS|EPLUS|FOUR POINTS|TD SYNNEX|INGRAM/i;
+const ISVS = ['Crowdstrike','Snowflake','Databricks','Palo Alto Networks','Zscaler','Okta','GitLab','Splunk','Elastic','Datadog','HashiCorp','Cloudflare','Wiz','MongoDB','Confluent','Sonatype','JFrog','SentinelOne','Akamai'];
+const CSP = { aws: 'AWS', azure: 'Azure', gcp: 'Google Cloud', google: 'Google Cloud' };
+
+async function scanISV(name) {
+  const app = A();
+  const end = new Date(), start = new Date(); start.setFullYear(end.getFullYear() - 1);
+  const iso = d => d.toISOString().split('T')[0];
+  const body = {
+    request_type: 'usaspending_proxy',
+    endpoint: '/search/spending_by_award/',
+    payload: { filters: { time_period: [{ start_date: iso(start), end_date: iso(end) }],
+                          award_type_codes: ['A','B','C','D'], keywords: [name] },
+               fields: ['Award ID','Recipient Name','Awarding Agency','Awarding Sub Agency','Award Amount','Start Date','End Date','Description','generated_internal_id'],
+               limit: 60, sort: 'Award Amount', order: 'desc' } };
+  const res = await fetch(app.PROXY_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  if (!res.ok) return null;
+  const data = await res.json();
+  const rows = (data && data.results) || [];
+  const now = Date.now();
+  let total = 0, mkt = 0, exp18 = 0;
+  const byAg = new Map(), byRe = new Map();
+  for (const c of rows) {
+    const endTs = Date.parse(c['End Date']) || 0;
+    if (endTs && endTs < now) continue;                 // active paper only
+    const amt = parseFloat(c['Award Amount']) || 0;
+    total += amt;
+    const ag = c['Awarding Agency'] || 'Other';
+    byAg.set(ag, (byAg.get(ag)||0) + amt);
+    const re = c['Recipient Name'] || '';
+    byRe.set(re, (byRe.get(re)||0) + amt);
+    if (window.cloudOf && cloudOf(c['Description'])) mkt += amt;
+    if (endTs && endTs <= now + 548*864e5) exp18 += amt;
+  }
+  const topAg = [...byAg.entries()].sort((a,b)=>b[1]-a[1])[0];
+  const resellers = [...byRe.entries()].filter(([n]) => CHANNEL_RE.test(n)).sort((a,b)=>b[1]-a[1]);
+  const topRe = resellers[0] || [...byRe.entries()].sort((a,b)=>b[1]-a[1])[0];
+  return { name, total, awards: rows.length, mkt, exp18,
+           topAg: topAg ? { n: topAg[0], v: topAg[1] } : null,
+           topRe: topRe ? { n: topRe[0], v: topRe[1], isChannel: !!resellers.length } : null };
+}
+
+function reportHtml(csp, results) {
+  const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  const ranked = results.filter(r => r && r.total > 0).sort((a,b) => b.total - a.total);
+  const grand = ranked.reduce((s,r)=>s+r.total,0);
+  const rowsHtml = ranked.map((r, i) => `
+    <div class="fc">
+      <div class="fc-head">${i+1}. ${esc(r.name)} \u00B7 ${money(r.total)}</div>
+      <div class="fc-meta">${r.awards} active awards${r.topAg ? ' \u00B7 biggest buyer: ' + esc(clean(r.topAg.n)) + ' (' + money(r.topAg.v) + ')' : ''}${r.topRe ? ' \u00B7 ' + (r.topRe.isChannel ? 'via ' : 'top holder: ') + esc(r.topRe.n) + ' (' + money(r.topRe.v) + ')' : ''}</div>
+      <div class="fc-why">${money(r.exp18)} expires within 18 months.${r.mkt > 0 ? ' ' + money(r.mkt) + ' is visibly marketplace paper.' : ''} <a class="rcpt" href="https://fedhoo.com/?q=${encodeURIComponent(r.name.toLowerCase())}">Full ${esc(r.name)} report \u2197</a></div>
+    </div>`).join('');
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The ${csp} co-sell map \u00B7 Follow the Money \u2014 fedhoo</title>
+<style>
+  body { margin: 0; background: #EFEAD8; color: #2B2A24; font-family: Georgia, serif; }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 56px 28px 80px; }
+  .kicker { font-family: system-ui, sans-serif; font-weight: 800; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: #8A8570; }
+  h1 { font-family: system-ui, sans-serif; font-weight: 900; font-size: clamp(34px, 6vw, 52px); line-height: 1.05; margin: 10px 0 6px; }
+  .dek { font-size: 19px; color: #5A5748; margin: 0 0 8px; }
+  .date { font-family: system-ui, sans-serif; font-size: 13px; color: #8A8570; margin-bottom: 30px; }
+  .hero { font-family: system-ui, sans-serif; font-weight: 900; font-size: clamp(48px, 9vw, 80px); color: #46446E; margin: 6px 0 28px; }
+  .fact { font-size: 17.5px; line-height: 1.65; margin: 0 0 22px; }
+  .fact strong { color: #46446E; }
+  .fc { border-top: 2px solid #D9D2B8; padding: 16px 0; }
+  .fc-head { font-family: system-ui, sans-serif; font-weight: 800; font-size: 19px; }
+  .fc-meta { font-family: system-ui, sans-serif; font-size: 14px; color: #8A8570; margin: 4px 0 7px; }
+  .fc-why { font-size: 16px; line-height: 1.55; color: #44423A; }
+  .rcpt { font-family: system-ui, sans-serif; font-weight: 800; color: #46446E; text-decoration: none; }
+  .foot { margin-top: 56px; border-top: 3px solid #2B2A24; padding-top: 16px; font-family: system-ui, sans-serif; font-size: 14px; color: #5A5748; }
+</style></head><body><div class="wrap">
+  <div class="kicker">Follow the Money</div>
+  <h1>The ${csp} co-sell map</h1>
+  <p class="dek">The SaaS vendors with visible federal contract dollars, ranked. Who buys them, who holds the paper, and what expires.</p>
+  <div class="date">${today} \u00B7 fedhoo</div>
+  <div class="hero">${money(grand)}</div>
+  <p class="fact">Across ${ranked.length} tracked ISVs, <strong>${money(grand)}</strong> in active federal contracts is visible in the public record. Most of it moves through resellers, so the vendor's own name rarely holds the paper. Marketplace figures come from award descriptions and understate the real number; treat every figure as a floor.</p>
+  ${rowsHtml}
+  <div class="foot">Curated ISV list, top 60 awards each, last 12 months, active paper only. Every figure traces to USASpending.gov. Live at fedhoo.com</div>
+</div></body></html>`;
+}
+
+window.CoSell = {
+  async run(cspKey) {
+    const csp = CSP[String(cspKey).toLowerCase()] || 'AWS';
+    let ov = document.getElementById('cosellOverlay');
+    if (ov) ov.remove();
+    ov = document.createElement('div');
+    ov.id = 'cosellOverlay';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#EFEAD8;display:flex;align-items:center;justify-content:center;';
+    ov.innerHTML = '<div style="font-family:system-ui,sans-serif;text-align:center;color:#5A5748;padding:24px;">'
+      + '<div style="font-weight:900;font-size:22px;color:#2B2A24;margin-bottom:10px;">Building the ' + esc(csp) + ' co-sell map</div>'
+      + '<div id="cosellStatus" style="font-size:14px;">Warming up\u2026</div></div>';
+    document.body.appendChild(ov);
+    const status = ov.querySelector('#cosellStatus');
+    const results = [];
+    for (let i = 0; i < ISVS.length; i++) {
+      status.textContent = `Scanning ${ISVS[i]} (${i+1}/${ISVS.length})\u2026`;
+      try { results.push(await scanISV(ISVS[i])); }
+      catch (e) { results.push(null); }
+    }
+    const html = reportHtml(csp, results);
+    ov.innerHTML = '<button aria-label="Back" style="position:fixed;top:14px;right:14px;z-index:10000;width:40px;height:40px;border-radius:50%;border:1.5px solid #46446E;background:#EFEAD8;color:#46446E;font-size:19px;font-weight:800;cursor:pointer;font-family:system-ui,sans-serif;">\u2715</button>'
+      + '<iframe style="width:100%;height:100%;border:0;display:block;" title="Co-sell map"></iframe>';
+    ov.querySelector('button').onclick = () => ov.remove();
+    ov.querySelector('iframe').srcdoc = html;
   },
 };
 })();
