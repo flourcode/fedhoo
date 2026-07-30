@@ -1059,14 +1059,6 @@ a, button, input, select { touch-action: manipulation; }
 .chart-caption strong { color: var(--text-primary); }
 
 
-/* ── co-sell pill row ── */
-.cosell-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 7px 2px 0; }
-.cosell-row-label { font-size: 11.5px; font-weight: 700; color: var(--text-tertiary); letter-spacing: 0.02em; }
-.cosell-pill { font-size: 11.5px; font-weight: 800; color: var(--accent); background: none; border: 1.5px solid var(--accent); border-radius: 9999px; padding: 3px 12px; cursor: pointer; font-family: inherit; }
-.cosell-pill:hover { background: var(--accent); color: #fff; }
-.cosell-pill:active { transform: scale(0.97); }
-/* ── cloud marketplace chips ── */
-.cloud-chip { font-size: 10px; font-weight: 800; letter-spacing: 0.04em; color: var(--accent); background: var(--accent-dim, rgba(70,68,110,0.10)); border-radius: 9999px; padding: 1px 7px; }
 /* ── v17: scope chips ── */
 .scope-chip { font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); background: var(--accent-dim, rgba(70,68,110,0.10)); border-radius: 9999px; padding: 3px 9px; margin-left: 8px; vertical-align: 2px; display: none; }
 .scope-chip.on { display: inline-block; }
@@ -1202,9 +1194,6 @@ a, button, input, select { touch-action: manipulation; }
           autocomplete="off" autocorrect="off" autocapitalize="none"
           enterkeyhint="search" aria-label="Search federal contracts by company, keyword, or NAICS code">
         </div>
-      </div>
-      <div class="cosell-row" aria-label="CSP co-sell maps">
-        <button class="cosell-pill" onclick="CoSell.run()">Federal SaaS leaderboard</button>
       </div>
       <div class="territory-dropdown" id="territoryDropdown" role="listbox" aria-label="Territory filter">
         <button class="territory-opt active" data-key="" onclick="App.setTerritory(null)" role="option" aria-selected="true">
@@ -1536,9 +1525,6 @@ a, button, input, select { touch-action: manipulation; }
           <div><strong>Get Mo’s take.</strong> Tap the Mo button for an instant action plan — partner routes, the expirations to chase, and the agency worth your next 30 days — then ask follow-ups. Every answer is grounded in the exact data on your screen.</div>
         </li>
       </ol>
-      <div class="hw-cosell" style="margin-top:14px;font-size:12.5px;color:var(--text-secondary);">
-        <a href="/?cosell=1" style="color:var(--accent);font-weight:800;text-decoration:none;">The federal SaaS leaderboard ↗</a> — every major SaaS vendor's visible federal paper, stack-ranked.
-      </div>
       <div class="hw-book">
         <div class="hw-book-title">Need help reading your market?</div>
         <div class="hw-book-body">Bring a territory or a target account. We’ll pull the data together on a call — how to read the signals, size the market, and prep for your next meeting in minutes.</div>
@@ -1549,7 +1535,7 @@ a, button, input, select { touch-action: manipulation; }
     <!-- BIO CARD — always shown at the bottom of results -->
     <div class="app-card wide result-panel hidden" id="bioCard" style="margin-top:0;">
       <div style="display:flex;align-items:center;gap:16px;">
-        <img src="/images/mark.jpg" alt="Mark Flournoy" style="width:52px;height:52px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid var(--border);">
+        <img src="/images/oldmark.jpg" alt="Mark Flournoy" style="width:52px;height:52px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid var(--border);">
         <div style="min-width:0;">
           <div style="font-size:var(--text-sm);font-weight:700;color:var(--text-primary);letter-spacing:-0.01em;margin-bottom:3px;">Hi, I'm Mark Flournoy</div>
           <div style="font-size:var(--text-xs);color:var(--text-secondary);line-height:1.55;">Retired federal sales — AWS, F5, Red Hat, DISA COTR, 20 years Marines. I built fedhoo because I spent too many years pulling this data by hand before pipeline reviews. No pitch — if you want to look at your territory together, grab 20 minutes.</div>
@@ -3184,12 +3170,6 @@ const App = {
     }
     if (!query) return;
 
-    // Co-sell map via the search box: "aws cosell", "cosell azure", "gcp isv map"
-    if (/^(saas\s+(leaderboard|leaders|map)|isv\s+(map|leaderboard)|co-?sell(\s+map)?)$/i.test(query.trim()) && window.CoSell) {
-      CoSell.run();
-      return;
-    }
-
     // #8: Request deduplication — skip if same query+territory already in flight or just completed
     const searchKey = `${query.toLowerCase()}|${this.territory || ''}`;
     if (searchKey === this._lastSearchKey && this.searchData.loaded) return;
@@ -3256,8 +3236,6 @@ const App = {
     this.closeArtiSheet();
     const sheetAic = DOM.get('aiContentContainer'); if (sheetAic) sheetAic.innerHTML = '';
     const ql = DOM.get('sheetQuestionLabel'); if (ql) { ql.textContent = ''; ql.classList.add('hidden'); }
-    document.getElementById('cosellCard')?.remove();
-    if (window.CoSellCard) CoSellCard.active = false;
     DOM.hide('expiringCard');
     DOM.hide('recentCard');
     DOM.hide('primesCard');
@@ -6573,11 +6551,6 @@ ${gemData.next_steps.map((step, i) => `<div class="ns-item"><span class="ns-num"
       const q = params.get('q');
       const t = params.get('territory');
       if (params.get('report') === '1') this._reportIntent = true;
-      const _cosell = params.get('cosell');
-      if (_cosell) {
-        setTimeout(() => window.CoSell && CoSell.run(_cosell), 600);
-        return;   // the map is the page; skip the default search
-      }
       if (t && this.SECTORS[t]) this.setTerritory(t);
       const lastQuery = localStorage.getItem('fedhoo_last_query');
 
@@ -7332,7 +7305,6 @@ function rowsFor(sort) {
       else { pat='maturing'; why='Long-run contract entering its final stretch.'; }
     }
     out.push({ id, amt, end, start, pat, why,
-      cloud: (window.cloudOf && cloudOf(c['Description'])) || null,
       gid: c['generated_internal_id'] || null,
       v: c['Recipient Name']||'Unknown',
       ag: (c['Awarding Sub Agency'] && c['Awarding Sub Agency'] !== c['Awarding Agency']) ? c['Awarding Sub Agency'] : (c['Awarding Agency']||''),
@@ -7366,7 +7338,7 @@ window.Deals = {
         + '<span class="dl-badge ' + (r.pat==='active'?'active-b':r.pat) + '">' + LABEL[r.pat] + '</span>'
         + '<div class="dl-body">'
         + '<div class="dl-line1">' + esc(r.v) + ' \u00B7 <span class="dl-amt">' + money(r.amt) + '</span></div>'
-        + '<div class="dl-line2">' + esc(r.ag) + ' \u2014 ' + dateBit + (r.cloud ? ' \u00B7 <span class="cloud-chip">' + r.cloud + ' Mktpl</span>' : '') + (r.desc ? ' \u00B7 ' + esc(r.desc) : '') + '</div>'
+        + '<div class="dl-line2">' + esc(r.ag) + ' \u2014 ' + dateBit + (r.desc ? ' \u00B7 ' + esc(r.desc) : '') + '</div>'
         + (r.why ? '<div class="dl-why">' + esc(r.why) + '</div>' : '')
         + '<div class="pf-actions"><button class="pf-link" data-dlask="' + i + '">Ask Mo</button>'
         + (r.gid ? '<a class="pf-link" href="https://www.usaspending.gov/award/' + encodeURIComponent(r.gid) + '" target="_blank" rel="noopener">Record \u2197</a>' : '')
@@ -7552,7 +7524,6 @@ window.SyncCards = {
     if (!app || !app.searchData || !app.searchData.loaded) return;
     if (window.PartnerFit) PartnerFit.render();
     if (window.Deals) Deals.render();
-    if (window.CoSellCard) CoSellCard.render();
     if (window.ChartCaptions) ChartCaptions.update(app._chartView || 'treemap');
     const ds = app.drillState || { level: 0 };
     const clean = (typeof Utils !== 'undefined' && Utils.cleanAgency) ? Utils.cleanAgency : (x => x);
@@ -7747,7 +7718,7 @@ function fyCloseLine() {
 }
 
 // ── smart casing: acronyms upper, brands mixed, ordinary words plain ──
-const SPECIAL = { saas:'SaaS', paas:'PaaS', iaas:'IaaS', fedramp:'FedRAMP', devsecops:'DevSecOps', devops:'DevOps', govcloud:'GovCloud',
+const SPECIAL = { fedramp:'FedRAMP', devsecops:'DevSecOps', devops:'DevOps', govcloud:'GovCloud',
   vmware:'VMware', mcafee:'McAfee', servicenow:'ServiceNow', javascript:'JavaScript', github:'GitHub' };
 const ACRO_EXTRA = ['aws','saic','sbom','ibm','sap','ai','ml','iot','rpa','vdi','sase','soc','siem',
   'edr','xdr','mdr','erp','crm','hcm','api','cui','cmmc','rmf','ato','it','ot','5g','gis',
@@ -7831,12 +7802,6 @@ function gather() {
       if (code && !catCode.has(cat)) catCode.set(cat, code);
     }
   }
-  // cloud-marketplace paper (Tier 2)
-  const mkt = new Map();
-  for (const c of rows) {
-    const csp = (window.cloudOf && cloudOf(c['Description'])) || null;
-    if (csp) mkt.set(csp, (mkt.get(csp) || 0) + (parseFloat(c['Award Amount']) || 0));
-  }
   // set-asides
   const saByType = new Map(); let saTotal = 0;
   for (const c of rows) {
@@ -7865,7 +7830,6 @@ function gather() {
     newest, biggest, soonest, entrants,
     partners: pfd ? [...(pfd.channel||[]).slice(0,2).map(v=>({v,route:'Channel'})), ...(pfd.primes||[]).slice(0,3).map(v=>({v,route:'Prime'}))].slice(0,4) : [],
     q: app.displayQuery || app.currentQuery || 'this market',
-    mkt: [...mkt.entries()].sort((a,b)=>b[1]-a[1]),
     saTotal, saTypes: [...saByType.entries()].sort((a,b)=>b[1]-a[1]),
     subs, domAg,
     cats: [...catAmts.entries()].sort((a,b)=>b[1]-a[1]),
@@ -8150,7 +8114,7 @@ function fiveContracts(d) {
   return picks.slice(0, 5).map((p, i) => {
     const c = p.c, en = c._endTs || Date.parse(c['End Date']);
     return `<div class="fc"><div class="fc-head">${i+1}. ${esc(c['Recipient Name'])} \u00B7 ${money(parseFloat(c['Award Amount'])||0)}</div>
-      <div class="fc-meta">${(window.cloudOf && cloudOf(c['Description'])) ? `<span class="cloud-chip">${cloudOf(c['Description'])} Mktpl</span> \u00B7 ` : ''}${c['generated_internal_id'] ? `<a class="rcpt" href="https://www.usaspending.gov/award/${encodeURIComponent(c['generated_internal_id'])}" target="_blank" rel="noopener">Record \u2197</a> \u00B7 ` : ''}${esc(clean(c['Awarding Agency']||''))}${en ? ' \u00B7 runs to ' + mon(en) + ' (' + fyq(en) + ')' : ''}${c['Description'] ? ' \u00B7 ' + esc(String(c['Description']).slice(0, 90)) : ''}</div>
+      <div class="fc-meta">${c['generated_internal_id'] ? `<a class="rcpt" href="https://www.usaspending.gov/award/${encodeURIComponent(c['generated_internal_id'])}" target="_blank" rel="noopener">Record \u2197</a> \u00B7 ` : ''}${esc(clean(c['Awarding Agency']||''))}${en ? ' \u00B7 runs to ' + mon(en) + ' (' + fyq(en) + ')' : ''}${c['Description'] ? ' \u00B7 ' + esc(String(c['Description']).slice(0, 90)) : ''}</div>
       <div class="fc-why">${p.why}</div></div>`;
   }).join('');
 }
@@ -8165,10 +8129,6 @@ function facts(d, part) {
   out.push(`<strong>${esc(leader[0])}</strong> leads with ${Math.round(leader[1]/Math.max(d.total,1)*100)}% of ${d.scope ? esc(d.scope) + '\u2019s ' + (d.agencyQ ? '' : esc(d.qProse) + ' ') + 'spend' : 'the money'}. The top three vendors hold ${conc}% \u2014 ${conc >= 60 ? 'a concentrated market where the way in is usually through an incumbent, not around one' : 'a fragmented field with room to win directly'}.`);
   if (d.expTotal > 0) out.push(`<strong>${money(d.expTotal)}</strong> \u2014 ${Math.round(d.expTotal/Math.max(d.total,1)*100)}% of the market \u2014 expires within 18 months. ${d.scope ? 'That\u2019s ' + esc(d.scope) + '\u2019s renewal calendar.' : 'That\u2019s the recompete calendar.'}`);
   if (d.newest) out.push(`The newest award landed in the last 90 days: ${money(d.newest.amt)} to <strong>${esc(d.newest.c['Recipient Name'])}</strong>. `);
-  if (d.mkt && d.mkt.length) {
-    const mtot = d.mkt.reduce((s,[,v])=>s+v,0);
-    out.push(`<strong>${money(mtot)}</strong> of this market is visibly cloud-marketplace paper \u2014 ${d.mkt.map(([k,v])=>`${k} ${money(v)}`).join(' \u00B7 ')}. Descriptions understate this; treat it as a floor.`);
-  }
   if (d.saTotal > 0) out.push(`<strong>${money(d.saTotal)}</strong> (${Math.round(d.saTotal/Math.max(d.total,1)*100)}%) moves through set-asides${d.saTypes.length ? ' \u2014 led by ' + esc(d.saTypes.slice(0,2).map(([t])=>t).join(' and ').toLowerCase()) : ''}.`);
   if (d.entrants > 0 && d.vs.length >= 4) out.push(`${d.entrants} of ${d.vs.length} vendors entered within the last three years. ${d.entrants/d.vs.length >= 0.3 ? 'New vendors are getting in.' : 'New entrants are rare.'}`);
   const fyl = fyCloseLine();
@@ -8223,7 +8183,6 @@ function buildHtml(d) {
   .rcpt { font-family: system-ui, sans-serif; font-weight: 800; color: #46446E; text-decoration: none; }
   .rcpt:hover { text-decoration: underline; }
   .cat-code { font-family: system-ui, sans-serif; font-weight: 700; font-size: 12px; color: #8A8570; letter-spacing: 0.03em; }
-  .cloud-chip { font-family: system-ui, sans-serif; font-size: 11px; font-weight: 800; letter-spacing: 0.04em; color: #46446E; border: 1.5px solid #46446E; border-radius: 9999px; padding: 1px 8px; }
   @media print { .rcpt { color: inherit; } }
   .tl-bar { background: #46446E !important; opacity: 0.8; }
   @media (max-width: 640px) {
@@ -8272,7 +8231,7 @@ function buildHtml(d) {
   ${fiveContracts(d)}
   ${partnersHtml(d)}
   <div class="bio">
-    <img src="https://fedhoo.com/images/mark.jpg" alt="Mark Flournoy" onerror="this.style.display='none'">
+    <img src="https://fedhoo.com/images/oldmark.jpg" alt="Mark Flournoy" onerror="this.style.display='none'">
     <div class="bio-body">
       <div class="bio-name">Hi, I\u2019m Mark</div>
       <div class="bio-text">Retired federal sales \u2014 AWS, F5, Red Hat, DISA COTR, 20 years Marines. I built fedhoo because I spent too many years pulling this data by hand before pipeline reviews. No pitch \u2014 if you want to look at your territory together, grab 20 minutes.</div>
@@ -8318,195 +8277,6 @@ window.Editorial = {
     const w = window.open('', '_blank');
     if (!w) { app.toast && app.toast('Popup blocked \u2014 allow popups for the report.', 'warning'); return; }
     w.document.write(h); w.document.close();
-  },
-};
-})();
-</script>
-
-
-<script>
-// ── cloud-marketplace detection (Tier 2) ──
-window.cloudOf = function (desc) {
-  const s = String(desc || '').toLowerCase();
-  if (/aws marketplace|amazon (web services )?marketplace|aws private offer|via aws/.test(s)) return 'AWS';
-  if (/azure marketplace|microsoft (azure )?marketplace|azure private offer/.test(s)) return 'Azure';
-  if (/(google cloud|gcp) marketplace|gcp private offer/.test(s)) return 'Google Cloud';
-  return null;
-};
-</script>
-
-<script>
-// ═══ FEDERAL SAAS LEADERBOARD — integrated (Tier 3) ═══
-// The scan pools raw award rows into App.searchData and lets the normal
-// pipeline render: treemap, flow, sub map, Contracts, Partner Fit, and the
-// Follow the Money report all work on the pooled market. The leaderboard
-// itself is a card inside the results grid, not a separate page.
-(function () {
-'use strict';
-const A = () => (typeof App !== 'undefined' && App) ? App : window.App;
-const money = (n) => { const x = Number(n)||0;
-  if (x>=1e9) return '$'+(x/1e9).toFixed(1)+'B';
-  if (x>=1e6) return '$'+(x/1e6).toFixed(1)+'M';
-  if (x>=1e3) return '$'+(x/1e3).toFixed(0)+'K';
-  return '$'+Math.round(x); };
-const esc = (s) => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-const clean = (a) => (typeof Utils !== 'undefined' && Utils.cleanAgency) ? Utils.cleanAgency(a) : a;
-const CHANNEL_RE = /CARAHSOFT|CDW|SHI |SHI,|INSIGHT PUBLIC|DLT SOLUTIONS|IMMIX|THUNDERCAT|WORLD WIDE TECH|IRON BOW|RED RIVER|PRESIDIO|MYTHICS|EPLUS|FOUR POINTS|TD SYNNEX|INGRAM/i;
-const ISVS = ['Crowdstrike','Snowflake','Databricks','Palo Alto Networks','Zscaler','Okta','GitLab','Splunk','Elastic','Datadog','HashiCorp','Cloudflare','Wiz','MongoDB','Confluent','Sonatype','JFrog','SentinelOne','Akamai','ServiceNow','Salesforce','Workday','Atlassian','Smartsheet','Box','Zoom','Adobe','Palantir','Snyk','GitHub','Docker','Nutanix','Rubrik','Cohesity','Veeam','Commvault','Netskope','Proofpoint','Tenable','Rapid7','Qualys','Trellix','Fortinet','Dynatrace','New Relic','UiPath','DocuSign','Tableau','Alteryx','Informatica'];
-
-async function scanISV(name) {
-  const app = A();
-  const end = new Date(), start = new Date(); start.setFullYear(end.getFullYear() - 1);
-  const iso = d => d.toISOString().split('T')[0];
-  const fields = (app && app.AWARD_FIELDS) || ['Award ID','Recipient Name','Awarding Agency','Awarding Sub Agency','Award Amount','Start Date','End Date','Description','generated_internal_id','NAICS','PSC','Type of Set Aside'];
-  const body = {
-    request_type: 'usaspending_proxy',
-    endpoint: '/search/spending_by_award/',
-    payload: { filters: { time_period: [{ start_date: iso(start), end_date: iso(end) }],
-                          award_type_codes: ['A','B','C','D'], keywords: [name] },
-               fields, limit: 60, sort: 'Award Amount', order: 'desc' } };
-  const res = await fetch(app.PROXY_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-  if (!res.ok) return [];
-  const data = await res.json();
-  return ((data && data.results) || []).map(c => { c._isv = name; c._endTs = Date.parse(c['End Date']) || 0; return c; });
-}
-
-// ── Scoped leaderboard: ranks vendors within the CURRENT drill scope. ──
-// "I cover VA" = pick VA in the card (or tap it in the treemap) — the whole
-// app drills there and this card re-ranks to vendors with paper at VA.
-window.CoSellCard = {
-  active: false,
-  render() {
-    if (!this.active) return;
-    const app = A();
-    const card = document.getElementById('cosellCard');
-    if (!card || !app.searchData || !app.searchData.loaded) return;
-    const rows = app.searchData.active || [];
-    const ds = app.drillState || { level: 0 };
-    const scoped = ds.level >= 1 && ds.currentAgency;
-    const scopeLabel = ds.level >= 2 && ds.currentSubAgency ? clean(ds.currentSubAgency)
-                     : scoped ? clean(ds.currentAgency) : null;
-    // agency picker options from the BASELINE pool (so the list doesn't shrink as you drill)
-    const base = app.searchData.baseline || rows;
-    const agSum = new Map();
-    for (const c of base) { const a = c['Awarding Agency'] || 'Other';
-      agSum.set(a, (agSum.get(a)||0) + (parseFloat(c['Award Amount'])||0)); }
-    const agOpts = [...agSum.entries()].sort((a,b)=>b[1]-a[1]).slice(0, 20);
-    const now = Date.now(), cut = now + 548*864e5;
-    // rank vendors within scope
-    const by = new Map();
-    for (const c of rows) {
-      if (!c._isv) continue;
-      let r = by.get(c._isv);
-      if (!r) { r = { total: 0, awards: 0, exp: 0, byOff: new Map(), byRe: new Map(), mkt: {} }; by.set(c._isv, r); }
-      const amt = parseFloat(c['Award Amount']) || 0;
-      r.total += amt; r.awards++;
-      const endTs = c._endTs || Date.parse(c['End Date']) || 0;
-      if (endTs > now && endTs <= cut) r.exp += amt;
-      const off = scoped ? (c['Awarding Sub Agency'] || c['Awarding Agency'] || '') : (c['Awarding Agency'] || '');
-      r.byOff.set(off, (r.byOff.get(off)||0) + amt);
-      r.byRe.set(c['Recipient Name']||'', (r.byRe.get(c['Recipient Name']||'')||0) + amt);
-      const csp = (window.cloudOf && cloudOf(c['Description'])) || null;
-      if (csp) r.mkt[csp] = (r.mkt[csp]||0) + amt;
-    }
-    const ranked = [...by.entries()].filter(([,r]) => r.total > 0).sort((a,b) => b[1].total - a[1].total);
-    const cur = scoped ? (ds.currentAgency || '') : '';
-    const picker = `<select id="cosellPatch" onchange="CoSellCard.pick(this.value)" style="font: inherit; font-size: var(--text-xs); font-weight: 700; color: var(--accent); background: none; border: 1.5px solid var(--accent); border-radius: 9999px; padding: 3px 10px; max-width: 240px;">
-      <option value="">All agencies</option>
-      ${agOpts.map(([a]) => `<option value="${esc(a)}" ${a === cur ? 'selected' : ''}>${esc(clean(a))}</option>`).join('')}
-    </select>`;
-    const rowsHtml = ranked.length ? ranked.map(([name, r], i) => {
-      const topOff = [...r.byOff.entries()].sort((a,b)=>b[1]-a[1])[0];
-      const chans = [...r.byRe.entries()].filter(([n]) => CHANNEL_RE.test(n)).sort((a,b)=>b[1]-a[1]);
-      const topRe = chans[0] || [...r.byRe.entries()].sort((a,b)=>b[1]-a[1])[0];
-      const tags = Object.entries(r.mkt).map(([k,v]) => `${k} ${money(v)}`).join(' \u00B7 ');
-      return `<div class="dl-row" style="cursor:default;">
-        <div class="dl-main">
-          <div class="dl-line1"><span class="dl-vendor">${i+1}. ${esc(name)}</span><span class="dl-amt">${money(r.total)}</span></div>
-          <div class="dl-line2">${r.awards} award${r.awards===1?'':'s'}${r.exp > 0 ? ' \u00B7 <strong>' + money(r.exp) + ' expiring \u226418mo</strong>' : ''}${topOff && topOff[0] ? ' \u00B7 ' + (scoped ? 'office: ' : 'top buyer: ') + esc(clean(topOff[0])) : ''}${topRe ? ' \u00B7 ' + (chans.length ? 'via ' : 'held by ') + esc(topRe[0]) : ''}${tags ? ' \u00B7 <span class="cloud-chip">' + tags + '</span>' : ''}</div>
-          <div class="pf-actions"><button class="pf-link" onclick="App.runSearch(${JSON.stringify(name.toLowerCase())})">Full market \u2192</button></div>
-        </div></div>`;
-    }).join('') : `<div class="dl-line2" style="padding: 12px 4px;">No tracked SaaS paper visible ${scopeLabel ? 'at ' + esc(scopeLabel) : 'here'}. That means not visible in prime awards \u2014 check the sub map and Partner Fit for the route in.</div>`;
-    card.innerHTML = `<div class="card-header"><div style="flex:1;"><div class="card-title">SaaS co-sell${scopeLabel ? ' \u00B7 ' + esc(scopeLabel) : ''}</div>
-      <div class="card-desc">Your patch: ${picker}<span style="margin-left:8px;">Ranked by active dollars in scope. Figures are floors; a vendor not listed was not scanned.</span></div></div></div>${rowsHtml}`;
-  },
-  pick(agency) {
-    const app = A();
-    if (!agency) { app.resetDrill && app.resetDrill(); }
-    else { app.drillToAgency && app.drillToAgency(agency); }
-    // drill paths call SyncCards.refresh, which re-renders this card
-  },
-};
-
-window.CoSell = {
-  async run() {
-    const app = A();
-    let ov = document.getElementById('cosellOverlay');
-    if (ov) ov.remove();
-    ov = document.createElement('div');
-    ov.id = 'cosellOverlay';
-    ov.style.cssText = 'position:fixed;inset:0;z-index:9999;background:var(--bg-app,#F4F3F8);display:flex;align-items:center;justify-content:center;';
-    ov.innerHTML = '<div style="font-family:inherit;text-align:center;color:var(--text-secondary);padding:24px;">'
-      + '<div style="font-weight:900;font-size:20px;color:var(--text-primary);margin-bottom:8px;">Building the federal SaaS leaderboard</div>'
-      + '<div id="cosellStatus" style="font-size:14px;">Warming up\u2026</div></div>';
-    document.body.appendChild(ov);
-    const status = ov.querySelector('#cosellStatus');
-    const all = [];
-    let done = 0;
-    const BATCH = 4;
-    for (let i = 0; i < ISVS.length; i += BATCH) {
-      const slice = ISVS.slice(i, i + BATCH);
-      await Promise.all(slice.map(name =>
-        scanISV(name).then(rows => { all.push(...rows); })
-          .catch(() => {})
-          .finally(() => { done++; status.textContent = `Scanned ${done} of ${ISVS.length} vendors\u2026`; })));
-    }
-    // pool + dedupe (an award can mention two ISVs; first scan wins)
-    const seen = new Set(), pool = [];
-    for (const c of all) {
-      const k = c['generated_internal_id'] || (c['Award ID'] + '|' + c['Award Amount']);
-      if (seen.has(k)) continue; seen.add(k);
-      pool.push(c);
-    }
-    pool.sort((a, b) => (parseFloat(b['Award Amount'])||0) - (parseFloat(a['Award Amount'])||0));
-
-    // hand the pooled market to the normal pipeline
-    try { app.currentQuery = 'saas'; app.originalQuery = 'saas'; app.displayQuery = 'SaaS'; } catch (e) {}
-    try { app.resetDrill && app.resetDrill(true); } catch (e) {}
-    const active = (typeof Utils !== 'undefined' && Utils.filterActiveContracts) ? Utils.filterActiveContracts(pool) : pool;
-    app.searchData = { raw: pool, active, baseline: active, filter: null, loaded: true };
-    try { app.analyzeMarket(active); } catch (e) {}
-    try {
-      if (app.UI && app.UI.marketCardTitle) app.UI.marketCardTitle.textContent = 'FEDERAL SAAS LEADERBOARD';
-      if (app.UI && app.UI.marketCardDesc) app.UI.marketCardDesc.textContent = 'Pooled from ' + ISVS.length + ' tracked vendors. Tap any agency or vendor to drill deeper.';
-    } catch (e) {}
-    try { DOM.show('resultsGrid'); DOM.show('shareBtn'); DOM.show('snapshotBtn'); } catch (e) {}
-    try { window.PartnerFit && PartnerFit.render(); } catch (e) {}
-    try { window.Deals && Deals.render(); } catch (e) {}
-    try { window.ChartCaptions && ChartCaptions.update(app._chartView || 'treemap'); } catch (e) {}
-    try { window.MatchScope && MatchScope.init(); } catch (e) {}
-    try {
-      const end = new Date(), start = new Date(); start.setFullYear(end.getFullYear() - 1);
-      const iso = d => d.toISOString().split('T')[0];
-      app._lastSearchFilters = { time_period: [{ start_date: iso(start), end_date: iso(end) }],
-                                 award_type_codes: ['A','B','C','D'], keywords: ISVS.slice(0, 8) };
-      app.renderSubawards && app.renderSubawards();
-    } catch (e) {}
-    // scoped leaderboard card at the top of the grid (re-renders on every drill)
-    try {
-      let card = document.getElementById('cosellCard');
-      const grid = document.getElementById('resultsGrid');
-      if (!card && grid) {
-        card = document.createElement('div');
-        card.id = 'cosellCard';
-        card.className = 'app-card wide';
-        grid.insertBefore(card, grid.firstChild);
-      }
-      window.CoSellCard.active = true;
-      CoSellCard.render();
-    } catch (e) {}
-    ov.remove();
-    try { window.scrollTo({ top: 0 }); } catch (e) {}
   },
 };
 })();
