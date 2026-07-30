@@ -8361,6 +8361,10 @@ window.IsvCard = {
       card.id = 'isvCard';
       card.className = 'app-card wide';
       deals.parentNode.insertBefore(card, deals.nextSibling);
+      card.addEventListener('click', (e) => {
+        const b = e.target.closest('.isv-go');
+        if (b && b.dataset.q) A().runSearch(b.dataset.q);
+      });
     }
     const rowsHtml = ranked.map(([name, r], i) => {
       const topOff = [...r.byOff.entries()].sort((a,b)=>b[1]-a[1])[0];
@@ -8371,7 +8375,7 @@ window.IsvCard = {
         <div class="dl-main">
           <div class="dl-line1"><span class="dl-vendor">${i+1}. ${esc(name)}</span><span class="dl-amt">${money(r.total)}</span></div>
           <div class="dl-line2">${r.awards} award${r.awards===1?'':'s'}${r.exp > 0 ? ' \u00B7 <strong>' + money(r.exp) + ' expiring \u226418mo</strong>' : ''}${topOff && topOff[0] ? ' \u00B7 ' + (scoped ? 'office: ' : 'top buyer: ') + esc(clean(topOff[0])) : ''}${topRe && topRe[0] ? ' \u00B7 ' + (chans.length ? 'via ' : 'held by ') + esc(topRe[0]) : ''}${tags ? ' \u00B7 ' + tags : ''}</div>
-          <div class="pf-actions"><button class="pf-link" onclick="App.runSearch(${JSON.stringify(name.toLowerCase())})">Full market \u2192</button></div>
+          <div class="pf-actions"><button class="pf-link isv-go" data-q="${esc(name.toLowerCase())}">Full market \u2192</button></div>
         </div></div>`;
     }).join('');
     card.innerHTML = `<div class="card-header"><div><div class="card-title">SaaS in these contracts${scopeLabel ? ' \u00B7 ' + esc(scopeLabel) : ''}</div>
