@@ -1502,8 +1502,8 @@ a, button, input, select { touch-action: manipulation; }
           <div class="fx-body" style="margin-top:8px;"><strong>Why it matters for entering a new market:</strong> you almost never win a new federal market cold. You enter through someone already inside — a prime that genuinely flows work to subs, or a channel holder with the vehicle and the renewal calendar. Partner Fit ranks who that someone should be, and the expiring-paper weighting tells you <em>when</em> to call.</div>
         </div>
         <div class="fx-item">
-          <div class="fx-title">One honest caveat</div>
-          <div class="fx-body">An end date is <strong>not an RFP</strong>. Expiring paper can renew quietly, exercise option years, or recompete — verify on <a href="https://sam.gov/search/" target="_blank" rel="noopener">SAM.gov</a> before you build a pipeline on it. Subaward data also lags prime awards by months.</div>
+          <div class="fx-title">One thing to know</div>
+          <div class="fx-body">An end date is <strong>not an RFP</strong>. Contracts renew, exercise option years, or recompete. Check SAM.gov before you build pipeline on an end date. Subaward data lags prime awards by months.</div>
         </div>
       </div>
     </div>
@@ -7212,7 +7212,7 @@ function angleFor(v, f) {
   if (CHANNEL_RE.test(v.name)) bits.push('channel holder \u2014 route to sell through, not against');
   else if (v.renew >= 1 && v.renew >= v.awards/2) bits.push('license/renewal paper \u2014 re-buys on cycle');
   if (f.hasSubs) bits.push(v.subOut > 0 ? ('flows ' + Math.round(v.subOut/Math.max(v.prime,1)*100) + '% to subs \u2014 open to teaming') : 'no visible sub flow \u2014 self-performs or thin bench');
-  if (v.bridge >= 1) bits.push(v.bridge + ' short-term award' + (v.bridge>1?'s':'') + ' \u2014 recompete turbulence');
+  if (v.bridge >= 1) bits.push(v.bridge + ' short-term award' + (v.bridge>1?'s':'') + ' \u2014 recompete ahead');
   return bits.length ? bits.join(' \u00B7 ') : (Math.round(v.prime/Math.max(f.total,1)*100) + '% of this market');
 }
 
@@ -7301,7 +7301,7 @@ function rowsFor(sort) {
     let pat = 'active', why = '';
     if (end > now && end <= cut) {
       if (RENEW_RE.test(c['Description']||'')) { pat='renewal'; why='License/subscription paper \u2014 re-buys on cycle.'; }
-      else if (start && (end-start) <= 3.05*31557600000) { pat='shortterm'; why='Short duration \u2014 bridge or base-only; recompete turbulence.'; }
+      else if (start && (end-start) <= 3.05*31557600000) { pat='shortterm'; why='Short duration \u2014 bridge or base period; recompete ahead.'; }
       else { pat='maturing'; why='Long-run contract entering its final stretch.'; }
     }
     out.push({ id, amt, end, start, pat, why,
@@ -7342,7 +7342,6 @@ window.Deals = {
         + (r.why ? '<div class="dl-why">' + esc(r.why) + '</div>' : '')
         + '<div class="pf-actions"><button class="pf-link" data-dlask="' + i + '">Ask Mo</button>'
         + (r.gid ? '<a class="pf-link" href="https://www.usaspending.gov/award/' + encodeURIComponent(r.gid) + '" target="_blank" rel="noopener">Record \u2197</a>' : '')
-        + (r.pat !== 'active' ? '<a class="pf-link" href="https://sam.gov/search/?keywords=' + encodeURIComponent(r.v) + '" target="_blank" rel="noopener">SAM.gov \u2197</a>' : '')
         + '</div>'
         + '</div></div>';
     }).join('');
@@ -7591,7 +7590,7 @@ window.MarketExtras = {
       if (!s) return lines;
       const extra = [];
       if (s.newest) extra.push(`Newest award: ${money(s.newest.amt)} to ${s.newest.v} at ${s.newest.ag}, awarded in the last 90 days \u2014 this market is actively buying.`);
-      if (s.entrants > 0 && s.vendors >= 4) extra.push(`${s.entrants} of ${s.vendors} vendors entered this market within the last 3 years \u2014 ${s.entrants / s.vendors >= 0.3 ? 'the door is open to newcomers' : 'entry is possible but slow'}.`);
+      if (s.entrants > 0 && s.vendors >= 4) extra.push(`${s.entrants} of ${s.vendors} vendors entered this market within the last 3 years \u2014 ${s.entrants / s.vendors >= 0.3 ? 'new vendors are winning here' : 'entry is possible but slow'}.`);
       if (s.leader && s.leader[1].exp12 > 0) extra.push(`${s.leader[0]} has ${money(s.leader[1].exp12)} expiring within 12 months \u2014 the leader's own paper is the biggest displacement pool.`);
       this.substat();
       return lines.concat(extra);
@@ -7713,8 +7712,8 @@ function fyCloseLine() {
   const now = new Date();
   const fyEnd = new Date(now.getFullYear() + (now.getMonth() >= 9 ? 1 : 0), 8, 30);
   const days = Math.ceil((fyEnd - now) / 864e5);
-  if (days <= 150) return `FY${String(fyEnd.getFullYear()).slice(2)} closes in <strong>${days} days</strong>. Q4 money moves fast, and use-it-or-lose-it budgets get spent on whoever is already in the building.`;
-  if (days >= 320) return `FY${String(fyEnd.getFullYear()).slice(2)} just opened — new money is loading, and the buys planned now award in Q3–Q4.`;
+  if (days <= 150) return `FY${String(fyEnd.getFullYear()).slice(2)} closes in <strong>${days} days</strong>. Use-it-or-lose-it budgets get spent on vendors already in the building.`;
+  if (days >= 320) return `FY${String(fyEnd.getFullYear()).slice(2)} just opened — budgets are being planned now; those buys award in Q3–Q4.`;
   return null;
 }
 
@@ -8056,7 +8055,7 @@ function expTimeline(d) {
     .filter(x => x.en > now && x.en <= cut && x.amt >= 250000)
     .sort((a,b) => a.en - b.en).slice(0, 6);
   if (items.length < 2) return '';
-  return '<h2>The next 18 months</h2><p class="fact">Every bar is a contract running out \u2014 the shorter the bar, the sooner the conversation.</p>'
+  return '<h2>The next 18 months</h2><p class="fact">Each bar is time left on the contract. Shortest bars expire first.</p>'
     + (() => {
       const withDays = items.map(x => ({ ...x, days: Math.ceil((x.en - now)/864e5) }));
       const maxD = Math.max(...withDays.map(x => x.days));   // scale to the range shown
@@ -8090,9 +8089,9 @@ function whatBuys(d) {
 function fiveContracts(d) {
   const picks = [];
   const add = (item, why) => { if (item && !picks.some(p => p.c === item.c)) picks.push({ ...item, why }); };
-  add(d.biggest, 'The anchor. The largest single obligation in this market \u2014 whoever holds it sets the competitive weather.');
+  add(d.biggest, 'The anchor. The largest single award in this market.');
   add(d.soonest, 'The clock. The next expiration on the calendar \u2014 renewal, option year, or your opening.');
-  add(d.newest, 'The pulse. Awarded within the last 90 days \u2014 proof this market is buying right now.');
+  add(d.newest, 'The pulse. Awarded within the last 90 days.');
   const rn = d.rows.map(c => ({ c, amt: parseFloat(c['Award Amount'])||0 }))
     .filter(x => /licen[sc]|subscription|saas|renewal/i.test(x.c['Description']||'')).sort((a,b)=>b.amt-a.amt)[0];
   add(rn, 'The recurring buy. License and subscription paper re-buys on cycle \u2014 the most predictable revenue in federal.');
@@ -8115,7 +8114,7 @@ function fiveContracts(d) {
   return picks.slice(0, 5).map((p, i) => {
     const c = p.c, en = c._endTs || Date.parse(c['End Date']);
     return `<div class="fc"><div class="fc-head">${i+1}. ${esc(c['Recipient Name'])} \u00B7 ${money(parseFloat(c['Award Amount'])||0)}</div>
-      <div class="fc-meta">${c['generated_internal_id'] ? `<a class="rcpt" href="https://www.usaspending.gov/award/${encodeURIComponent(c['generated_internal_id'])}" target="_blank" rel="noopener">Record \u2197</a> \u00B7 <a class="rcpt" href="https://sam.gov/search/?keywords=${encodeURIComponent(c['Recipient Name']||'')}" target="_blank" rel="noopener">SAM.gov \u2197</a> \u00B7 ` : ''}${esc(clean(c['Awarding Agency']||''))}${en ? ' \u00B7 runs to ' + mon(en) + ' (' + fyq(en) + ')' : ''}${c['Description'] ? ' \u00B7 ' + esc(String(c['Description']).slice(0, 90)) : ''}</div>
+      <div class="fc-meta">${c['generated_internal_id'] ? `<a class="rcpt" href="https://www.usaspending.gov/award/${encodeURIComponent(c['generated_internal_id'])}" target="_blank" rel="noopener">Record \u2197</a> \u00B7 ` : ''}${esc(clean(c['Awarding Agency']||''))}${en ? ' \u00B7 runs to ' + mon(en) + ' (' + fyq(en) + ')' : ''}${c['Description'] ? ' \u00B7 ' + esc(String(c['Description']).slice(0, 90)) : ''}</div>
       <div class="fc-why">${p.why}</div></div>`;
   }).join('');
 }
@@ -8128,10 +8127,10 @@ function facts(d, part) {
     ? `<strong>${esc(d.scope)}</strong> has <strong>${money(d.total)}</strong> in active ${d.agencyQ ? '' : esc(d.qProse) + ' '}contracts \u2014 ${d.rows.length} awards across ${d.ags.length} ${d.axisOffice ? `buying office${d.ags.length===1?'':'s'}` : `agenc${d.ags.length===1?'y':'ies'}`} and ${d.vs.length} vendors, counting the largest deals funded in the last 12 months.`
     : `The federal government has <strong>${money(d.total)}</strong> in active ${esc(d.qProse)} contracts \u2014 ${d.rows.length} awards across ${d.ags.length} agencies and ${d.vs.length} vendors, counting the largest deals funded in the last 12 months.`);
   out.push(`<strong>${esc(leader[0])}</strong> leads with ${Math.round(leader[1]/Math.max(d.total,1)*100)}% of ${d.scope ? esc(d.scope) + '\u2019s ' + (d.agencyQ ? '' : esc(d.qProse) + ' ') + 'spend' : 'the money'}. The top three vendors hold ${conc}% \u2014 ${conc >= 60 ? 'a concentrated market where the way in is usually through an incumbent, not around one' : 'a fragmented field with room to win directly'}.`);
-  if (d.expTotal > 0) out.push(`<strong>${money(d.expTotal)}</strong> \u2014 ${Math.round(d.expTotal/Math.max(d.total,1)*100)}% of the market \u2014 expires within 18 months. ${d.scope ? 'That is ' + esc(d.scope) + '\u2019s renewal calendar \u2014 and your opening.' : 'In federal sales, expirations are the calendar of opportunity.'}`);
-  if (d.newest) out.push(`The newest award landed in the last 90 days: ${money(d.newest.amt)} to <strong>${esc(d.newest.c['Recipient Name'])}</strong>. This market is buying now, not someday.`);
-  if (d.saTotal > 0) out.push(`<strong>${money(d.saTotal)}</strong> (${Math.round(d.saTotal/Math.max(d.total,1)*100)}%) moves through set-asides${d.saTypes.length ? ' \u2014 led by ' + esc(d.saTypes.slice(0,2).map(([t])=>t).join(' and ').toLowerCase()) : ''}. For small businesses, the side door is real.`);
-  if (d.entrants > 0 && d.vs.length >= 4) out.push(`${d.entrants} of ${d.vs.length} vendors entered within the last three years. ${d.entrants/d.vs.length >= 0.3 ? 'The door is open.' : 'Entry happens, but slowly.'}`);
+  if (d.expTotal > 0) out.push(`<strong>${money(d.expTotal)}</strong> \u2014 ${Math.round(d.expTotal/Math.max(d.total,1)*100)}% of the market \u2014 expires within 18 months. ${d.scope ? 'That\u2019s ' + esc(d.scope) + '\u2019s renewal calendar.' : 'That\u2019s the recompete calendar.'}`);
+  if (d.newest) out.push(`The newest award landed in the last 90 days: ${money(d.newest.amt)} to <strong>${esc(d.newest.c['Recipient Name'])}</strong>. `);
+  if (d.saTotal > 0) out.push(`<strong>${money(d.saTotal)}</strong> (${Math.round(d.saTotal/Math.max(d.total,1)*100)}%) moves through set-asides${d.saTypes.length ? ' \u2014 led by ' + esc(d.saTypes.slice(0,2).map(([t])=>t).join(' and ').toLowerCase()) : ''}.`);
+  if (d.entrants > 0 && d.vs.length >= 4) out.push(`${d.entrants} of ${d.vs.length} vendors entered within the last three years. ${d.entrants/d.vs.length >= 0.3 ? 'New vendors are getting in.' : 'New entrants are rare.'}`);
   const fyl = fyCloseLine();
   if (fyl) out.push(fyl);
   const chosen = part === 'more' ? out.slice(3) : part === 'lead' ? out.slice(0, 3) : out;
