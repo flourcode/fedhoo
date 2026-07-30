@@ -1535,7 +1535,7 @@ a, button, input, select { touch-action: manipulation; }
     <!-- BIO CARD — always shown at the bottom of results -->
     <div class="app-card wide result-panel hidden" id="bioCard" style="margin-top:0;">
       <div style="display:flex;align-items:center;gap:16px;">
-        <img src="/images/oldmark.jpg" alt="Mark Flournoy" style="width:52px;height:52px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid var(--border);">
+        <img src="/images/mark.jpg" alt="Mark Flournoy" style="width:52px;height:52px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid var(--border);">
         <div style="min-width:0;">
           <div style="font-size:var(--text-sm);font-weight:700;color:var(--text-primary);letter-spacing:-0.01em;margin-bottom:3px;">Hi, I'm Mark Flournoy</div>
           <div style="font-size:var(--text-xs);color:var(--text-secondary);line-height:1.55;">Retired federal sales — AWS, F5, Red Hat, DISA COTR, 20 years Marines. I built fedhoo because I spent too many years pulling this data by hand before pipeline reviews. No pitch — if you want to look at your territory together, grab 20 minutes.</div>
@@ -3236,6 +3236,7 @@ const App = {
     this.closeArtiSheet();
     const sheetAic = DOM.get('aiContentContainer'); if (sheetAic) sheetAic.innerHTML = '';
     const ql = DOM.get('sheetQuestionLabel'); if (ql) { ql.textContent = ''; ql.classList.add('hidden'); }
+    document.getElementById('isvCard')?.remove();
     DOM.hide('expiringCard');
     DOM.hide('recentCard');
     DOM.hide('primesCard');
@@ -3408,6 +3409,7 @@ const App = {
         DOM.show('snapshotBtn');
         if (window.PartnerFit) PartnerFit.render();
         if (window.Deals) Deals.render();
+    if (window.IsvCard) IsvCard.render();
         if (window.ChartCaptions) ChartCaptions.update(App._chartView || 'treemap');
         if (window.MatchScope) MatchScope.init();
         if (this._reportIntent) { this._reportIntent = false; setTimeout(() => window.Editorial && Editorial.showInline(), 400); }
@@ -4491,6 +4493,7 @@ const App = {
     this._subawardData = subs;
     if (window.PartnerFit) PartnerFit.render();
     if (window.Deals) Deals.render();
+    if (window.IsvCard) IsvCard.render();
     DOM.get('tabSubSankey')?.classList.remove('hidden');
     DOM.get('dotSubSankey')?.classList.remove('hidden');
 
@@ -7524,6 +7527,7 @@ window.SyncCards = {
     if (!app || !app.searchData || !app.searchData.loaded) return;
     if (window.PartnerFit) PartnerFit.render();
     if (window.Deals) Deals.render();
+    if (window.IsvCard) IsvCard.render();
     if (window.ChartCaptions) ChartCaptions.update(app._chartView || 'treemap');
     const ds = app.drillState || { level: 0 };
     const clean = (typeof Utils !== 'undefined' && Utils.cleanAgency) ? Utils.cleanAgency : (x => x);
@@ -8231,7 +8235,7 @@ function buildHtml(d) {
   ${fiveContracts(d)}
   ${partnersHtml(d)}
   <div class="bio">
-    <img src="https://fedhoo.com/images/oldmark.jpg" alt="Mark Flournoy" onerror="this.style.display='none'">
+    <img src="https://fedhoo.com/images/mark.jpg" alt="Mark Flournoy" onerror="this.style.display='none'">
     <div class="bio-body">
       <div class="bio-name">Hi, I\u2019m Mark</div>
       <div class="bio-text">Retired federal sales \u2014 AWS, F5, Red Hat, DISA COTR, 20 years Marines. I built fedhoo because I spent too many years pulling this data by hand before pipeline reviews. No pitch \u2014 if you want to look at your territory together, grab 20 minutes.</div>
@@ -8282,5 +8286,99 @@ window.Editorial = {
 })();
 </script>
 
+
+<script>
+// ═══ SAAS-IN-THESE-CONTRACTS CARD ═══
+// No extra API calls, no separate mode: vendor names are detected in the
+// award rows the search already returned. Renders below Contracts, follows
+// the drill scope like every other card, hides itself when nothing matches.
+(function () {
+'use strict';
+const A = () => (typeof App !== 'undefined' && App) ? App : window.App;
+const money = (n) => { const x = Number(n)||0;
+  if (x>=1e9) return '$'+(x/1e9).toFixed(1)+'B';
+  if (x>=1e6) return '$'+(x/1e6).toFixed(1)+'M';
+  if (x>=1e3) return '$'+(x/1e3).toFixed(0)+'K';
+  return '$'+Math.round(x); };
+const esc = (s) => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const clean = (a) => (typeof Utils !== 'undefined' && Utils.cleanAgency) ? Utils.cleanAgency(a) : a;
+const CHANNEL_RE = /CARAHSOFT|CDW|SHI |SHI,|INSIGHT PUBLIC|DLT SOLUTIONS|IMMIX|THUNDERCAT|WORLD WIDE TECH|IRON BOW|RED RIVER|PRESIDIO|MYTHICS|EPLUS|FOUR POINTS|TD SYNNEX|INGRAM/i;
+const cloudOf = (desc) => {
+  const s = String(desc || '').toLowerCase();
+  if (/aws marketplace|amazon (web services )?marketplace|aws private offer/.test(s)) return 'AWS';
+  if (/azure marketplace|microsoft (azure )?marketplace|azure private offer/.test(s)) return 'Azure';
+  if (/(google cloud|gcp) marketplace|gcp private offer/.test(s)) return 'Google Cloud';
+  return null;
+};
+// vendor list: name -> match pattern. Short/common words get strict patterns
+// so "sandbox" never counts as Box and "zoom in" never counts as Zoom.
+const ISV_PATTERNS = (() => {
+  const names = ['Crowdstrike','Snowflake','Databricks','Palo Alto Networks','Zscaler','Okta','GitLab','Splunk','Elastic','Datadog','HashiCorp','Cloudflare','Wiz','MongoDB','Confluent','Sonatype','JFrog','SentinelOne','Akamai','ServiceNow','Salesforce','Workday','Atlassian','Smartsheet','Palantir','Snyk','GitHub','Docker','Nutanix','Rubrik','Cohesity','Veeam','Commvault','Netskope','Proofpoint','Tenable','Rapid7','Qualys','Trellix','Fortinet','Dynatrace','New Relic','UiPath','DocuSign','Tableau','Alteryx','Informatica'];
+  const special = {
+    'Palo Alto Networks': /\bpalo\s*alto\b/i,
+    'SentinelOne': /\bsentinel\s*one\b/i,
+    'New Relic': /\bnew\s*relic\b/i,
+    'Wiz': /\bwiz\b(?!ard)/i,
+    'Elastic': /\belastic(?:search|\b(?!\s*(band|ity)))/i,
+  };
+  return names.map(n => ({ n, re: special[n] || new RegExp('\\b' + n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s*') + '\\b', 'i') }));
+})();
+
+window.IsvCard = {
+  render() {
+    const app = A();
+    const deals = document.getElementById('dealsCard');
+    let card = document.getElementById('isvCard');
+    if (!app || !app.searchData || !app.searchData.loaded || !deals) { if (card) card.remove(); return; }
+    const rows = app.searchData.active || [];
+    const ds = app.drillState || { level: 0 };
+    const scoped = ds.level >= 1 && ds.currentAgency;
+    const scopeLabel = ds.level >= 2 && ds.currentSubAgency ? clean(ds.currentSubAgency)
+                     : scoped ? clean(ds.currentAgency) : null;
+    const now = Date.now(), cut = now + 548*864e5;
+    const by = new Map();
+    for (const c of rows) {
+      const hay = (c['Description'] || '') + ' ' + (c['Recipient Name'] || '');
+      for (const { n, re } of ISV_PATTERNS) {
+        if (!re.test(hay)) continue;
+        let r = by.get(n);
+        if (!r) { r = { total: 0, awards: 0, exp: 0, byOff: new Map(), byRe: new Map(), mkt: {} }; by.set(n, r); }
+        const amt = parseFloat(c['Award Amount']) || 0;
+        r.total += amt; r.awards++;
+        const endTs = c._endTs || Date.parse(c['End Date']) || 0;
+        if (endTs > now && endTs <= cut) r.exp += amt;
+        const off = scoped ? (c['Awarding Sub Agency'] || c['Awarding Agency'] || '') : (c['Awarding Agency'] || '');
+        r.byOff.set(off, (r.byOff.get(off)||0) + amt);
+        r.byRe.set(c['Recipient Name']||'', (r.byRe.get(c['Recipient Name']||'')||0) + amt);
+        const csp = cloudOf(c['Description']);
+        if (csp) r.mkt[csp] = (r.mkt[csp]||0) + amt;
+      }
+    }
+    const ranked = [...by.entries()].filter(([,r]) => r.total > 0).sort((a,b) => b[1].total - a[1].total).slice(0, 12);
+    if (!ranked.length) { if (card) card.remove(); return; }
+    if (!card) {
+      card = document.createElement('div');
+      card.id = 'isvCard';
+      card.className = 'app-card wide';
+      deals.parentNode.insertBefore(card, deals.nextSibling);
+    }
+    const rowsHtml = ranked.map(([name, r], i) => {
+      const topOff = [...r.byOff.entries()].sort((a,b)=>b[1]-a[1])[0];
+      const chans = [...r.byRe.entries()].filter(([nm]) => CHANNEL_RE.test(nm)).sort((a,b)=>b[1]-a[1]);
+      const topRe = chans[0] || [...r.byRe.entries()].sort((a,b)=>b[1]-a[1])[0];
+      const tags = Object.entries(r.mkt).map(([k,v]) => `${k} ${money(v)}`).join(' \u00B7 ');
+      return `<div class="dl-row" style="cursor:default;">
+        <div class="dl-main">
+          <div class="dl-line1"><span class="dl-vendor">${i+1}. ${esc(name)}</span><span class="dl-amt">${money(r.total)}</span></div>
+          <div class="dl-line2">${r.awards} award${r.awards===1?'':'s'}${r.exp > 0 ? ' \u00B7 <strong>' + money(r.exp) + ' expiring \u226418mo</strong>' : ''}${topOff && topOff[0] ? ' \u00B7 ' + (scoped ? 'office: ' : 'top buyer: ') + esc(clean(topOff[0])) : ''}${topRe && topRe[0] ? ' \u00B7 ' + (chans.length ? 'via ' : 'held by ') + esc(topRe[0]) : ''}${tags ? ' \u00B7 ' + tags : ''}</div>
+          <div class="pf-actions"><button class="pf-link" onclick="App.runSearch(${JSON.stringify(name.toLowerCase())})">Full market \u2192</button></div>
+        </div></div>`;
+    }).join('');
+    card.innerHTML = `<div class="card-header"><div><div class="card-title">SaaS in these contracts${scopeLabel ? ' \u00B7 ' + esc(scopeLabel) : ''}</div>
+      <div class="card-desc">Vendors named in the awards above. Dollars are full award values, not product revenue \u2014 a floor. Tracked list only; unlisted vendors are not counted.</div></div></div>${rowsHtml}`;
+  },
+};
+})();
+</script>
 </body>
 </html>
