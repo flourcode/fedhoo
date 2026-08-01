@@ -8090,6 +8090,80 @@ function whatBuys(d) {
     </div>`).join('');
 }
 
+// ── fedhoo Opportunity Score: deterministic, published weights ──
+// Same philosophy as Partner Fit: a score you can audit, not a vibe.
+const OPP_W = { size: 20, renewal: 30, openness: 20, entrants: 15, channel: 15 };
+const CH_RE = /CARAHSOFT|CDW|SHI |SHI,|INSIGHT PUBLIC|DLT SOLUTIONS|IMMIX|THUNDERCAT|WORLD WIDE TECH|IRON BOW|RED RIVER|PRESIDIO|MYTHICS|EPLUS|FOUR POINTS|TD SYNNEX|INGRAM/i;
+function oppSubscores(d) {
+  const leader = d.vs.length ? d.vs[0][1] / Math.max(d.total, 1) : 0;
+  const chCount = new Set(d.rows.map(c => c['Recipient Name']||'').filter(n => CH_RE.test(n))).size;
+  const clamp = (x) => Math.max(0, Math.min(10, x));
+  return {
+    size:     { v: clamp((Math.log10(Math.max(d.total, 1)) - 6) * 3), label: 'Market size' },
+    renewal:  { v: clamp(d.total ? d.expTotal / d.total * 10 : 0), label: 'Renewal window (18mo)' },
+    openness: { v: clamp((1 - leader) * 10), label: 'Field openness' },
+    entrants: { v: clamp(d.vs.length ? d.entrants / d.vs.length * 25 : 0), label: 'New-entrant rate' },
+    channel:  { v: [0, 5, 8][Math.min(chCount, 2)] ?? 10, label: 'Channel availability' },
+  };
+}
+function oppScore(d) {
+  if (!d.rows || d.rows.length < 5) return '';
+  const ss = oppSubscores(d);
+  let overall = 0;
+  for (const k in OPP_W) overall += (ss[k].v / 10) * OPP_W[k];
+  overall = Math.round(overall);
+  const entries = Object.keys(OPP_W).map(k => ({ k, ...ss[k], w: OPP_W[k] }));
+  const sorted = [...entries].sort((a,b) => b.v - a.v);
+  const hi = sorted[0], lo = sorted[sorted.length - 1];
+  const rows = entries.map(e => `<div class="os-row">
+      <span class="os-label">${e.label}</span>
+      <span class="os-track"><span class="os-bar" style="width:${Math.round(e.v*10)}%"></span></span>
+      <span class="os-num">${e.v.toFixed(1)}</span></div>`).join('');
+  return `<div class="opp">
+    <div class="os-head">fedhoo Opportunity Score <span class="os-big">${overall}<span class="os-of">/100</span></span></div>
+    ${rows}
+    <div class="os-why">Strongest: ${hi.label.toLowerCase()} (${hi.v.toFixed(1)}). Weakest: ${lo.label.toLowerCase()} (${lo.v.toFixed(1)}). Weights: size ${OPP_W.size} \u00B7 renewal ${OPP_W.renewal} \u00B7 openness ${OPP_W.openness} \u00B7 entrants ${OPP_W.entrants} \u00B7 channel ${OPP_W.channel}. Computed from the awards below \u2014 nothing generated.</div>
+  </div>`;
+}
+
+// ── First moves: rules, not generation. Every line has a receipt. ──
+function firstMoves(d) {
+  const moves = [];
+  const now = Date.now(), cut = now + 548*864e5;
+  // reseller holding the most expiring paper
+  const chExp = new Map();
+  for (const c of d.rows) {
+    const n = c['Recipient Name'] || '';
+    if (!CH_RE.test(n)) continue;
+    const en = c._endTs || Date.parse(c['End Date']) || 0;
+    if (en > now && en <= cut) chExp.set(n, (chExp.get(n)||0) + (parseFloat(c['Award Amount'])||0));
+  }
+  const topCh = [...chExp.entries()].sort((a,b)=>b[1]-a[1])[0];
+  if (topCh && topCh[1] > 0)
+    moves.push(`Call <strong>${esc(topCh[0])}</strong>. They hold ${money(topCh[1])} of this market expiring within 18 months \u2014 the renewal conversations are happening now.`);
+  // biggest buyer
+  if (d.ags.length)
+    moves.push(`Get in front of <strong>${esc(clean(d.ags[0][0]))}</strong>. ${money(d.ags[0][1])} in active paper \u2014 the biggest buyer in this view.`);
+  // soonest meaningful expiration
+  const soon = d.rows.map(c => ({ c, en: c._endTs || Date.parse(c['End Date']) || 0, amt: parseFloat(c['Award Amount'])||0 }))
+    .filter(x => x.en > now && x.en <= cut && x.amt >= 250000).sort((a,b) => a.en - b.en)[0];
+  if (soon)
+    moves.push(`Watch <strong>${esc(soon.c['Recipient Name'])}</strong>\u2019s ${money(soon.amt)} at ${esc(clean(soon.c['Awarding Agency']||''))} \u2014 runs out ${mon(soon.en)} (${fyq(soon.en)}).${soon.c['generated_internal_id'] ? ` <a class="rcpt" href="https://www.usaspending.gov/award/${encodeURIComponent(soon.c['generated_internal_id'])}" target="_blank" rel="noopener">Record \u2197</a>` : ''}`);
+  // set-aside lane
+  if (d.saTotal > 0 && d.saTotal / Math.max(d.total,1) >= 0.15)
+    moves.push(`If you hold a set-aside, lead with it. ${Math.round(d.saTotal/Math.max(d.total,1)*100)}% of this market moves through set-asides${d.saTypes.length ? ' \u2014 mostly ' + esc(String(d.saTypes[0][0]).toLowerCase()) : ''}.`);
+  // newest award = what's getting funded
+  if (d.newest)
+    moves.push(`Study the newest win: <strong>${esc(d.newest.c['Recipient Name'])}</strong> at ${esc(clean(d.newest.c['Awarding Agency']||''))} (${money(d.newest.amt)}). Fresh awards show what\u2019s getting funded.`);
+  // prime fallback when no channel exists
+  if (!topCh && d.vs.length)
+    moves.push(`Team with <strong>${esc(d.vs[0][0])}</strong>. Largest incumbent \u2014 ${money(d.vs[0][1])} in this market. Prime relationships are the slow road in, but they carry.`);
+  if (moves.length < 2) return '';
+  return `<h2>First moves</h2>
+  <p class="fact">Ranked from the data above, not generated. Check everything before you build pipeline on it.</p>
+  ${moves.slice(0, 5).map((m, i) => `<p class="fm"><span class="fm-n">${i+1}.</span> ${m}</p>`).join('')}`;
+}
+
 function fiveContracts(d) {
   const picks = [];
   const add = (item, why) => { if (item && !picks.some(p => p.c === item.c)) picks.push({ ...item, why }); };
@@ -8184,6 +8258,19 @@ function buildHtml(d) {
   .fb:nth-child(5) .fb-bar { background: #C2A15C; }
   .fb:nth-child(6) .fb-bar { background: #7B78C0; }
   .fb-amt { font-family: system-ui, sans-serif; font-weight: 800; font-size: 15px; color: #2B2A24; white-space: nowrap; }
+  .opp { background: #E9E3CD; border-radius: 10px; padding: 20px 22px; margin: 0 0 30px; }
+  .os-head { font-family: system-ui, sans-serif; font-weight: 900; font-size: 17px; display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
+  .os-big { font-size: 34px; color: #46446E; }
+  .os-of { font-size: 16px; color: #8A8570; font-weight: 800; }
+  .os-row { display: flex; align-items: center; gap: 10px; margin: 6px 0; font-family: system-ui, sans-serif; }
+  .os-label { flex: 0 0 190px; font-size: 13px; font-weight: 700; color: #44423A; }
+  .os-track { flex: 1; height: 8px; background: #D9D2B8; border-radius: 4px; overflow: hidden; }
+  .os-bar { display: block; height: 100%; background: #46446E; border-radius: 4px; }
+  .os-num { flex: 0 0 34px; text-align: right; font-size: 13px; font-weight: 800; color: #2B2A24; }
+  .os-why { font-family: system-ui, sans-serif; font-size: 12.5px; color: #8A8570; line-height: 1.55; margin-top: 12px; }
+  .fm { font-size: 17.5px; line-height: 1.65; margin: 0 0 16px; }
+  .fm-n { font-family: system-ui, sans-serif; font-weight: 900; color: #46446E; margin-right: 4px; }
+  @media (max-width: 640px) { .os-label { flex-basis: 120px; font-size: 12px; } }
   .rcpt { font-family: system-ui, sans-serif; font-weight: 800; color: #46446E; text-decoration: none; }
   .rcpt:hover { text-decoration: underline; }
   .cat-code { font-family: system-ui, sans-serif; font-weight: 700; font-size: 12px; color: #8A8570; letter-spacing: 0.03em; }
@@ -8219,6 +8306,7 @@ function buildHtml(d) {
   <p class="dek">${d.agencyQ ? 'What the spending record says about the incumbents, the money in motion, and the way in.' : 'What the spending record says about the buyers, the winners, and the way in.'}</p>
   <div class="date"><span class="date-text">${today} \u00B7 fedhoo</span><button class="share-report" onclick="__shareReport()">Share this report \u2197</button><a class="share-report live-link" href="${'https://fedhoo.com/?q=' + encodeURIComponent((A().originalQuery || A().currentQuery || '').toLowerCase()) + (A().territory ? '&territory=' + encodeURIComponent(A().territory) : '')}">Explore live on fedhoo \u2197</a></div>
   <div class="hero">${money(d.total)}</div>
+  ${oppScore(d)}
   ${facts(d, 'lead')}
   <h2>Where the money flows</h2>
   <div class="chart chart-desktop">${sankey(d)}</div>
@@ -8234,6 +8322,7 @@ function buildHtml(d) {
   <h2>This market in five contracts</h2>
   ${fiveContracts(d)}
   ${partnersHtml(d)}
+  ${firstMoves(d)}
   <div class="bio">
     <img src="https://fedhoo.com/images/mark.jpg" alt="Mark Flournoy" onerror="this.style.display='none'">
     <div class="bio-body">
