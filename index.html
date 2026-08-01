@@ -8258,7 +8258,8 @@ function buildHtml(d) {
   .fb:nth-child(5) .fb-bar { background: #C2A15C; }
   .fb:nth-child(6) .fb-bar { background: #7B78C0; }
   .fb-amt { font-family: system-ui, sans-serif; font-weight: 800; font-size: 15px; color: #2B2A24; white-space: nowrap; }
-  .opp { background: #E9E3CD; border-radius: 10px; padding: 20px 22px; margin: 0 0 30px; }
+  .opp { background: #E9E3CD; border-radius: 10px; padding: 20px 22px; margin: 26px 0 8px; }
+  .chart-brand { font-family: system-ui, sans-serif; font-size: 12px; font-weight: 700; color: #8A8570; letter-spacing: 0.02em; padding: 12px 4px 0; }
   .os-head { font-family: system-ui, sans-serif; font-weight: 900; font-size: 17px; display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
   .os-big { font-size: 34px; color: #46446E; }
   .os-of { font-size: 16px; color: #8A8570; font-weight: 800; }
@@ -8306,18 +8307,18 @@ function buildHtml(d) {
   <p class="dek">${d.agencyQ ? 'What the spending record says about the incumbents, the money in motion, and the way in.' : 'What the spending record says about the buyers, the winners, and the way in.'}</p>
   <div class="date"><span class="date-text">${today} \u00B7 fedhoo</span><button class="share-report" onclick="__shareReport()">Share this report \u2197</button><a class="share-report live-link" href="${'https://fedhoo.com/?q=' + encodeURIComponent((A().originalQuery || A().currentQuery || '').toLowerCase()) + (A().territory ? '&territory=' + encodeURIComponent(A().territory) : '')}">Explore live on fedhoo \u2197</a></div>
   <div class="hero">${money(d.total)}</div>
-  ${oppScore(d)}
-  ${facts(d, 'lead')}
   <h2>Where the money flows</h2>
-  <div class="chart chart-desktop">${sankey(d)}</div>
+  <div class="chart chart-desktop">${sankey(d)}<div class="chart-brand">fedhoo.com \u00B7 ${d.agencyQ ? `What\u2019s ${qUp} buying?` : `Who\u2019s buying ${qUp}?`} \u00B7 ${today}</div></div>
   <div class="chart-mobile">${flowBars(d)}</div>
   <div class="chart-cap">Active contract dollars, ${d.axisOffice ? 'buying office' : 'buying agency'} \u2192 prime contractor. Top 100 awards funded in the last 12 months. Source: USASpending.gov</div>
+  ${facts(d, 'lead')}
   ${whatBuys(d)}
   ${d.subs && d.subs.length >= 3 && sankey3(d) ? `<h2>How the work flows down</h2>
   <div class="chart chart-desktop">${sankey3(d)}</div>
   <div class="chart-mobile">${subBars(d)}</div>
   <div class="chart-cap">Prime \u2192 subcontractor flows from reported subawards. Subaward reporting lags prime awards by months \u2014 treat as a floor, not a census. Source: USASpending.gov</div>` : ''}
-  ${(() => { const m = facts(d, 'more'); return m ? '<h2>The undercurrents</h2>' + m : ''; })()}
+  ${(() => { const opp = oppScore(d); const m = facts(d, 'more');
+     return (opp || m) ? '<h2>Opportunity fit</h2>' + opp + m : ''; })()}
   ${expTimeline(d)}
   <h2>This market in five contracts</h2>
   ${fiveContracts(d)}
