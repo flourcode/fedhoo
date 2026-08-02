@@ -1528,7 +1528,7 @@ a, button, input, select { touch-action: manipulation; }
       <div class="hw-book">
         <div class="hw-book-title">Need help reading your market?</div>
         <div class="hw-book-body">Bring a territory or a target account. We’ll pull the data together on a call — how to read the signals, size the market, and prep for your next meeting in minutes.</div>
-        <a class="hw-book-btn" href="https://calendly.com/markflournoy/chat-with-mark" target="_blank" rel="noopener">Book a session with Mark</a>
+        <a class="hw-book-btn" href="https://calendly.com/markflournoy/chat-with-mark?utm_source=fedhoo&utm_medium=site&utm_content=fedhoo_footer_how" target="_blank" rel="noopener">Book a session with Mark</a>
       </div>
     </div>
 
@@ -1539,7 +1539,7 @@ a, button, input, select { touch-action: manipulation; }
         <div style="min-width:0;">
           <div style="font-size:var(--text-sm);font-weight:700;color:var(--text-primary);letter-spacing:-0.01em;margin-bottom:3px;">Hi, I'm Mark Flournoy</div>
           <div style="font-size:var(--text-xs);color:var(--text-secondary);line-height:1.55;">Retired federal sales — AWS, F5, Red Hat, DISA COTR, 20 years Marines. I built fedhoo because I spent too many years pulling this data by hand before pipeline reviews. No pitch — if you want to look at your territory together, grab 20 minutes.</div>
-          <a href="https://calendly.com/markflournoy/chat-with-mark" target="_blank" rel="noopener" class="footer-chat-btn" style="margin-top:12px;height:34px;font-size:var(--text-xs);padding:0 14px;">Book a chat →</a>
+          <a href="https://calendly.com/markflournoy/chat-with-mark?utm_source=fedhoo&utm_medium=site&utm_content=fedhoo_footer_bio" target="_blank" rel="noopener" class="footer-chat-btn" style="margin-top:12px;height:34px;font-size:var(--text-xs);padding:0 14px;">Book a chat →</a>
         </div>
       </div>
     </div>
@@ -1611,7 +1611,7 @@ a, button, input, select { touch-action: manipulation; }
 
   <div class="footer-copy">© 2026 fedhoo · Data via USASpending.gov · Not affiliated with the U.S. government</div>
   <div style="text-align:center;margin-top:10px;">
-    <a href="https://calendly.com/markflournoy/chat-with-mark" target="_blank" rel="noopener" class="footer-chat-btn">Book a chat with Mark</a>
+    <a href="https://calendly.com/markflournoy/chat-with-mark?utm_source=fedhoo&utm_medium=site&utm_content=fedhoo_footer_center" target="_blank" rel="noopener" class="footer-chat-btn">Book a chat with Mark</a>
   </div>
   <div class="footer-legal">fedhoo uses Google Analytics to understand site usage and improve the product. We do not collect personal information or sell data. <a href="https://tools.google.com/dlpage/gaoptout" target="_blank" rel="noopener">Opt out using Google's Analytics Opt-out Browser Add-on</a>.</div>
 </footer>
@@ -8161,7 +8161,8 @@ function firstMoves(d) {
   if (moves.length < 2) return '';
   return `<h2>First moves</h2>
   <p class="fact">Ranked from the data above, not generated. Check everything before you build pipeline on it.</p>
-  ${moves.slice(0, 5).map((m, i) => `<p class="fm"><span class="fm-n">${i+1}.</span> ${m}</p>`).join('')}`;
+  ${moves.slice(0, 5).map((m, i) => `<p class="fm"><span class="fm-n">${i+1}.</span> ${m}</p>`).join('')}
+  <p class="fm fm-cta">Want to work these moves against your actual territory? <a class="rcpt" href="https://calendly.com/markflournoy/chat-with-mark?utm_source=fedhoo&utm_medium=report&utm_content=first_moves" target="_blank" rel="noopener">Grab 20 minutes \u2197</a> \u2014 no pitch.</p>`;
 }
 
 function fiveContracts(d) {
@@ -8271,6 +8272,7 @@ function buildHtml(d) {
   .os-why { font-family: system-ui, sans-serif; font-size: 12.5px; color: #8A8570; line-height: 1.55; margin-top: 12px; }
   .fm { font-size: 17.5px; line-height: 1.65; margin: 0 0 16px; }
   .fm-n { font-family: system-ui, sans-serif; font-weight: 900; color: #46446E; margin-right: 4px; }
+  .fm-cta { margin-top: 26px; padding-top: 18px; border-top: 1px solid #D9D2B8; color: #44423A; }
   @media (max-width: 640px) { .os-label { flex-basis: 120px; font-size: 12px; } }
   .rcpt { font-family: system-ui, sans-serif; font-weight: 800; color: #46446E; text-decoration: none; }
   .rcpt:hover { text-decoration: underline; }
@@ -8329,7 +8331,7 @@ function buildHtml(d) {
     <div class="bio-body">
       <div class="bio-name">Hi, I\u2019m Mark</div>
       <div class="bio-text">Retired federal sales \u2014 AWS, F5, Red Hat, DISA COTR, 20 years Marines. I built fedhoo because I spent too many years pulling this data by hand before pipeline reviews. No pitch \u2014 if you want to look at your territory together, grab 20 minutes.</div>
-      <a class="bio-btn" href="https://calendly.com/markflournoy/chat-with-mark" target="_blank" rel="noopener">Chat with Mark \u2197</a>
+      <a class="bio-btn" href="https://calendly.com/markflournoy/chat-with-mark?utm_source=fedhoo&utm_medium=site&utm_content=fedhoo_report_bio" target="_blank" rel="noopener">Chat with Mark \u2197</a>
     </div>
   </div>
   <div class="foot">
