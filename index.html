@@ -1116,6 +1116,18 @@ a, button, input, select { touch-action: manipulation; }
 .cross-nav-cta { color: var(--accent, #46446E); }
 .cross-nav-cta:hover { color: #5E5B92; }
 
+
+/* ── pastel entity system (ported from fedmo v2) ── */
+.dl-amt { background: rgba(22,163,74,0.10); color: #15803D; padding: 1px 8px; border-radius: 6px; }
+.dark .dl-amt { background: rgba(74,222,128,0.14); color: #6EE7A0; }
+.veh-chip { font-size: 10px; font-weight: 800; letter-spacing: 0.04em; color: #5B21B6; background: #EDE9FE; border-radius: 9999px; padding: 1px 8px; }
+.dark .veh-chip { background: rgba(139,92,246,0.18); color: #C4B5FD; }
+.fh-hl { padding: 0 4px; border-radius: 5px; }
+.fh-hl-vendor { background: rgba(249,115,22,0.11); box-shadow: inset 0 -1px 0 rgba(249,115,22,0.25); }
+.fh-hl-agency { background: rgba(139,92,246,0.10); box-shadow: inset 0 -1px 0 rgba(139,92,246,0.25); }
+.dark .fh-hl-vendor { background: rgba(249,115,22,0.18); }
+.dark .fh-hl-agency { background: rgba(139,92,246,0.20); }
+
 </style>
 </head>
 <body>
@@ -2475,6 +2487,11 @@ const Html = {
   // onDone     , called with the final accumulated text string on success
   // onError    , called with an error message string on failure
   async streamInto(targetEl, response, onDone, onError) {
+    const _origDone = onDone;
+    onDone = (txt) => {
+      try { if (window.__fhHighlight && window.App && App.searchData) __fhHighlight(targetEl, App.searchData.active); } catch (e) {}
+      if (_origDone) _origDone(txt);
+    };
     if (!response.body) {
       onError('No response stream available.');
       return;
@@ -7308,6 +7325,7 @@ function rowsFor(sort) {
       else { pat='maturing'; why='Long-run contract entering its final stretch.'; }
     }
     out.push({ id, amt, end, start, pat, why,
+      veh: (window.detectVehicle ? detectVehicle(c) : null),
       gid: c['generated_internal_id'] || null,
       v: c['Recipient Name']||'Unknown',
       ag: (c['Awarding Sub Agency'] && c['Awarding Sub Agency'] !== c['Awarding Agency']) ? c['Awarding Sub Agency'] : (c['Awarding Agency']||''),
@@ -7341,7 +7359,7 @@ window.Deals = {
         + '<span class="dl-badge ' + (r.pat==='active'?'active-b':r.pat) + '">' + LABEL[r.pat] + '</span>'
         + '<div class="dl-body">'
         + '<div class="dl-line1">' + esc(r.v) + ' \u00B7 <span class="dl-amt">' + money(r.amt) + '</span></div>'
-        + '<div class="dl-line2">' + esc(r.ag) + ' \u2014 ' + dateBit + (r.desc ? ' \u00B7 ' + esc(r.desc) : '') + '</div>'
+        + '<div class="dl-line2">' + esc(r.ag) + ' \u2014 ' + dateBit + (r.veh ? ' \u00B7 <span class="veh-chip">' + esc(r.veh) + '</span>' : '') + (r.desc ? ' \u00B7 ' + esc(r.desc) : '') + '</div>'
         + (r.why ? '<div class="dl-why">' + esc(r.why) + '</div>' : '')
         + '<div class="pf-actions"><button class="pf-link" data-dlask="' + i + '">Ask Mo</button>'
         + (r.gid ? '<a class="pf-link" href="https://www.usaspending.gov/award/' + encodeURIComponent(r.gid) + '" target="_blank" rel="noopener">Record \u2197</a>' : '')
@@ -8260,6 +8278,7 @@ function buildHtml(d) {
   .fb:nth-child(5) .fb-bar { background: #C2A15C; }
   .fb:nth-child(6) .fb-bar { background: #7B78C0; }
   .fb-amt { font-family: system-ui, sans-serif; font-weight: 800; font-size: 15px; color: #2B2A24; white-space: nowrap; }
+  .fh-hl { padding: 0 4px; border-radius: 5px; }
   .opp { background: #E9E3CD; border-radius: 10px; padding: 20px 22px; margin: 26px 0 8px; }
   .chart-brand { font-family: system-ui, sans-serif; font-size: 12px; font-weight: 700; color: #8A8570; letter-spacing: 0.02em; padding: 12px 4px 0; }
   .os-head { font-family: system-ui, sans-serif; font-weight: 900; font-size: 17px; display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
@@ -8481,6 +8500,129 @@ window.IsvCard = {
   },
 };
 })();
+</script>
+
+<script>
+// ── Ported from fedmo v2: vehicle detection + prose↔data highlighting ──
+const VEHICLE_MAP = {
+  // SEWP V GWAC contracts are NNG15S* (FY2015 SEWP). Generic NNG matches
+  // NASA Goddard satellite procurement (NNG09HR00C, NNG10XA05C) which is
+  // NOT SEWP V — those are NASA's direct hardware contracts.
+  'NNG15S':    'SEWP V',
+  'GS00Q':     'CIO-SP4',
+  'HHSN':      'CIO-SP3',
+  'GS35F':     'GSA MAS',
+  'GS00F':     'GSA MAS',
+  '47QT':      'GSA MAS',
+  '47QR':      'OASIS+',
+  '47QF':      'OASIS+',
+  'W91RUS':    'ITES-3S',
+  'W52P1J':    'ITES',
+  'N0017':     'SeaPort-NxG',
+  'FA8771':    'NETCENTS-2',
+  'HC1028':    'ENCORE III',
+  'HC1047':    'JWCC',
+  'HSHQDC':    'EAGLE II',
+};
+
+const PARENT_VEHICLE_MAP = {
+  ...VEHICLE_MAP,
+  '75A501':    'BARDA IDIQ',
+  '75N910':    'NIH Research IDIQ',
+  '75FCMC':    'HHS OAM Vehicle',
+  'HHSM50':    'CMS Ordering Vehicle',
+};
+
+function parseParentFromInternalId(internalId, awardId) {
+  if (!internalId || !awardId) return null;
+  const strip = `CONT_AWD_${awardId}_`;
+  if (!internalId.startsWith(strip)) return null;
+  const remainder = internalId.slice(strip.length);
+  const parts = remainder.split('_');
+  if (parts.length < 3) return null;
+  const parentId = parts.slice(1, -1).join('_');
+  return (parentId && parentId !== '-NONE-') ? parentId : null;
+}
+
+function detectVehicle(award) {
+  const id = String(award['Award ID'] || '').toUpperCase();
+  if (id) {
+    for (let len = 7; len >= 3; len--) {
+      const vehicle = VEHICLE_MAP[id.substring(0, len)];
+      if (vehicle) return vehicle;
+    }
+  }
+
+  const internalId = String(award['generated_internal_id'] || '');
+  const parentId = parseParentFromInternalId(internalId, String(award['Award ID'] || ''));
+  if (parentId) {
+    const parentUpper = parentId.toUpperCase();
+    for (let len = 7; len >= 3; len--) {
+      const vehicle = PARENT_VEHICLE_MAP[parentUpper.substring(0, len)];
+      if (vehicle) return vehicle;
+    }
+  }
+
+  return null;
+}
+
+// Highlight vendor/agency names in Mo's prose ONLY when they exist in the
+// current search rows — a highlight is itself a receipt.
+window.__fhHighlight = function (el, rows) {
+  if (!el || !rows || !rows.length) return;
+  const names = new Map();
+  const add = (raw, cls) => {
+    const t = String(raw || '').trim();
+    if (t.length < 4) return;
+    const k = t.toLowerCase();
+    if (!names.has(k)) names.set(k, { t, cls });
+  };
+  const STOP = new Set(['general','united','american','national','advanced','global','federal',
+    'international','science','systems','digital','university','department','defense','technology',
+    'information','enterprise','integrated','strategic','applied','world','pacific','atlantic']);
+  const addVendor = (raw) => {
+    add(raw, 'fh-hl-vendor');
+    const tok = String(raw || '').trim().split(/\s+/)[0];
+    if (tok && tok.length >= 5 && !STOP.has(tok.toLowerCase())) add(tok, 'fh-hl-vendor');
+  };
+  for (const r of rows.slice(0, 60)) {
+    addVendor(r['Recipient Name']);
+    add(r['Awarding Agency'], 'fh-hl-agency');
+    add(r['Awarding Sub Agency'], 'fh-hl-agency');
+    if (typeof Utils !== 'undefined' && Utils.cleanAgency) {
+      add(Utils.cleanAgency(r['Awarding Agency'] || ''), 'fh-hl-agency');
+      add(Utils.cleanAgency(r['Awarding Sub Agency'] || ''), 'fh-hl-agency');
+    }
+  }
+  if (!names.size) return;
+  const escRe = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp('(' + [...names.values()].sort((a,b)=>b.t.length-a.t.length).map(e=>escRe(e.t)).join('|') + ')', 'gi');
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null);
+  const targets = [];
+  let node;
+  while ((node = walker.nextNode())) {
+    if (node.parentElement && node.parentElement.closest('a, .fh-hl, button')) continue;
+    if (re.test(node.nodeValue)) targets.push(node);
+    re.lastIndex = 0;
+  }
+  for (const tn of targets) {
+    const frag = document.createDocumentFragment();
+    const text = tn.nodeValue;
+    let last = 0, m;
+    re.lastIndex = 0;
+    while ((m = re.exec(text))) {
+      if (m.index > last) frag.appendChild(document.createTextNode(text.slice(last, m.index)));
+      const span = document.createElement('span');
+      const hit = names.get(m[0].toLowerCase());
+      span.className = 'fh-hl ' + (hit ? hit.cls : 'fh-hl-vendor');
+      span.textContent = m[0];
+      frag.appendChild(span);
+      last = m.index + m[0].length;
+    }
+    if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+    tn.parentNode.replaceChild(frag, tn);
+  }
+};
 </script>
 </body>
 </html>
