@@ -7774,11 +7774,15 @@ function gather() {
     const ql = String(app.displayQuery || app.currentQuery || '').toLowerCase().trim();
     const AL = (typeof Utils !== 'undefined' && Utils.agencyAliases) || {};
     const SAL = (typeof Utils !== 'undefined' && Utils.subAgencyAliases) || {};
-    let det = null;
-    if (AL[ql]) det = AL[ql];
-    else if (SAL[ql] && SAL[ql].name) det = SAL[ql].name;
-    else for (const v of Object.values(AL)) { if (String(v).toLowerCase() === ql) { det = v; break; } }
-    if (det) { scope = clean(det); agencyQ = true; }
+    let det = null, acroKey = null;
+    if (AL[ql]) { det = AL[ql]; acroKey = ql; }
+    else if (SAL[ql] && SAL[ql].name) { det = SAL[ql].name; acroKey = ql; }
+    else {
+      for (const v of Object.values(AL)) { if (String(v).toLowerCase() === ql) { det = v; break; } }
+      if (!det) for (const v of Object.values(SAL)) { if (v && v.name && String(v.name).toLowerCase() === ql) { det = v.name; break; } }
+    }
+    if (det) { scope = clean(det); agencyQ = true; app.__agDet = { det, acroKey }; }
+    else app.__agDet = null;
   }
   // Flow axis: offices when drilled; for agency queries, offices only if they
   // actually differentiate (data-driven — no taxonomy assumptions)
@@ -7858,6 +7862,11 @@ function gather() {
     catCode,
     terr: (app.territory && app.SECTORS && app.SECTORS[app.territory]) ? (app.SECTORS[app.territory].label || app.territory) : null,
     agencyQ, axisOffice: useSub,
+    // Article-aware agency phrasing: acronym queries stay bare ("What's DARPA
+    // buying?"); full names take the article and canonical casing ("What's
+    // the Missile Defense Agency buying?").
+    agName: (agencyQ && app.__agDet) ? (app.__agDet.acroKey ? app.__agDet.acroKey.toUpperCase() : app.__agDet.det) : null,
+    agArt: !!(agencyQ && app.__agDet && !app.__agDet.acroKey),
     qHead: smartCase(app.displayQuery || app.currentQuery || 'this market', 'head'),
     qProse: smartCase(app.displayQuery || app.currentQuery || 'this market', 'prose'),
     scope };
@@ -8222,10 +8231,10 @@ function facts(d, part) {
   const conc = Math.round(top3 / Math.max(d.total,1) * 100);
   const out = [];
   out.push(d.scope
-    ? `<strong>${esc(d.scope)}</strong> has <strong>${money(d.total)}</strong> in active ${d.agencyQ ? '' : esc(d.qProse) + ' '}contracts \u2014 ${d.rows.length} awards across ${d.ags.length} ${d.axisOffice ? `buying office${d.ags.length===1?'':'s'}` : `agenc${d.ags.length===1?'y':'ies'}`} and ${d.vs.length} vendors, counting the largest deals funded in the last 12 months.`
+    ? `<strong>${d.agencyQ && d.agArt ? 'The ' : ''}${esc(d.agencyQ ? (d.agName || d.scope) : d.scope)}</strong> has <strong>${money(d.total)}</strong> in active ${d.agencyQ ? '' : esc(d.qProse) + ' '}contracts \u2014 ${d.rows.length} awards across ${d.ags.length} ${d.axisOffice ? `buying office${d.ags.length===1?'':'s'}` : `agenc${d.ags.length===1?'y':'ies'}`} and ${d.vs.length} vendors, counting the largest deals funded in the last 12 months.`
     : `The federal government has <strong>${money(d.total)}</strong> in active ${esc(d.qProse)} contracts \u2014 ${d.rows.length} awards across ${d.ags.length} agencies and ${d.vs.length} vendors, counting the largest deals funded in the last 12 months.`);
-  out.push(`<strong>${esc(leader[0])}</strong> leads with ${Math.round(leader[1]/Math.max(d.total,1)*100)}% of ${d.scope ? esc(d.scope) + '\u2019s ' + (d.agencyQ ? '' : esc(d.qProse) + ' ') + 'spend' : 'the money'}. The top three vendors hold ${conc}% \u2014 ${conc >= 60 ? 'a concentrated market where the way in is usually through an incumbent, not around one' : 'a fragmented field with room to win directly'}.`);
-  if (d.expTotal > 0) out.push(`<strong>${money(d.expTotal)}</strong> \u2014 ${Math.round(d.expTotal/Math.max(d.total,1)*100)}% of the market \u2014 expires within 18 months. ${d.scope ? 'That\u2019s ' + esc(d.scope) + '\u2019s renewal calendar.' : 'That\u2019s the recompete calendar.'}`);
+  out.push(`<strong>${esc(leader[0])}</strong> leads with ${Math.round(leader[1]/Math.max(d.total,1)*100)}% of ${d.scope ? (d.agencyQ && d.agArt ? 'the ' : '') + esc(d.agencyQ ? (d.agName || d.scope) : d.scope) + '\u2019s ' + (d.agencyQ ? '' : esc(d.qProse) + ' ') + 'spend' : 'the money'}. The top three vendors hold ${conc}% \u2014 ${conc >= 60 ? 'a concentrated market where the way in is usually through an incumbent, not around one' : 'a fragmented field with room to win directly'}.`);
+  if (d.expTotal > 0) out.push(`<strong>${money(d.expTotal)}</strong> \u2014 ${Math.round(d.expTotal/Math.max(d.total,1)*100)}% of the market \u2014 expires within 18 months. ${d.scope ? 'That\u2019s ' + (d.agencyQ && d.agArt ? 'the ' : '') + esc(d.agencyQ ? (d.agName || d.scope) : d.scope) + '\u2019s renewal calendar.' : 'That\u2019s the recompete calendar.'}`);
   if (d.newest) out.push(`The newest award landed in the last 90 days: ${money(d.newest.amt)} to <strong>${esc(d.newest.c['Recipient Name'])}</strong>. `);
   if (d.saTotal > 0) out.push(`<strong>${money(d.saTotal)}</strong> (${Math.round(d.saTotal/Math.max(d.total,1)*100)}%) moves through set-asides${d.saTypes.length ? ' \u2014 led by ' + esc(d.saTypes.slice(0,2).map(([t])=>t).join(' and ').toLowerCase()) : ''}.`);
   if (d.entrants > 0 && d.vs.length >= 4) out.push(`${d.entrants} of ${d.vs.length} vendors entered within the last three years. ${d.entrants/d.vs.length >= 0.3 ? 'New vendors are getting in.' : 'New entrants are rare.'}`);
@@ -8251,7 +8260,7 @@ function buildHtml(d) {
   const qUp = esc(d.qHead || d.q);
   const url = 'https://fedhoo.com/?q=' + encodeURIComponent((A().originalQuery || A().currentQuery || '').toLowerCase()) + (A().territory ? '&territory=' + encodeURIComponent(A().territory) : '');
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${d.agencyQ ? `What\u2019s ${qUp} buying?` : `Who\u2019s buying ${qUp}${d.terr && !d.scope ? ' in ' + esc(d.terr) : ''}?`} \u00B7 Follow the Money \u2014 fedhoo</title>
+<title>${d.agencyQ ? `What\u2019s ${d.agArt ? 'the ' : ''}${esc(d.agName || d.qHead)} buying?` : `Who\u2019s buying ${qUp}${d.terr && !d.scope ? ' in ' + esc(d.terr) : ''}?`} \u00B7 Follow the Money \u2014 fedhoo</title>
 <style>
   body { margin: 0; background: #EFEAD8; color: #2B2A24; font-family: Georgia, 'Times New Roman', serif; }
   .wrap { max-width: 1100px; margin: 0 auto; padding: 56px 28px 80px; }
@@ -8325,7 +8334,7 @@ function buildHtml(d) {
   @media print { body { background: #EFEAD8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; } .share-report { display: none; } }
 </style></head><body><div class="wrap">
   <div class="kicker">Follow the Money${d.scope && !d.agencyQ ? ' \u00B7 ' + esc(d.scope) : ''}</div>
-  <h1>${d.agencyQ ? `What\u2019s ${qUp} buying?` : `Who\u2019s buying ${qUp}${d.scope ? ' at ' + esc(d.scope) : d.terr ? ' in ' + esc(d.terr) : ''}?`}</h1>
+  <h1>${d.agencyQ ? `What\u2019s ${d.agArt ? 'the ' : ''}${esc(d.agName || d.qHead)} buying?` : `Who\u2019s buying ${qUp}${d.scope ? ' at ' + esc(d.scope) : d.terr ? ' in ' + esc(d.terr) : ''}?`}</h1>
   <p class="dek">${d.agencyQ ? 'What the spending record says about the incumbents, the money in motion, and the way in.' : 'What the spending record says about the buyers, the winners, and the way in.'}</p>
   <div class="date"><span class="date-text">${today} \u00B7 fedhoo</span><button class="share-report" onclick="__shareReport()">Share this report \u2197</button><button class="share-report" onclick="__shareCard()">Post card \u2913</button><a class="share-report live-link" href="${'https://fedhoo.com/?q=' + encodeURIComponent((A().originalQuery || A().currentQuery || '').toLowerCase()) + (A().territory ? '&territory=' + encodeURIComponent(A().territory) : '')}">Explore live on fedhoo \u2197</a></div>
   <div class="hero">${money(d.total)}</div>
@@ -8362,7 +8371,7 @@ function buildHtml(d) {
 <script>
   var __reportUrl = ${JSON.stringify('https://fedhoo.com/?q=' + encodeURIComponent((A().originalQuery || A().currentQuery || '').toLowerCase()) + (A().territory ? '&territory=' + encodeURIComponent(A().territory) : '') + '&report=1')};
   var __cardData = ${JSON.stringify({
-    headline: d.agencyQ ? `What\u2019s ${d.qHead} buying?` : `Who\u2019s buying ${d.qHead}${d.scope ? ' at ' + clean(d.scope) : d.terr ? ' in ' + d.terr : ''}?`,
+    headline: d.agencyQ ? `What\u2019s ${d.agArt ? 'the ' : ''}${d.agName || d.qHead} buying?` : `Who\u2019s buying ${d.qHead}${d.scope ? ' at ' + clean(d.scope) : d.terr ? ' in ' + d.terr : ''}?`,
     hero: money(d.total),
     stat: (() => {
       const pct = Math.round(d.expTotal / Math.max(d.total, 1) * 100);
