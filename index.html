@@ -8327,7 +8327,7 @@ function buildHtml(d) {
   <div class="kicker">Follow the Money${d.scope && !d.agencyQ ? ' \u00B7 ' + esc(d.scope) : ''}</div>
   <h1>${d.agencyQ ? `What\u2019s ${qUp} buying?` : `Who\u2019s buying ${qUp}${d.scope ? ' at ' + esc(d.scope) : d.terr ? ' in ' + esc(d.terr) : ''}?`}</h1>
   <p class="dek">${d.agencyQ ? 'What the spending record says about the incumbents, the money in motion, and the way in.' : 'What the spending record says about the buyers, the winners, and the way in.'}</p>
-  <div class="date"><span class="date-text">${today} \u00B7 fedhoo</span><button class="share-report" onclick="__shareReport()">Share this report \u2197</button><a class="share-report live-link" href="${'https://fedhoo.com/?q=' + encodeURIComponent((A().originalQuery || A().currentQuery || '').toLowerCase()) + (A().territory ? '&territory=' + encodeURIComponent(A().territory) : '')}">Explore live on fedhoo \u2197</a></div>
+  <div class="date"><span class="date-text">${today} \u00B7 fedhoo</span><button class="share-report" onclick="__shareReport()">Share this report \u2197</button><button class="share-report" onclick="__shareCard()">Post card \u2913</button><a class="share-report live-link" href="${'https://fedhoo.com/?q=' + encodeURIComponent((A().originalQuery || A().currentQuery || '').toLowerCase()) + (A().territory ? '&territory=' + encodeURIComponent(A().territory) : '')}">Explore live on fedhoo \u2197</a></div>
   <div class="hero">${money(d.total)}</div>
   <h2 id="flows">Where the money flows</h2>
   <div class="chart chart-desktop">${sankey(d)}<div class="chart-brand">fedhoo.com \u00B7 ${d.agencyQ ? `What\u2019s ${qUp} buying?` : `Who\u2019s buying ${qUp}?`} \u00B7 ${today}</div></div>
@@ -8361,6 +8361,108 @@ function buildHtml(d) {
 </div>
 <script>
   var __reportUrl = ${JSON.stringify('https://fedhoo.com/?q=' + encodeURIComponent((A().originalQuery || A().currentQuery || '').toLowerCase()) + (A().territory ? '&territory=' + encodeURIComponent(A().territory) : '') + '&report=1')};
+  var __cardData = ${JSON.stringify({
+    headline: d.agencyQ ? `What\u2019s ${d.qHead} buying?` : `Who\u2019s buying ${d.qHead}${d.scope ? ' at ' + clean(d.scope) : d.terr ? ' in ' + d.terr : ''}?`,
+    hero: money(d.total),
+    stat: (() => {
+      const pct = Math.round(d.expTotal / Math.max(d.total, 1) * 100);
+      return pct >= 5 ? `${money(d.expTotal)} \u2014 ${pct}% of it \u2014 expires within 18 months` : `${d.rows.length} active awards across ${d.vs.length} vendors`;
+    })(),
+    flows: (d.flows || []).slice(0, 3).map(f => ({ a: clean(f.ag), v: String(f.v), amt: money(f.amt), n: f.amt })),
+    q: (A().originalQuery || A().currentQuery || '').toLowerCase(),
+    date: today,
+  })};
+  function __shareCard() {
+    var W = 1080, H = 1350, PAD = 84;
+    var cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    var x = cv.getContext('2d');
+    var INK = '#2B2A24', MUT = '#8A8570', PUR = '#46446E', CREAM = '#EFEAD8', PANEL = '#E9E3CD';
+    var BARS = ['#9C7A9E', '#6FA3BF', '#C2A15C'];
+    x.fillStyle = CREAM; x.fillRect(0, 0, W, H);
+    var sans = function (w, px) { return w + ' ' + px + 'px system-ui, -apple-system, "Segoe UI", sans-serif'; };
+    // kicker
+    x.fillStyle = MUT; x.font = sans(800, 34);
+    x.fillText('F O L L O W   T H E   M O N E Y', PAD, 150);
+    // headline, wrapped to two lines max
+    x.fillStyle = INK; x.font = sans(900, 88);
+    var words = __cardData.headline.split(' '), lines = [''], li = 0;
+    for (var i = 0; i < words.length; i++) {
+      var t = (lines[li] ? lines[li] + ' ' : '') + words[i];
+      if (x.measureText(t).width > W - PAD * 2 && lines[li]) { li++; lines[li] = words[i]; }
+      else lines[li] = t;
+    }
+    lines = lines.slice(0, 2);
+    var y = 260;
+    for (var j = 0; j < lines.length; j++) { x.fillText(lines[j], PAD, y); y += 100; }
+    // hero
+    x.fillStyle = PUR; x.font = sans(900, 210);
+    x.fillText(__cardData.hero, PAD, y + 160);
+    y += 215;
+    // punch stat
+    x.fillStyle = INK; x.font = sans(700, 44);
+    var sw = __cardData.stat.split(' '), sl = [''], si = 0;
+    for (var k = 0; k < sw.length; k++) {
+      var st = (sl[si] ? sl[si] + ' ' : '') + sw[k];
+      if (x.measureText(st).width > W - PAD * 2 && sl[si]) { si++; sl[si] = sw[k]; }
+      else sl[si] = st;
+    }
+    for (var m = 0; m < Math.min(sl.length, 2); m++) { x.fillText(sl[m], PAD, y + 60); y += 58; }
+    y += 60;
+    // flows panel — vertical budget respects the footer; agency and vendor
+    // truncate independently so the arrow and vendor always survive
+    if (__cardData.flows.length) {
+      var footTop = H - 200;
+      var avail = footTop - y - 24;
+      var rowsShown = Math.max(0, Math.min(__cardData.flows.length, Math.floor((avail - 90) / 92)));
+      if (rowsShown >= 1) {
+        var ph = 92 * rowsShown + 84;
+        x.fillStyle = PANEL;
+        x.beginPath(); x.roundRect(PAD - 20, y, W - (PAD - 20) * 2, ph, 18); x.fill();
+        x.fillStyle = MUT; x.font = sans(800, 30);
+        x.fillText('WHERE THE MONEY FLOWS', PAD + 8, y + 50);
+        var maxN = __cardData.flows[0].n || 1;
+        var innerW = W - PAD * 2 - 16;
+        var fitPart = function (t, budget) {
+          t = String(t);
+          while (t.length > 4 && x.measureText(t + '\u2026').width > budget) t = t.slice(0, -1);
+          return x.measureText(String(arguments[0])).width <= budget ? String(arguments[0]) : t + '\u2026';
+        };
+        var by = y + 86;
+        for (var f = 0; f < rowsShown; f++) {
+          var fl = __cardData.flows[f];
+          x.font = sans(800, 32);
+          var arrow = '  \u2192  ';
+          var agPart = fitPart(fl.a, innerW * 0.46);
+          var vPart = fitPart(fl.v, innerW - x.measureText(agPart + arrow).width);
+          x.fillStyle = INK;
+          x.fillText(agPart + arrow + vPart, PAD + 8, by + 28);
+          var bw = Math.max(60, (fl.n / maxN) * (innerW - 220));
+          x.fillStyle = BARS[f % BARS.length];
+          x.beginPath(); x.roundRect(PAD + 8, by + 40, bw, 24, 8); x.fill();
+          x.fillStyle = PUR; x.font = sans(900, 30);
+          x.fillText(fl.amt, PAD + 8 + bw + 16, by + 62);
+          by += 92;
+        }
+      }
+    }
+    // footer
+    x.fillStyle = INK; x.font = sans(900, 40);
+    x.fillText('fedhoo.com/?q=' + __cardData.q, PAD, H - 130);
+    x.fillStyle = MUT; x.font = sans(600, 28);
+    x.fillText(__cardData.date + '  \u00B7  every figure traces to USASpending.gov', PAD, H - 76);
+    cv.toBlob(function (blob) {
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'follow-the-money-' + __cardData.q.replace(/[^a-z0-9]+/g, '-') + '.png';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(function(){ URL.revokeObjectURL(a.href); }, 3000);
+      var btns = document.querySelectorAll('.share-report');
+      for (var b = 0; b < btns.length; b++) if (btns[b].textContent.indexOf('card') > -1) {
+        btns[b].textContent = 'Saved \u2713';
+        (function(el){ setTimeout(function(){ el.textContent = 'Post card \u2913'; }, 2200); })(btns[b]);
+      }
+    }, 'image/png');
+  }
   function __shareReport() {
     if (navigator.share) { navigator.share({ title: document.title, url: __reportUrl }).catch(function(){}); return; }
     var done = function () { var b = document.querySelector('.share-report'); if (b) { b.textContent = 'Link copied \u2713'; setTimeout(function(){ b.textContent = 'Share this report \u2197'; }, 2200); } };
