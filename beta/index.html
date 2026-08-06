@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>fedhoo brief — the room, before you walk in</title>
+<meta name="theme-color" content="#EFEAD8">
+<style>
+  :root {
+    --cream: #EFEAD8; --panel: #E7E1CB; --ink: #2B2A24; --mut: #8A8570;
+    --pur: #46446E; --purs: rgba(70,68,110,0.12);
+    --green: #15803D; --greens: rgba(22,163,74,0.12);
+    --amber: #92400E; --ambers: #FEF3C7;
+    --red: #B91C1C; --reds: #FEE2E2;
+    --lav: #5B21B6; --lavs: #EDE9FE;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--cream); color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  body { padding-bottom: 96px; }
+  .wrap { max-width: 560px; margin: 0 auto; padding: 18px 16px 0; }
+
+  .kicker { font-size: 11px; font-weight: 800; letter-spacing: 0.16em; color: var(--mut); }
+  .wordmark { font-size: 20px; font-weight: 900; margin: 2px 0 0; }
+  .wordmark span { color: var(--pur); }
+
+  /* ── empty state ── */
+  .empty { margin-top: 12vh; text-align: center; }
+  .empty h1 { font-size: 30px; font-weight: 900; line-height: 1.15; margin: 0 0 8px; }
+  .empty p { color: var(--mut); font-size: 15px; margin: 0 0 22px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+  .chip { font-size: 14px; font-weight: 700; color: var(--pur); border: 1.5px solid var(--pur);
+    background: none; border-radius: 999px; padding: 8px 16px; cursor: pointer; font-family: inherit; }
+  .chip:active { background: var(--pur); color: #fff; }
+  .recent-label { font-size: 11px; font-weight: 800; letter-spacing: 0.1em; color: var(--mut); margin: 26px 0 8px; }
+
+  /* ── brief sections ── */
+  .card { background: var(--panel); border-radius: 16px; padding: 18px 16px; margin: 14px 0; }
+  .sec { font-size: 11px; font-weight: 800; letter-spacing: 0.14em; color: var(--mut); margin: 0 0 10px; }
+  h2.q { font-size: 26px; font-weight: 900; line-height: 1.1; margin: 18px 0 2px; }
+  .asof { font-size: 12px; color: var(--mut); margin-bottom: 4px; }
+
+  .hero-num { font-size: 58px; font-weight: 900; color: var(--pur); line-height: 1; letter-spacing: -0.02em; }
+  .hero-sub { font-size: 14px; color: var(--mut); margin-top: 6px; }
+  .hero-punch { font-size: 17px; font-weight: 700; margin-top: 14px; line-height: 1.4; }
+  .hero-punch strong { color: var(--pur); }
+
+  /* score ring */
+  .score-row { display: flex; align-items: center; gap: 16px; }
+  .ring { flex: 0 0 92px; }
+  .score-meta { flex: 1; }
+  .score-name { font-weight: 900; font-size: 15px; }
+  .score-why { font-size: 12.5px; color: var(--mut); line-height: 1.45; margin-top: 3px; }
+  .subs { margin-top: 12px; display: none; }
+  .subs.open { display: block; }
+  .sub-row { display: flex; align-items: center; gap: 8px; margin: 7px 0; }
+  .sub-label { flex: 0 0 128px; font-size: 12px; font-weight: 700; }
+  .sub-track { flex: 1; height: 7px; background: rgba(43,42,36,0.12); border-radius: 4px; overflow: hidden; }
+  .sub-bar { height: 100%; background: var(--pur); border-radius: 4px; }
+  .sub-num { flex: 0 0 30px; text-align: right; font-size: 12px; font-weight: 800; }
+  .score-tap { font-size: 12px; font-weight: 700; color: var(--pur); background: none; border: 0; padding: 6px 0 0; font-family: inherit; }
+
+  /* vendor bars */
+  .v-row { padding: 10px 0; border-top: 1px solid rgba(43,42,36,0.08); }
+  .v-row:first-of-type { border-top: 0; }
+  .v-line { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  .v-name { font-weight: 800; font-size: 15px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .v-amt { font-weight: 800; font-size: 14px; color: var(--green); background: var(--greens); padding: 1px 8px; border-radius: 6px; white-space: nowrap; }
+  .v-track { height: 10px; background: rgba(43,42,36,0.10); border-radius: 5px; margin-top: 7px; overflow: hidden; }
+  .v-bar { height: 100%; border-radius: 5px; }
+  .v-pct { font-size: 12px; color: var(--mut); margin-top: 4px; }
+  .v-more { display: none; margin-top: 8px; font-size: 13.5px; line-height: 1.5; color: #44423A; }
+  .v-row.open .v-more { display: block; }
+  .rcpt { font-weight: 800; color: var(--pur); text-decoration: none; }
+
+  /* clock */
+  .c-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid rgba(43,42,36,0.08); }
+  .c-row:first-of-type { border-top: 0; }
+  .pill { font-size: 12px; font-weight: 800; border-radius: 999px; padding: 3px 10px; white-space: nowrap; }
+  .pill.hot { background: var(--reds); color: var(--red); }
+  .pill.warm { background: var(--ambers); color: var(--amber); }
+  .pill.cool { background: rgba(43,42,36,0.08); color: var(--mut); }
+  .c-main { flex: 1; min-width: 0; }
+  .c-v { font-weight: 800; font-size: 14.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .c-meta { font-size: 12px; color: var(--mut); }
+  .c-amt { font-weight: 800; font-size: 14px; white-space: nowrap; }
+
+  .door-line { font-size: 15px; line-height: 1.55; }
+  .door-line .mini { font-size: 11px; font-weight: 800; letter-spacing: 0.04em; border-radius: 999px; padding: 1px 8px; background: var(--lavs); color: var(--lav); }
+
+  /* talk tracks */
+  .tt-btn { width: 100%; font-size: 15px; font-weight: 800; color: #fff; background: var(--pur);
+    border: 0; border-radius: 12px; padding: 14px; cursor: pointer; font-family: inherit; }
+  .tt-btn:disabled { opacity: 0.6; }
+  .tt-out { font-size: 15px; line-height: 1.6; margin-top: 12px; }
+  .tt-out strong { color: var(--pur); }
+  .tt-note { font-size: 11.5px; color: var(--mut); margin-top: 8px; }
+
+  .full-link { display: block; text-align: center; font-weight: 800; color: var(--pur);
+    text-decoration: none; padding: 14px; font-size: 15px; }
+  .foot { text-align: center; font-size: 11.5px; color: var(--mut); padding: 4px 0 24px; }
+
+  /* skeleton */
+  .skel { border-radius: 10px; background: linear-gradient(90deg, rgba(43,42,36,0.07) 25%, rgba(43,42,36,0.13) 50%, rgba(43,42,36,0.07) 75%);
+    background-size: 200% 100%; animation: sh 1.1s infinite; }
+  @keyframes sh { to { background-position: -200% 0; } }
+
+  /* bottom search */
+  .dock { position: fixed; bottom: 0; left: 0; right: 0; padding: 10px 14px calc(12px + env(safe-area-inset-bottom));
+    background: linear-gradient(transparent, var(--cream) 30%); }
+  .dock-inner { max-width: 560px; margin: 0 auto; display: flex; gap: 8px; }
+  .dock input { flex: 1; font-size: 16px; font-family: inherit; padding: 14px 16px; border-radius: 14px;
+    border: 2px solid var(--ink); background: #fff; color: var(--ink); outline: none; }
+  .dock button { font-size: 15px; font-weight: 900; color: #fff; background: var(--ink); border: 0;
+    border-radius: 14px; padding: 0 20px; cursor: pointer; font-family: inherit; }
+  .err { background: var(--reds); color: var(--red); border-radius: 12px; padding: 12px 14px; font-size: 14px; font-weight: 600; margin: 14px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="kicker">FOLLOW THE MONEY</div>
+  <div class="wordmark">fedhoo <span>brief</span></div>
+  <div id="view"></div>
+</div>
+
+<div class="dock">
+  <div class="dock-inner">
+    <input id="q" type="search" placeholder="Who's the meeting with?" autocomplete="off" enterkeyhint="search">
+    <button id="go">Brief me</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+// Same wires as fedhoo — nothing invented.
+const PROXY = 'https://76unm1rlj0.execute-api.us-east-1.amazonaws.com/default/grumpy2';
+const AI = 'https://x6cdyrfcy43r5rpw6i6aiwsegi0effvy.lambda-url.us-east-1.on.aws/';
+const FIELDS = ['Award ID','Recipient Name','Awarding Agency','Awarding Sub Agency','Awarding Office',
+  'Award Amount','Description','generated_internal_id','Start Date','End Date','NAICS','PSC',
+  'Contract Award Type','Type of Set Aside','parent_award_id','pop_city_name','pop_state_code','idv_type'];
+const CHANNEL_RE = /CARAHSOFT|CDW|SHI |SHI,|INSIGHT PUBLIC|DLT SOLUTIONS|IMMIX|THUNDERCAT|WORLD WIDE TECH|IRON BOW|RED RIVER|PRESIDIO|MYTHICS|EPLUS|FOUR POINTS|TD SYNNEX|INGRAM/i;
+const BAR_PAL = ['#9C7A9E','#6FA3BF','#D65F4C','#1F4A44','#C2A15C','#7B78C0'];
+
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const money = (n) => { const x = Number(n) || 0;
+  if (x >= 1e9) return '$' + (x / 1e9).toFixed(1) + 'B';
+  if (x >= 1e6) return '$' + (x / 1e6).toFixed(1) + 'M';
+  if (x >= 1e3) return '$' + (x / 1e3).toFixed(0) + 'K';
+  return '$' + Math.round(x); };
+const clean = (a) => String(a || '').replace(/^Department of( the)? /i, '').replace(/^U\.S\. /i, '');
+const fy = (ts) => { const d = new Date(ts); const y = d.getFullYear() + (d.getMonth() >= 9 ? 1 : 0);
+  return 'FY' + String(y).slice(2) + ' Q' + [2,2,2,3,3,3,4,4,4,1,1,1][d.getMonth()]; };
+const mon = (ts) => new Date(ts).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+const titleCase = (s) => String(s || '').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+const dispName = (s) => { const t = String(s || '').trim(); return t === t.toUpperCase() && t.length > 4 ? titleCase(t) : t; };
+
+// ── data ─────────────────────────────────────────────────────────────
+async function fetchAwards(q) {
+  const end = new Date(), start = new Date(); start.setFullYear(end.getFullYear() - 1);
+  const iso = (d) => d.toISOString().split('T')[0];
+  const res = await fetch(PROXY, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      request_type: 'usaspending_proxy',
+      endpoint: '/search/spending_by_award/',
+      payload: { filters: { time_period: [{ start_date: iso(start), end_date: iso(end) }],
+                            award_type_codes: ['A','B','C','D'], keywords: [q] },
+                 fields: FIELDS, limit: 100, sort: 'Award Amount', order: 'desc' } }),
+  });
+  if (!res.ok) throw new Error('USASpending request failed (' + res.status + ')');
+  const data = await res.json();
+  return (data.results || []).map((c) => { c._amt = parseFloat(c['Award Amount']) || 0;
+    c._end = Date.parse(c['End Date']) || 0; c._start = Date.parse(c['Start Date']) || 0; return c; });
+}
+
+function analyze(rows) {
+  const now = Date.now(), cut = now + 548 * 864e5;
+  const active = rows.filter((c) => !c._end || c._end > now);
+  const total = active.reduce((s, c) => s + c._amt, 0);
+  const byV = new Map(), byAg = new Map();
+  let expTotal = 0;
+  for (const c of active) {
+    byV.set(c['Recipient Name'] || 'Unknown', (byV.get(c['Recipient Name'] || 'Unknown') || 0) + c._amt);
+    byAg.set(c['Awarding Agency'] || 'Other', (byAg.get(c['Awarding Agency'] || 'Other') || 0) + c._amt);
+    if (c._end && c._end <= cut) expTotal += c._amt;
+  }
+  const vs = [...byV.entries()].sort((a, b) => b[1] - a[1]);
+  const ags = [...byAg.entries()].sort((a, b) => b[1] - a[1]);
+  const expiring = active.filter((c) => c._end && c._end > now && c._end <= cut)
+    .sort((a, b) => a._end - b._end);
+  const fresh = active.filter((c) => c._start && now - c._start <= 90 * 864e5)
+    .sort((a, b) => b._start - a._start);
+  const resellers = vs.filter(([n]) => CHANNEL_RE.test(n));
+  const entrants = vs.filter(([n]) => {
+    const first = Math.min(...active.filter((c) => (c['Recipient Name'] || 'Unknown') === n && c._start).map((c) => c._start));
+    return isFinite(first) && now - first <= 3 * 365 * 864e5;
+  }).length;
+  const saTotal = active.filter((c) => c['Type of Set Aside'] && !/^(NONE|NO SET ASIDE)/i.test(c['Type of Set Aside']))
+    .reduce((s, c) => s + c._amt, 0);
+  // Opportunity Score — same published weights as the fedhoo report.
+  const clamp = (x) => Math.max(0, Math.min(10, x));
+  const subs = {
+    size:     { l: 'Market size', v: clamp((Math.log10(Math.max(total, 1)) - 6) * 3) },
+    renewal:  { l: 'Renewal (18mo)', v: clamp(total ? expTotal / total * 10 : 0) },
+    openness: { l: 'Field openness', v: clamp((1 - (vs.length ? vs[0][1] / Math.max(total, 1) : 0)) * 10) },
+    entrants: { l: 'New entrants', v: clamp(vs.length ? entrants / vs.length * 25 : 0) },
+    channel:  { l: 'Channel', v: [0, 5, 8][Math.min(resellers.length, 2)] ?? 10 },
+  };
+  const W = { size: 20, renewal: 30, openness: 20, entrants: 15, channel: 15 };
+  let score = 0; for (const k in W) score += subs[k].v / 10 * W[k];
+  return { active, total, vs, ags, expTotal, expiring, fresh, resellers, saTotal,
+           subs, W, score: Math.round(score) };
+}
+
+// ── render ───────────────────────────────────────────────────────────
+function ring(score) {
+  const r = 38, c = 2 * Math.PI * r, off = c * (1 - score / 100);
+  return `<svg class="ring" viewBox="0 0 92 92" width="92" height="92" aria-label="Opportunity score ${score} of 100">
+    <circle cx="46" cy="46" r="${r}" fill="none" stroke="rgba(43,42,36,0.12)" stroke-width="9"/>
+    <circle cx="46" cy="46" r="${r}" fill="none" stroke="#46446E" stroke-width="9" stroke-linecap="round"
+      stroke-dasharray="${c}" stroke-dashoffset="${off}" transform="rotate(-90 46 46)"/>
+    <text x="46" y="53" text-anchor="middle" font-size="24" font-weight="900" fill="#2B2A24">${score}</text>
+  </svg>`;
+}
+
+function renderBrief(q, d) {
+  const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  const pct = Math.round(d.expTotal / Math.max(d.total, 1) * 100);
+  const maxV = d.vs.length ? d.vs[0][1] : 1;
+  const hi = Object.values(d.subs).sort((a, b) => b.v - a.v)[0];
+  const lo = Object.values(d.subs).sort((a, b) => a.v - b.v)[0];
+
+  const vendors = d.vs.slice(0, 6).map(([n, v], i) => {
+    const big = d.active.filter((c) => (c['Recipient Name'] || 'Unknown') === n).sort((a, b) => b._amt - a._amt)[0];
+    return `<div class="v-row" data-vrow>
+      <div class="v-line"><span class="v-name">${esc(dispName(n))}</span><span class="v-amt">${money(v)}</span></div>
+      <div class="v-track"><div class="v-bar" style="width:${Math.max(4, v / maxV * 100)}%;background:${BAR_PAL[i % BAR_PAL.length]}"></div></div>
+      <div class="v-pct">${Math.round(v / Math.max(d.total, 1) * 100)}% of the money \u00B7 tap for their biggest award</div>
+      <div class="v-more">${big ? `${money(big._amt)} at ${esc(clean(big['Awarding Agency'] || ''))}${big._end ? ', runs to ' + mon(big._end) + ' (' + fy(big._end) + ')' : ''}${big['Description'] ? ' \u2014 ' + esc(String(big['Description']).slice(0, 90).toLowerCase()) : ''}. ${big['generated_internal_id'] ? `<a class="rcpt" href="https://www.usaspending.gov/award/${encodeURIComponent(big['generated_internal_id'])}" target="_blank" rel="noopener">Record \u2197</a>` : ''}` : ''}</div>
+    </div>`;
+  }).join('');
+
+  const clock = d.expiring.slice(0, 5).map((c) => {
+    const days = Math.ceil((c._end - Date.now()) / 864e5);
+    const cls = days <= 45 ? 'hot' : days <= 120 ? 'warm' : 'cool';
+    return `<div class="c-row">
+      <span class="pill ${cls}">${days}d</span>
+      <div class="c-main"><div class="c-v">${esc(dispName(c['Recipient Name'] || ''))}</div>
+        <div class="c-meta">${fy(c._end)} \u00B7 ${esc(clean(c['Awarding Agency'] || ''))}</div></div>
+      <span class="c-amt">${money(c._amt)}</span>
+      ${c['generated_internal_id'] ? `<a class="rcpt" href="https://www.usaspending.gov/award/${encodeURIComponent(c['generated_internal_id'])}" target="_blank" rel="noopener">\u2197</a>` : ''}
+    </div>`;
+  }).join('');
+
+  const fresh = d.fresh.slice(0, 3).map((c) =>
+    `<div class="c-row"><span class="pill cool">new</span>
+      <div class="c-main"><div class="c-v">${esc(dispName(c['Recipient Name'] || ''))}</div>
+        <div class="c-meta">${mon(c._start)} \u00B7 ${esc(clean(c['Awarding Agency'] || ''))}</div></div>
+      <span class="c-amt">${money(c._amt)}</span></div>`).join('');
+
+  const door = d.resellers.length
+    ? `The paper runs through ${d.resellers.slice(0, 3).map(([n, v]) => `<strong>${esc(dispName(n))}</strong> <span class="mini">${money(v)}</span>`).join(' \u00B7 ')}. Start there.`
+    : `No reseller holds paper here. Direct or teaming \u2014 that\u2019s the whole menu.`;
+  const sa = d.saTotal / Math.max(d.total, 1) >= 0.15
+    ? ` ${Math.round(d.saTotal / Math.max(d.total, 1) * 100)}% moves through set-asides.` : '';
+
+  $('#view').innerHTML = `
+    <h2 class="q">${esc(dispName(q))}</h2>
+    <div class="asof">${today} \u00B7 last 12 months of awards \u00B7 every figure traces to USASpending.gov</div>
+
+    <div class="card">
+      <div class="hero-num">${money(d.total)}</div>
+      <div class="hero-sub">${d.active.length} active awards \u00B7 ${d.vs.length} vendors</div>
+      ${pct >= 5 ? `<div class="hero-punch"><strong>${money(d.expTotal)} \u2014 ${pct}%</strong> \u2014 expires within 18 months.</div>` : ''}
+    </div>
+
+    <div class="card">
+      <div class="score-row">${ring(d.score)}
+        <div class="score-meta">
+          <div class="score-name">Opportunity Score</div>
+          <div class="score-why">Strongest: ${hi.l.toLowerCase()} (${hi.v.toFixed(1)}). Weakest: ${lo.l.toLowerCase()} (${lo.v.toFixed(1)}). Nothing generated.</div>
+          <button class="score-tap" data-subs>Show the math</button>
+        </div>
+      </div>
+      <div class="subs" id="subs">
+        ${Object.entries(d.subs).map(([k, s]) => `<div class="sub-row">
+          <span class="sub-label">${s.l} \u00B7 w${d.W[k]}</span>
+          <span class="sub-track"><span class="sub-bar" style="width:${s.v * 10}%"></span></span>
+          <span class="sub-num">${s.v.toFixed(1)}</span></div>`).join('')}
+      </div>
+    </div>
+
+    <div class="card"><div class="sec">THE ROOM \u2014 WHO HOLDS THE MONEY</div>${vendors}</div>
+
+    ${clock ? `<div class="card"><div class="sec">THE CLOCK \u2014 EXPIRING SOONEST</div>${clock}</div>` : ''}
+    ${fresh ? `<div class="card"><div class="sec">FRESH INK \u2014 AWARDED IN THE LAST 90 DAYS</div>${fresh}</div>` : ''}
+
+    <div class="card"><div class="sec">THE DOOR</div><div class="door-line">${door}${sa}</div></div>
+
+    <div class="card">
+      <div class="sec">TALK TRACKS</div>
+      <button class="tt-btn" id="ttBtn">Prep three openers for this meeting</button>
+      <div class="tt-out" id="ttOut"></div>
+      <div class="tt-note" id="ttNote" hidden>Mo\u2019s read on the numbers above \u2014 the figures themselves come straight from the record.</div>
+    </div>
+
+    <a class="full-link" href="https://fedhoo.com/?q=${encodeURIComponent(q.toLowerCase())}&report=1&utm_source=brief" target="_blank" rel="noopener">Full Follow the Money report \u2197</a>
+    <div class="foot">fedhoo \u00B7 free \u00B7 no login</div>`;
+
+  document.querySelectorAll('[data-vrow]').forEach((r) =>
+    r.addEventListener('click', () => r.classList.toggle('open')));
+  $('[data-subs]').addEventListener('click', (e) => {
+    $('#subs').classList.toggle('open');
+    e.target.textContent = $('#subs').classList.contains('open') ? 'Hide the math' : 'Show the math';
+  });
+  $('#ttBtn').addEventListener('click', () => talkTracks(q, d));
+}
+
+// ── talk tracks: Mo narrates, the numbers stay ours ─────────────────
+async function talkTracks(q, d) {
+  const btn = $('#ttBtn'), out = $('#ttOut');
+  btn.disabled = true; btn.textContent = 'Thinking\u2026';
+  try {
+    const res = await fetch(AI, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        request_type: 'govhoo_chat',
+        market_data: {
+          query: q,
+          contracts: d.active.slice(0, 50).map((c) => ({
+            vendor: c['Recipient Name'], agency: c['Awarding Agency'],
+            office: c['Awarding Sub Agency'] || '', amount: c['Award Amount'],
+            start_date: c['Start Date'] || '', end_date: c['End Date'],
+            naics: (c['NAICS'] && (c['NAICS'].code || c['NAICS'])) || '',
+            psc: (c['PSC'] && (c['PSC'].code || c['PSC'])) || '',
+            set_aside: c['Type of Set Aside'] || '',
+            description: c['Description'] || '',
+          })),
+          subawards: [],
+        },
+        objective: `Infer what I likely sell from my search "${q}" and answer from that seller's perspective.`,
+        history: [],
+        question: 'I walk into a meeting about this market in 20 minutes. Give me exactly three short conversation openers grounded in this data \u2014 one about the expiring paper, one about who holds the money, one about what is changing. Plain language, no hype, each under 25 words.',
+      }),
+    });
+    if (!res.ok || !res.body) throw new Error('Mo is unavailable right now.');
+    const reader = res.body.getReader(), dec = new TextDecoder();
+    let buf = '', acc = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const lines = buf.split('\n'); buf = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        try {
+          const m = JSON.parse(line.slice(6).trim());
+          if (m.t === 'chunk' && m.text) { acc += m.text; out.innerHTML = md(acc); }
+          else if (m.t === 'done') { out.innerHTML = md(acc); }
+          else if (m.t === 'error') throw new Error(m.msg || 'Mo error');
+        } catch (e) { if (e.message !== 'Unexpected end of JSON input') { /* partial frame */ } }
+      }
+    }
+    $('#ttNote').hidden = false;
+    btn.textContent = 'Prep three openers for this meeting';
+  } catch (e) {
+    out.innerHTML = '<div class="err">' + esc(e.message || 'Something went wrong.') + '</div>';
+    btn.textContent = 'Try again';
+  }
+  btn.disabled = false;
+}
+function md(t) {
+  return esc(t).replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/^\s*[-*]\s+/gm, '\u2022 ').replace(/\n/g, '<br>');
+}
+
+// ── shell ────────────────────────────────────────────────────────────
+const RECENT_KEY = 'fh_brief_recent';
+const recents = () => { try { return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'); } catch (e) { return []; } };
+function remember(q) {
+  const r = [q, ...recents().filter((x) => x !== q)].slice(0, 5);
+  try { localStorage.setItem(RECENT_KEY, JSON.stringify(r)); } catch (e) {}
+}
+
+function renderEmpty() {
+  const r = recents();
+  $('#view').innerHTML = `<div class="empty">
+    <h1>The room,<br>before you walk in.</h1>
+    <p>Type the agency, company, or market. Get the money, the clock, and the door in one screen.</p>
+    <div class="chips">${['DARPA','VA','Crowdstrike','Cloud','Zero Trust'].map((c) =>
+      `<button class="chip" data-q="${esc(c)}">${esc(c)}</button>`).join('')}</div>
+    ${r.length ? `<div class="recent-label">RECENT</div>
+      <div class="chips">${r.map((c) => `<button class="chip" data-q="${esc(c)}">${esc(c)}</button>`).join('')}</div>` : ''}
+  </div>`;
+  document.querySelectorAll('[data-q]').forEach((b) =>
+    b.addEventListener('click', () => run(b.dataset.q)));
+}
+
+function renderLoading(q) {
+  $('#view').innerHTML = `<h2 class="q">${esc(dispName(q))}</h2>
+    <div class="asof">pulling the record\u2026</div>
+    <div class="card"><div class="skel" style="height:58px;width:55%"></div><div class="skel" style="height:14px;width:70%;margin-top:12px"></div></div>
+    <div class="card"><div class="skel" style="height:92px;width:92px;border-radius:50%"></div></div>
+    <div class="card">${'<div class="skel" style="height:38px;margin:10px 0"></div>'.repeat(4)}</div>`;
+}
+
+async function run(q) {
+  q = String(q || '').trim();
+  if (!q) return;
+  $('#q').value = q; $('#q').blur();
+  renderLoading(q);
+  try {
+    const rows = await fetchAwards(q);
+    if (!rows.length) {
+      $('#view').innerHTML = `<h2 class="q">${esc(dispName(q))}</h2>
+        <div class="err">Nothing in the record for that in the last 12 months. Try a broader term, a product category, or the agency\u2019s full name.</div>`;
+      return;
+    }
+    remember(q);
+    renderBrief(q, analyze(rows));
+    window.scrollTo({ top: 0 });
+    const u = new URL(location.href); u.searchParams.set('q', q); history.replaceState(null, '', u);
+  } catch (e) {
+    $('#view').innerHTML = `<div class="err">${esc(e.message || 'Request failed.')} \u2014 check your connection and try again.</div>`;
+  }
+}
+
+$('#go').addEventListener('click', () => run($('#q').value));
+$('#q').addEventListener('keydown', (e) => { if (e.key === 'Enter') run($('#q').value); });
+
+const boot = new URLSearchParams(location.search).get('q');
+if (boot) run(boot); else renderEmpty();
+</script>
+</body>
+</html>
