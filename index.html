@@ -1177,6 +1177,7 @@ a, button, input, select { touch-action: manipulation; }
 <!-- HEADER -->
 <header class="site-header">
   <nav class="cross-nav" aria-label="Site">
+    <a class="cross-nav-link" href="/brief/">Brief</a>
     <a class="cross-nav-link" href="/tools/">Tools</a>
     <a class="cross-nav-link cross-nav-cta" href="/consulting/">Work with Mark ↗</a>
   </nav>
@@ -2703,7 +2704,10 @@ async searchAwards(keywords) {
       // likely an agency name containing "and" (e.g. "National Aeronautics and Space Administration").
       // Fall through to the standard keyword search using the original full string instead.
       if (codes.length === 0 && agencies.length === 0) {
-        const filters = { time_period: [period], award_type_codes: this.CONTRACT_TYPES, keywords: [keywords] };
+        // Comma-separated queries fan out to USASpending's keyword array (OR):
+        // "quantum, qkd, post-quantum" covers markets that splinter across terms.
+        const kwList = String(keywords).split(',').map(s => s.trim()).filter(Boolean);
+        const filters = { time_period: [period], award_type_codes: this.CONTRACT_TYPES, keywords: kwList.length ? kwList : [keywords] };
         App._applySectorFilter(filters);
         App._lastSearchFilters = filters;
         const pool = (await this._post('/search/spending_by_award/', { filters, fields: this.AWARD_FIELDS, limit: 100, sort: 'Award Amount', order: 'desc' })).results || [];
@@ -4054,17 +4058,8 @@ const App = {
     if (this.territory) url.searchParams.set('territory', this.territory);
     else url.searchParams.delete('territory');
     const shareUrl = url.toString();
-    // Native share sheet on supporting devices (iOS/Android): one tap to text
-    // a colleague a live link. Desktop and unsupported browsers fall back to copy.
-    if (navigator.share) {
-      const q = this.displayQuery || this.currentQuery || 'Federal market';
-      navigator.share({
-        title: `fedhoo \u2014 ${q}`,
-        text: `Federal market: ${q}`,
-        url: shareUrl,
-      }).catch(() => {});   // user cancelled the sheet — not an error
-      return;
-    }
+    // Copy-link only. The native share sheet proved flaky across desktop
+    // browsers and inside iframes; a copied URL works everywhere, every time.
     navigator.clipboard.writeText(shareUrl).then(() => {
       this.toast('Link copied to clipboard', 'ok', 2000);
       if (btn) {
@@ -8190,7 +8185,7 @@ function firstMoves(d) {
   return `<h2 id="firstmoves">First moves</h2>
   <p class="fact">Ranked from the data above, not generated. Check everything before you build pipeline on it.</p>
   ${moves.slice(0, 5).map((m, i) => `<p class="fm"><span class="fm-n">${i+1}.</span> ${m}</p>`).join('')}
-  <p class="fm fm-cta">Want to work these moves against your actual territory? <a class="rcpt" href="https://calendly.com/markflournoy/chat-with-mark?utm_source=fedhoo&utm_medium=report&utm_content=first_moves" target="_blank" rel="noopener">Grab 20 minutes \u2197</a> \u2014 no pitch.</p>`;
+  <p class="fm fm-cta">Want this run against your actual territory \u2014 your patch, the VARs and SIs who hold its paper, and your first moves sequenced? <a class="rcpt" href="https://calendly.com/markflournoy/deepdive?utm_source=fedhoo&utm_medium=report&utm_content=first_moves" target="_blank" rel="noopener">Book a Territory Review \u2197</a> \u2014 $250, one hour, no retainer pitch.</p>`;
 }
 
 function fiveContracts(d) {
@@ -8336,7 +8331,7 @@ function buildHtml(d) {
   <div class="kicker">Follow the Money${d.scope && !d.agencyQ ? ' \u00B7 ' + esc(d.scope) : ''}</div>
   <h1>${d.agencyQ ? `What\u2019s ${d.agArt ? 'the ' : ''}${esc(d.agName || d.qHead)} buying?` : `Who\u2019s buying ${qUp}${d.scope ? ' at ' + esc(d.scope) : d.terr ? ' in ' + esc(d.terr) : ''}?`}</h1>
   <p class="dek">${d.agencyQ ? 'What the spending record says about the incumbents, the money in motion, and the way in.' : 'What the spending record says about the buyers, the winners, and the way in.'}</p>
-  <div class="date"><span class="date-text">${today} \u00B7 fedhoo</span><button class="share-report" onclick="__shareReport()">Share this report \u2197</button><button class="share-report" onclick="__shareCard()">Post card \u2913</button><a class="share-report live-link" href="${'https://fedhoo.com/?q=' + encodeURIComponent((A().originalQuery || A().currentQuery || '').toLowerCase()) + (A().territory ? '&territory=' + encodeURIComponent(A().territory) : '')}">Explore live on fedhoo \u2197</a></div>
+  <div class="date"><span class="date-text">${today} \u00B7 fedhoo</span><button class="share-report" onclick="__shareReport()">Copy report link \u29C9</button><button class="share-report" onclick="__shareCard()">Post card \u2913</button><a class="share-report live-link" href="${'https://fedhoo.com/?q=' + encodeURIComponent((A().originalQuery || A().currentQuery || '').toLowerCase()) + (A().territory ? '&territory=' + encodeURIComponent(A().territory) : '')}">Explore live on fedhoo \u2197</a></div>
   <div class="hero">${money(d.total)}</div>
   <h2 id="flows">Where the money flows</h2>
   <div class="chart chart-desktop">${sankey(d)}<div class="chart-brand">fedhoo.com \u00B7 ${d.agencyQ ? `What\u2019s ${qUp} buying?` : `Who\u2019s buying ${qUp}?`} \u00B7 ${today}</div></div>
@@ -8473,9 +8468,8 @@ function buildHtml(d) {
     }, 'image/png');
   }
   function __shareReport() {
-    if (navigator.share) { navigator.share({ title: document.title, url: __reportUrl }).catch(function(){}); return; }
-    var done = function () { var b = document.querySelector('.share-report'); if (b) { b.textContent = 'Link copied \u2713'; setTimeout(function(){ b.textContent = 'Share this report \u2197'; }, 2200); } };
-    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(__reportUrl).then(done);
+    var done = function () { var b = document.querySelector('.share-report'); if (b) { b.textContent = 'Link copied \u2713'; setTimeout(function(){ b.textContent = 'Copy report link \u29C9'; }, 2200); } };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(__reportUrl).then(done, function () { window.prompt('Copy this link:', __reportUrl); });
     else { window.prompt('Copy this link:', __reportUrl); }
   }
 <\/script></body></html>`;
@@ -8541,7 +8535,9 @@ const cloudOf = (desc) => {
 // vendor list: name -> match pattern. Short/common words get strict patterns
 // so "sandbox" never counts as Box and "zoom in" never counts as Zoom.
 const ISV_PATTERNS = (() => {
-  const names = ['Crowdstrike','Snowflake','Databricks','Palo Alto Networks','Zscaler','Okta','GitLab','Splunk','Elastic','Datadog','HashiCorp','Cloudflare','Wiz','MongoDB','Confluent','Sonatype','JFrog','SentinelOne','Akamai','ServiceNow','Salesforce','Workday','Atlassian','Smartsheet','Palantir','Snyk','GitHub','Docker','Nutanix','Rubrik','Cohesity','Veeam','Commvault','Netskope','Proofpoint','Tenable','Rapid7','Qualys','Trellix','Fortinet','Dynatrace','New Relic','UiPath','DocuSign','Tableau','Alteryx','Informatica'];
+  const names = ['Crowdstrike','Snowflake','Databricks','Palo Alto Networks','Zscaler','Okta','GitLab','Splunk','Elastic','Datadog','HashiCorp','Cloudflare','Wiz','MongoDB','Confluent','Sonatype','JFrog','SentinelOne','Akamai','ServiceNow','Salesforce','Workday','Atlassian','Smartsheet','Palantir','Snyk','GitHub','Docker','Nutanix','Rubrik','Cohesity','Veeam','Commvault','Netskope','Proofpoint','Tenable','Rapid7','Qualys','Trellix','Fortinet','Dynatrace','New Relic','UiPath','DocuSign','Tableau','Alteryx','Informatica',
+    // quantum ecosystem
+    'IonQ','Rigetti','Quantinuum','PsiQuantum','D-Wave','Infleqtion','ColdQuanta','QuEra','Atom Computing','SandboxAQ','Q-CTRL','Xanadu','Quantum Computing Inc'];
   const special = {
     'Palo Alto Networks': /\bpalo\s*alto\b/i,
     'SentinelOne': /\bsentinel\s*one\b/i,
@@ -8606,7 +8602,7 @@ window.IsvCard = {
           <div class="pf-actions"><button class="pf-link isv-go" data-q="${esc(name.toLowerCase())}">Full market \u2192</button></div>
         </div></div>`;
     }).join('');
-    card.innerHTML = `<div class="card-header"><div><div class="card-title">SaaS in these contracts${scopeLabel ? ' \u00B7 ' + esc(scopeLabel) : ''}</div>
+    card.innerHTML = `<div class="card-header"><div><div class="card-title">Tech vendors in these contracts${scopeLabel ? ' \u00B7 ' + esc(scopeLabel) : ''}</div>
       <div class="card-desc">Vendors named in the awards above. Dollars are full award values, not product revenue \u2014 a floor. Tracked list only; unlisted vendors are not counted.</div></div></div>${rowsHtml}`;
   },
 };
