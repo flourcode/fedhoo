@@ -8797,8 +8797,19 @@ window.OppsCard = {
   async render() {
     const app = A();
     const deals = document.getElementById('dealsCard');
+    // Claim the shell BEFORE any await: two render chains fire near-
+    // simultaneously after a search, and an async existence check let both
+    // create the card. Synchronous claim makes the second call find it.
+    document.querySelectorAll('#oppsCard').forEach((el, i) => { if (i > 0) el.remove(); });
     let card = document.getElementById('oppsCard');
     if (!app || !app.searchData || !app.searchData.loaded || !deals) { if (card) card.remove(); return; }
+    if (!card && deals.parentNode) {
+      card = document.createElement('div');
+      card.id = 'oppsCard';
+      card.className = 'app-card wide';
+      card.style.display = 'none';
+      deals.parentNode.insertBefore(card, deals.nextSibling);
+    }
     const opps = await load();
     if (!opps.length) { if (card) card.remove(); return; }
     // match on the search's own expanded keywords, word-bounded
@@ -8807,7 +8818,9 @@ window.OppsCard = {
     if (!kws.length) { if (card) card.remove(); return; }
     const res = kws.map(k => new RegExp('\\b' + k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+') + '\\b', 'i'));
     const now = Date.now();
-    let hits = opps.filter(o => o._due > now && res.some(re => re.test(o._hay)));
+    const matches = opps.filter(o => res.some(re => re.test(o._hay)));
+    let hits = matches.filter(o => o._due > now);
+    let openEnded = matches.filter(o => !o._due);
     // drill scope: match sub-tier name against the drilled agency, loosely
     const ds = app.drillState || { level: 0 };
     const scopeLabel = ds.level >= 2 && ds.currentSubAgency ? ds.currentSubAgency
@@ -8815,20 +8828,17 @@ window.OppsCard = {
     if (scopeLabel) {
       const norm = (x) => String(x || '').toLowerCase().replace(/^department of( the)? /, '').replace(/^u\.s\. /, '');
       const target = norm(scopeLabel);
-      const scoped = hits.filter(o => {
-        const st = norm(o['Sub Tier Name']);
-        return st.includes(target) || target.includes(st);
-      });
+      const inScope = (o) => { const st = norm(o['Sub Tier Name']); return st.includes(target) || target.includes(st); };
+      const scoped = hits.filter(inScope);
       if (scoped.length) hits = scoped;
+      const scopedOpen = openEnded.filter(inScope);
+      if (scoped.length || scopedOpen.length) openEnded = scopedOpen;
     }
-    if (!hits.length) { if (card) card.remove(); return; }
+    if (!hits.length && !openEnded.length) { if (card) card.remove(); return; }
     hits.sort((a, b) => a._due - b._due);
-    if (!card) {
-      card = document.createElement('div');
-      card.id = 'oppsCard';
-      card.className = 'app-card wide';
-      deals.parentNode.insertBefore(card, deals.nextSibling);
-    }
+    openEnded.sort((a, b) => (Date.parse(b['Last Updated Date']) || 0) - (Date.parse(a['Last Updated Date']) || 0));
+    if (!card) return;   // shell claimed above; if gone, a new search cleared us
+    card.style.display = '';
     const rows = hits.slice(0, 8).map(o => {
       const days = Math.ceil((o._due - now) / 864e5);
       const cls = days <= 7 ? 'opp-hot' : days <= 14 ? 'opp-warm' : 'opp-cool';
@@ -8843,9 +8853,21 @@ window.OppsCard = {
           ${o['Description'] ? `<div class="dl-line2" style="opacity:0.85;">${esc(String(o['Description']).slice(0, 140))}\u2026</div>` : ''}
         </div></div>`;
     }).join('');
+    const openRows = openEnded.slice(0, 4).map(o => {
+      const upd = Date.parse(o['Last Updated Date']) || 0;
+      const poc = o['POC Email']
+        ? ` \u00B7 <a class="pf-link" href="mailto:${esc(o['POC Email'])}?subject=${encodeURIComponent(o['Notice ID'] + ' \u2014 ' + o['Opportunity Title'])}">${esc(tc(o['POC Name'] || 'Contracting officer'))} \u2709</a>` : '';
+      return `<div class="dl-row" style="cursor:default;">
+        <div class="dl-main">
+          <div class="dl-line1"><span class="dl-vendor">${esc(tc(o['Opportunity Title']).slice(0, 90))}</span><span class="opp-days opp-cool">open</span></div>
+          <div class="dl-line2">${esc(tc(o['Sub Tier Name']))} \u00B7 ${esc(o['Contract Opportunity Type'])} \u00B7 Notice ${esc(o['Notice ID'])}${upd ? ' \u00B7 updated ' + new Date(upd).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}${poc}</div>
+        </div></div>`;
+    }).join('');
     const asOf = _asOf ? new Date(_asOf).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
-    card.innerHTML = `<div class="card-header"><div><div class="card-title">Open right now${scopeLabel && hits.length ? ' \u00B7 ' + esc(String(scopeLabel).replace(/^Department of( the)? /i, '')) : ''}</div>
-      <div class="card-desc">${hits.length} active solicitation${hits.length === 1 ? '' : 's'} on SAM.gov matching this search, closing soonest first. Snapshot as of ${asOf}; search the Notice ID on SAM.gov for the full package. Email goes to the contracting officer.</div></div></div>${rows}`;
+    card.innerHTML = `<div class="card-header"><div><div class="card-title">Open right now${scopeLabel && (hits.length || openEnded.length) ? ' \u00B7 ' + esc(String(scopeLabel).replace(/^Department of( the)? /i, '')) : ''}</div>
+      <div class="card-desc">${hits.length ? hits.length + ' active solicitation' + (hits.length === 1 ? '' : 's') + ' with deadlines, closing soonest first' : 'Open notices matching this search'}${openEnded.length ? ' \u00B7 ' + openEnded.length + ' open-ended notice' + (openEnded.length === 1 ? '' : 's') : ''}. Snapshot as of ${asOf}; search the Notice ID on SAM.gov for the full package. Email goes to the contracting officer.</div></div></div>
+      ${rows}
+      ${openRows ? `<div class="dl-line2" style="margin-top:12px;font-weight:800;letter-spacing:0.06em;font-size:11px;">NO STATED DEADLINE \u2014 SOURCES SOUGHT &amp; OPEN NOTICES</div>${openRows}` : ''}`;
   },
 };
 })();
