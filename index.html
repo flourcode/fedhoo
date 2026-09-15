@@ -1118,7 +1118,14 @@ a, button, input, select { touch-action: manipulation; }
 
 
 /* ── open solicitations card ── */
-.opp-days { font-size: 12px; font-weight: 800; border-radius: 9999px; padding: 2px 10px; white-space: nowrap; }
+.opp-line1 { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.opp-title { font-weight: 800; font-size: var(--text-base, 15px); color: var(--text-title, inherit); line-height: 1.35; min-width: 0; }
+.opp-days { flex-shrink: 0; font-size: 12px; font-weight: 800; border-radius: 9999px; padding: 2px 10px; white-space: nowrap; }
+.opp-view { font-weight: 800; color: var(--accent); text-decoration: none; white-space: nowrap; }
+.opp-view:hover { text-decoration: underline; }
+.opp-poc { display: inline-block; font-weight: 700; color: var(--accent); background: var(--accent-dim, rgba(70,68,110,0.10)); border-radius: 9999px; padding: 1px 10px; text-decoration: none; white-space: nowrap; }
+.opp-poc:hover { filter: brightness(0.92); }
+.opp-desc { opacity: 0.8; margin-top: 3px; }
 .opp-hot { background: #FEE2E2; color: #B91C1C; }
 .opp-warm { background: #FEF3C7; color: #92400E; }
 .opp-cool { background: rgba(43,42,36,0.08); color: var(--text-secondary); }
@@ -8753,6 +8760,24 @@ window.__fhHighlight = function (el, rows) {
 const A = () => (typeof App !== 'undefined' && App) ? App : window.App;
 const esc = (s) => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 const tc = (s) => String(s || '').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+// Title-case ALL-CAPS text but keep short tokens and digit-bearing tokens
+// as they were: "FCI LA TUNA - 1ST QTR FY2027" -> "FCI LA TUNA - 1st Qtr FY2027"
+const smartTitle = (s) => {
+  s = String(s || '').trim();
+  if (s !== s.toUpperCase()) return s;   // mixed case already — trust it
+  return s.split(/\s+/).map(w => {
+    const bare = w.replace(/[^A-Za-z0-9]/g, '');
+    if (/\d/.test(bare) && /[A-Za-z]/.test(bare)) return w;         // FY2027, W564KV
+    if (bare.length <= 4 && bare === bare.toUpperCase() && bare.length >= 2) return w;  // FCI, DFAC, INL
+    return w.charAt(0) + w.slice(1).toLowerCase();
+  }).join(' ');
+};
+const pocLabel = (name) => {
+  const n = String(name || '').trim();
+  if (!n || n.length > 34 || /solicitation|questions|buyer|listed|document/i.test(n)) return 'Email the buyer';
+  return tc(n);
+};
+const samUrl = (id) => 'https://sam.gov/search/?keywords=' + encodeURIComponent(String(id || '').trim());
 
 function parseCSV(text) {
   const rows = []; let row = [], cell = '', q = false;
@@ -8778,7 +8803,20 @@ function parseCSV(text) {
 let _data = null, _loading = null, _asOf = null;
 function load() {
   if (_data || _loading) return _loading || Promise.resolve(_data);
-  _loading = fetch('/data/solicitations.csv')
+  // Deferred + bounded: wait for the browser to go idle so the 4MB CSV never
+  // competes with the search's own requests or first paint, and abort at 10s
+  // so a slow CDN can't wedge the card.
+  _loading = new Promise(res => {
+    let done = false;
+    const go = () => { if (!done) { done = true; res(); } };
+    if ('requestIdleCallback' in window) requestIdleCallback(go, { timeout: 2500 });
+    setTimeout(go, 3000);   // hard fallback: idle callbacks can starve
+  })
+    .then(() => {
+      const ctrl = ('AbortController' in window) ? new AbortController() : null;
+      if (ctrl) setTimeout(() => ctrl.abort(), 10000);
+      return fetch('/data/solicitations.csv', ctrl ? { signal: ctrl.signal } : {});
+    })
     .then(r => { if (!r.ok) throw new Error(String(r.status)); return r.text(); })
     .then(t => {
       _data = parseCSV(t).filter(o => (o['Status'] || '').toLowerCase() === 'active')
@@ -8839,29 +8877,34 @@ window.OppsCard = {
     openEnded.sort((a, b) => (Date.parse(b['Last Updated Date']) || 0) - (Date.parse(a['Last Updated Date']) || 0));
     if (!card) return;   // shell claimed above; if gone, a new search cleared us
     card.style.display = '';
+    const oppRow = (o, pillHtml, extraMeta) => {
+      const id = String(o['Notice ID'] || '').trim();
+      const sa = o['Current Set Aside'] && !/^none$/i.test(o['Current Set Aside'])
+        ? ` \u00B7 <span class="opp-sa">${esc(o['Current Set Aside'].replace(/\s*\(FAR[^)]*\)/, '').replace(/^(SBA Certified |Service-Disabled )/,'').replace(/ Program Set-Aside| Set-Aside/,''))}</span>` : '';
+      const meta = [esc(smartTitle(o['Sub Tier Name']))]
+        .concat(extraMeta || [])
+        .concat(id ? [`<a class="opp-view" href="${samUrl(id)}" target="_blank" rel="noopener">${esc(id)} \u2197</a>`] : [])
+        .join(' \u00B7 ') + sa;
+      const poc = o['POC Email']
+        ? `<a class="opp-poc" href="mailto:${esc(o['POC Email'])}?subject=${encodeURIComponent((id ? id + ' \u2014 ' : '') + o['Opportunity Title'])}">\u2709 ${esc(pocLabel(o['POC Name']))}</a>` : '';
+      const desc = String(o['Description'] || '').replace(/https?:\/\/\S+/g, '').replace(/\s+/g, ' ').trim();
+      return `<div class="dl-row" style="cursor:default;">
+        <div class="dl-main">
+          <div class="opp-line1"><span class="opp-title">${esc(smartTitle(o['Opportunity Title']).slice(0, 96))}</span>${pillHtml}</div>
+          <div class="dl-line2">${meta}${poc ? ' \u00B7 ' + poc : ''}</div>
+          ${desc ? `<div class="dl-line2 opp-desc">${esc(desc.slice(0, 140))}\u2026</div>` : ''}
+        </div></div>`;
+    };
     const rows = hits.slice(0, 8).map(o => {
       const days = Math.ceil((o._due - now) / 864e5);
       const cls = days <= 7 ? 'opp-hot' : days <= 14 ? 'opp-warm' : 'opp-cool';
-      const sa = o['Current Set Aside'] && !/^none$/i.test(o['Current Set Aside'])
-        ? `<span class="opp-sa">${esc(o['Current Set Aside'].replace(/\s*\(FAR[^)]*\)/, ''))}</span>` : '';
-      const poc = o['POC Email']
-        ? ` \u00B7 <a class="pf-link" href="mailto:${esc(o['POC Email'])}?subject=${encodeURIComponent(o['Notice ID'] + ' \u2014 ' + o['Opportunity Title'])}">${esc(tc(o['POC Name'] || 'Contracting officer'))} \u2709</a>` : '';
-      return `<div class="dl-row" style="cursor:default;">
-        <div class="dl-main">
-          <div class="dl-line1"><span class="dl-vendor">${esc(tc(o['Opportunity Title']).slice(0, 90))}</span><span class="opp-days ${cls}">${days}d</span></div>
-          <div class="dl-line2">${esc(tc(o['Sub Tier Name']))} \u00B7 Notice ${esc(o['Notice ID'])}${sa}${poc}</div>
-          ${o['Description'] ? `<div class="dl-line2" style="opacity:0.85;">${esc(String(o['Description']).slice(0, 140))}\u2026</div>` : ''}
-        </div></div>`;
+      return oppRow(o, `<span class="opp-days ${cls}">closes ${days}d</span>`);
     }).join('');
     const openRows = openEnded.slice(0, 4).map(o => {
       const upd = Date.parse(o['Last Updated Date']) || 0;
-      const poc = o['POC Email']
-        ? ` \u00B7 <a class="pf-link" href="mailto:${esc(o['POC Email'])}?subject=${encodeURIComponent(o['Notice ID'] + ' \u2014 ' + o['Opportunity Title'])}">${esc(tc(o['POC Name'] || 'Contracting officer'))} \u2709</a>` : '';
-      return `<div class="dl-row" style="cursor:default;">
-        <div class="dl-main">
-          <div class="dl-line1"><span class="dl-vendor">${esc(tc(o['Opportunity Title']).slice(0, 90))}</span><span class="opp-days opp-cool">open</span></div>
-          <div class="dl-line2">${esc(tc(o['Sub Tier Name']))} \u00B7 ${esc(o['Contract Opportunity Type'])} \u00B7 Notice ${esc(o['Notice ID'])}${upd ? ' \u00B7 updated ' + new Date(upd).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}${poc}</div>
-        </div></div>`;
+      const extra = [esc(o['Contract Opportunity Type'] || 'Notice')];
+      if (upd) extra.push('updated ' + new Date(upd).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+      return oppRow(o, `<span class="opp-days opp-cool">open</span>`, extra);
     }).join('');
     const asOf = _asOf ? new Date(_asOf).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
     card.innerHTML = `<div class="card-header"><div><div class="card-title">Open right now${scopeLabel && (hits.length || openEnded.length) ? ' \u00B7 ' + esc(String(scopeLabel).replace(/^Department of( the)? /i, '')) : ''}</div>
