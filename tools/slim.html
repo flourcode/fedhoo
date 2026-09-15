@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Solicitations slimmer — fedhoo</title>
+<style>
+  body { background:#F4F3F8; color:#1A1A1E; font-family:system-ui,sans-serif; max-width:640px; margin:0 auto; padding:40px 20px; }
+  h1 { font-size:24px; font-weight:900; } p { line-height:1.55; color:#55535E; }
+  .drop { border:2.5px dashed #46446E; border-radius:14px; padding:48px 20px; text-align:center; font-weight:700; color:#46446E; cursor:pointer; }
+  .drop.on { background:rgba(70,68,110,0.07); }
+  #out { margin-top:18px; font-size:14px; font-weight:600; }
+  code { background:rgba(70,68,110,0.08); padding:1px 6px; border-radius:5px; }
+</style>
+</head>
+<body>
+<h1>Solicitations slimmer</h1>
+<p>Drop the full SAM.gov Contract Opportunities export here (any size). This strips it to active, future-dated notices closing within 120 days, removes HTML, and downloads a <code>solicitations.csv</code> ready to upload to <code>/data/</code>. Everything runs in your browser — the file never leaves this machine.</p>
+<div class="drop" id="drop">Drop the CSV here, or click to choose</div>
+<input type="file" id="file" accept=".csv" hidden>
+<div id="out"></div>
+<script>
+'use strict';
+const KEEP = ['Sub Tier Name','Notice ID','Contract Opportunity Type','Opportunity Title','Description',
+  'Current Response Date','Current Set Aside','NAICS','PSC','POC Name','POC Email','Last Updated Date','Status'];
+function parseCSV(text) {
+  const rows = []; let row = [], cell = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i+1] === '"') { cell += '"'; i++; } else q = false; } else cell += c; }
+    else if (c === '"') q = true;
+    else if (c === ',') { row.push(cell); cell = ''; }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && text[i+1] === '\n') i++;
+      row.push(cell); cell = ''; if (row.length > 1 || row[0] !== '') rows.push(row); row = []; }
+    else cell += c;
+  }
+  if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+  const hdr = rows.shift().map(h => h.replace(/^\uFEFF/, '').trim());
+  return rows.map(r => Object.fromEntries(hdr.map((h, i) => [h, r[i] || ''])));
+}
+const csvCell = (v) => /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+function slim(text) {
+  const rows = parseCSV(text);
+  const now = Date.now(), horizon = now + 120 * 864e5;
+  const out = [KEEP.join(',')];
+  let kept = 0;
+  for (const r of rows) {
+    if ((r['Status'] || '').trim().toLowerCase() !== 'active') continue;
+    const due = Date.parse(r['Current Response Date'] || '');
+    const upd = Date.parse(r['Last Updated Date'] || '');
+    const datedOK = due && due > now && due <= horizon;
+    const openOK = !due && upd && upd >= now - 180 * 864e5;   // fresh open-ended notices
+    if (!datedOK && !openOK) continue;
+    const s = {};
+    for (const k of KEEP) s[k] = (r[k] || '').trim();
+    s['Description'] = s['Description'].replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+      .replace(/\s+/g, ' ').trim().slice(0, 160);
+    s['Opportunity Title'] = s['Opportunity Title'].slice(0, 140);
+    out.push(KEEP.map(k => csvCell(s[k])).join(','));
+    kept++;
+  }
+  return { csv: out.join('\r\n'), kept, total: rows.length };
+}
+function handle(file) {
+  const rd = new FileReader();
+  rd.onload = () => {
+    const { csv, kept, total } = slim(rd.result);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    a.download = 'solicitations.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+    document.getElementById('out').textContent =
+      'Done: ' + kept + ' notices kept of ' + total + ' (' + Math.round(csv.length / 1024) + ' KB). Upload the downloaded file to /data/solicitations.csv and invalidate.';
+  };
+  rd.readAsText(file);
+}
+const drop = document.getElementById('drop'), inp = document.getElementById('file');
+drop.onclick = () => inp.click();
+inp.onchange = () => inp.files[0] && handle(inp.files[0]);
+drop.ondragover = (e) => { e.preventDefault(); drop.classList.add('on'); };
+drop.ondragleave = () => drop.classList.remove('on');
+drop.ondrop = (e) => { e.preventDefault(); drop.classList.remove('on'); e.dataTransfer.files[0] && handle(e.dataTransfer.files[0]); };
+</script>
+</body>
+</html>
