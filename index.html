@@ -1117,6 +1117,12 @@ a, button, input, select { touch-action: manipulation; }
 .cross-nav-cta:hover { color: #5E5B92; }
 
 
+/* ── open solicitations card ── */
+.opp-days { font-size: 12px; font-weight: 800; border-radius: 9999px; padding: 2px 10px; white-space: nowrap; }
+.opp-hot { background: #FEE2E2; color: #B91C1C; }
+.opp-warm { background: #FEF3C7; color: #92400E; }
+.opp-cool { background: rgba(43,42,36,0.08); color: var(--text-secondary); }
+.opp-sa { font-size: 10px; font-weight: 800; letter-spacing: 0.03em; border-radius: 9999px; padding: 1px 8px; margin-left: 6px; background: #DCFCE7; color: #166534; }
 /* ── pastel entity system (ported from fedmo v2) ── */
 .dl-amt { background: rgba(22,163,74,0.10); color: #15803D; padding: 1px 8px; border-radius: 6px; }
 .dark .dl-amt { background: rgba(74,222,128,0.14); color: #6EE7A0; }
@@ -2709,6 +2715,7 @@ async searchAwards(keywords) {
         const filters = { time_period: [period], award_type_codes: this.CONTRACT_TYPES, keywords: kwList.length ? kwList : [keywords] };
         App._applySectorFilter(filters);
         App._lastSearchFilters = filters;
+        App._lastKeywords = filters.keywords || kwList;   // OppsCard matches on these
         const pool = (await this._post('/search/spending_by_award/', { filters, fields: this.AWARD_FIELDS, limit: 100, sort: 'Award Amount', order: 'desc' })).results || [];
         return cleanAndSort(pool);
       }
@@ -3257,6 +3264,7 @@ const App = {
     const sheetAic = DOM.get('aiContentContainer'); if (sheetAic) sheetAic.innerHTML = '';
     const ql = DOM.get('sheetQuestionLabel'); if (ql) { ql.textContent = ''; ql.classList.add('hidden'); }
     document.getElementById('isvCard')?.remove();
+    document.getElementById('oppsCard')?.remove();
     DOM.hide('expiringCard');
     DOM.hide('recentCard');
     DOM.hide('primesCard');
@@ -3430,6 +3438,7 @@ const App = {
         if (window.PartnerFit) PartnerFit.render();
         if (window.Deals) Deals.render();
     if (window.IsvCard) IsvCard.render();
+    if (window.OppsCard) OppsCard.render();
         if (window.ChartCaptions) ChartCaptions.update(App._chartView || 'treemap');
         if (window.MatchScope) MatchScope.init();
         if (this._reportIntent) { this._reportIntent = false; setTimeout(() => window.Editorial && Editorial.showInline(), 400); }
@@ -4505,6 +4514,7 @@ const App = {
     if (window.PartnerFit) PartnerFit.render();
     if (window.Deals) Deals.render();
     if (window.IsvCard) IsvCard.render();
+    if (window.OppsCard) OppsCard.render();
     DOM.get('tabSubSankey')?.classList.remove('hidden');
     DOM.get('dotSubSankey')?.classList.remove('hidden');
 
@@ -7540,6 +7550,7 @@ window.SyncCards = {
     if (window.PartnerFit) PartnerFit.render();
     if (window.Deals) Deals.render();
     if (window.IsvCard) IsvCard.render();
+    if (window.OppsCard) OppsCard.render();
     if (window.ChartCaptions) ChartCaptions.update(app._chartView || 'treemap');
     const ds = app.drillState || { level: 0 };
     const clean = (typeof Utils !== 'undefined' && Utils.cleanAgency) ? Utils.cleanAgency : (x => x);
@@ -8729,6 +8740,115 @@ window.__fhHighlight = function (el, rows) {
     tn.parentNode.replaceChild(frag, tn);
   }
 };
+</script>
+
+<script>
+// ═══ OPEN RIGHT NOW — live solicitations matched to the search ═══
+// Data: /data/solicitations.csv, a SAM.gov Contract Opportunities export
+// Mark refreshes by re-uploading. Matching is client-side with word
+// boundaries against the SAME expanded keywords the search used, so a
+// three-letter query can never substring-match its way to $214B again.
+(function () {
+'use strict';
+const A = () => (typeof App !== 'undefined' && App) ? App : window.App;
+const esc = (s) => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const tc = (s) => String(s || '').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+
+function parseCSV(text) {
+  const rows = []; let row = [], cell = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) {
+      if (c === '"') { if (text[i+1] === '"') { cell += '"'; i++; } else q = false; }
+      else cell += c;
+    } else if (c === '"') q = true;
+    else if (c === ',') { row.push(cell); cell = ''; }
+    else if (c === '\n' || c === '\r') {
+      if (c === '\r' && text[i+1] === '\n') i++;
+      row.push(cell); cell = '';
+      if (row.length > 1 || row[0] !== '') rows.push(row);
+      row = [];
+    } else cell += c;
+  }
+  if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+  const hdr = rows.shift().map(h => h.replace(/^\uFEFF/, '').trim());
+  return rows.map(r => Object.fromEntries(hdr.map((h, i) => [h, r[i] || ''])));
+}
+
+let _data = null, _loading = null, _asOf = null;
+function load() {
+  if (_data || _loading) return _loading || Promise.resolve(_data);
+  _loading = fetch('/data/solicitations.csv')
+    .then(r => { if (!r.ok) throw new Error(String(r.status)); return r.text(); })
+    .then(t => {
+      _data = parseCSV(t).filter(o => (o['Status'] || '').toLowerCase() === 'active')
+        .map(o => { o._due = Date.parse(o['Current Response Date']) || 0;
+                    o._hay = [o['Opportunity Title'], o['Description'], o['NAICS'], o['PSC']].join(' ');
+                    return o; });
+      _asOf = Math.max(0, ..._data.map(o => Date.parse(o['Last Updated Date']) || 0));
+      return _data;
+    })
+    .catch(() => { _data = []; return _data; })
+    .finally(() => { _loading = null; });
+  return _loading;
+}
+
+window.OppsCard = {
+  async render() {
+    const app = A();
+    const deals = document.getElementById('dealsCard');
+    let card = document.getElementById('oppsCard');
+    if (!app || !app.searchData || !app.searchData.loaded || !deals) { if (card) card.remove(); return; }
+    const opps = await load();
+    if (!opps.length) { if (card) card.remove(); return; }
+    // match on the search's own expanded keywords, word-bounded
+    const kws = (app._lastKeywords && app._lastKeywords.length ? app._lastKeywords
+                : [app.currentQuery || '']).map(k => String(k).trim()).filter(k => k.length >= 3);
+    if (!kws.length) { if (card) card.remove(); return; }
+    const res = kws.map(k => new RegExp('\\b' + k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+') + '\\b', 'i'));
+    const now = Date.now();
+    let hits = opps.filter(o => o._due > now && res.some(re => re.test(o._hay)));
+    // drill scope: match sub-tier name against the drilled agency, loosely
+    const ds = app.drillState || { level: 0 };
+    const scopeLabel = ds.level >= 2 && ds.currentSubAgency ? ds.currentSubAgency
+                     : ds.level >= 1 ? ds.currentAgency : null;
+    if (scopeLabel) {
+      const norm = (x) => String(x || '').toLowerCase().replace(/^department of( the)? /, '').replace(/^u\.s\. /, '');
+      const target = norm(scopeLabel);
+      const scoped = hits.filter(o => {
+        const st = norm(o['Sub Tier Name']);
+        return st.includes(target) || target.includes(st);
+      });
+      if (scoped.length) hits = scoped;
+    }
+    if (!hits.length) { if (card) card.remove(); return; }
+    hits.sort((a, b) => a._due - b._due);
+    if (!card) {
+      card = document.createElement('div');
+      card.id = 'oppsCard';
+      card.className = 'app-card wide';
+      deals.parentNode.insertBefore(card, deals.nextSibling);
+    }
+    const rows = hits.slice(0, 8).map(o => {
+      const days = Math.ceil((o._due - now) / 864e5);
+      const cls = days <= 7 ? 'opp-hot' : days <= 14 ? 'opp-warm' : 'opp-cool';
+      const sa = o['Current Set Aside'] && !/^none$/i.test(o['Current Set Aside'])
+        ? `<span class="opp-sa">${esc(o['Current Set Aside'].replace(/\s*\(FAR[^)]*\)/, ''))}</span>` : '';
+      const poc = o['POC Email']
+        ? ` \u00B7 <a class="pf-link" href="mailto:${esc(o['POC Email'])}?subject=${encodeURIComponent(o['Notice ID'] + ' \u2014 ' + o['Opportunity Title'])}">${esc(tc(o['POC Name'] || 'Contracting officer'))} \u2709</a>` : '';
+      return `<div class="dl-row" style="cursor:default;">
+        <div class="dl-main">
+          <div class="dl-line1"><span class="dl-vendor">${esc(tc(o['Opportunity Title']).slice(0, 90))}</span><span class="opp-days ${cls}">${days}d</span></div>
+          <div class="dl-line2">${esc(tc(o['Sub Tier Name']))} \u00B7 Notice ${esc(o['Notice ID'])}${sa}${poc}</div>
+          ${o['Description'] ? `<div class="dl-line2" style="opacity:0.85;">${esc(String(o['Description']).slice(0, 140))}\u2026</div>` : ''}
+        </div></div>`;
+    }).join('');
+    const asOf = _asOf ? new Date(_asOf).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+    card.innerHTML = `<div class="card-header"><div><div class="card-title">Open right now${scopeLabel && hits.length ? ' \u00B7 ' + esc(String(scopeLabel).replace(/^Department of( the)? /i, '')) : ''}</div>
+      <div class="card-desc">${hits.length} active solicitation${hits.length === 1 ? '' : 's'} on SAM.gov matching this search, closing soonest first. Snapshot as of ${asOf}; search the Notice ID on SAM.gov for the full package. Email goes to the contracting officer.</div></div></div>${rows}`;
+  },
+};
+})();
 </script>
 </body>
 </html>
