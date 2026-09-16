@@ -8779,7 +8779,19 @@ const smartTitle = (s) => {
     return w.charAt(0) + w.slice(1).toLowerCase();
   }).join(' ');
 };
-const samUrl = (id) => 'https://sam.gov/search/?keywords=' + encodeURIComponent(String(id || '').trim());
+// SAM's search only loads a keyword when it arrives as a simpleSearch
+// keywordTag (lowercased), not as ?keywords= alone. This shape opens the
+// notice's result page without a login.
+const samUrl = (id) => {
+  const raw = String(id || '').trim();
+  const lower = encodeURIComponent(raw.toLowerCase());
+  return 'https://sam.gov/search/?keywords=' + encodeURIComponent(raw)
+    + '&page=1&pageSize=25&sort=-modifiedDate'
+    + '&sfm%5BsimpleSearch%5D%5BkeywordRadio%5D=ALL'
+    + '&sfm%5BsimpleSearch%5D%5BkeywordTags%5D%5B0%5D%5Bkey%5D=' + lower
+    + '&sfm%5BsimpleSearch%5D%5BkeywordTags%5D%5B0%5D%5Bvalue%5D=' + lower
+    + '&sfm%5Bstatus%5D%5Bis_active%5D=true';
+};
 const dayMon = (ts) => new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 // column indices in the compact row arrays
 const AG=0, ID=1, TYPE=2, TITLE=3, DESC=4, DUE=5, SA=6, NAICS=7, PSC=8, POCN=9, POCE=10, UPD=11;
