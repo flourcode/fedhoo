@@ -15,7 +15,7 @@
 </head>
 <body>
 <h1>Solicitations slimmer</h1>
-<p>Drop the full SAM.gov Contract Opportunities export here (any size). This strips it to active, future-dated notices closing within 120 days, removes HTML, and downloads a <code>solicitations.json</code> ready to upload to <code>/data/</code>. Everything runs in your browser — the file never leaves this machine.</p>
+<p>Drop the full SAM.gov Contract Opportunities export here (any size). This strips it to active notices posted in the last 120 days or closing in the next 120, removes HTML, and downloads a <code>solicitations.json</code> ready to upload to <code>/data/</code>. Everything runs in your browser — the file never leaves this machine.</p>
 <div class="drop" id="drop">Drop the CSV here, or click to choose</div>
 <input type="file" id="file" accept=".csv" hidden>
 <div id="out"></div>
@@ -53,22 +53,27 @@ function setAside(s) {
 }
 function build(text) {
   const src = parseCSV(text);
-  const now = Date.now(), horizon = now + 120 * 864e5, stale = now - 180 * 864e5;
+  const now = Date.now(), dueH = now + 120 * 864e5, postedH = now - 120 * 864e5, stale = now - 180 * 864e5;
   const out = [];
   for (const r of src) {
     if ((r['Status'] || '').trim().toLowerCase() !== 'active') continue;
     const due = Date.parse(r['Current Response Date'] || '') || 0;
     const upd = Date.parse(r['Last Updated Date'] || '') || 0;
-    if (!((due && due > now && due <= horizon) || (!due && upd && upd >= stale))) continue;
+    const pub = Date.parse(r['Last Published Date'] || '') || upd;
+    if (due && due <= now) continue;                     // never show a closed deadline
+    const fresh = pub && pub >= postedH;                 // posted in the last 120 days
+    const biddable = due && due <= dueH;                 // closing in the next 120 days
+    const openish = !due && upd && upd >= stale;         // live notice with no deadline
+    if (!(fresh || biddable || openish)) continue;
     let poc = (r['POC Name'] || '').trim();
     if (poc.length > 34 || /solicitation|questions|buyer|listed|document/i.test(poc)) poc = '';
     out.push([(r['Sub Tier Name'] || '').trim().slice(0, 60), (r['Notice ID'] || '').trim(),
       TYPE[(r['Contract Opportunity Type'] || '').trim()] || (r['Contract Opportunity Type'] || '').trim().slice(0, 20),
-      (r['Opportunity Title'] || '').replace(/\s+/g, ' ').trim().slice(0, 130), clean(r['Description'], 150),
+      (r['Opportunity Title'] || '').replace(/\s+/g, ' ').trim().slice(0, 110), clean(r['Description'], 90),
       due, setAside(r['Current Set Aside']), titleCase(r['NAICS']), titleCase(r['PSC']),
-      poc, (r['POC Email'] || '').trim(), upd]);
+      poc, (r['POC Email'] || '').trim(), upd, pub]);
   }
-  out.sort((a, b) => (a[5] ? 0 : 1) - (b[5] ? 0 : 1) || (a[5] && b[5] ? a[5] - b[5] : b[11] - a[11]));
+  out.sort((a, b) => (b[12] || b[11] || 0) - (a[12] || a[11] || 0));   // newest posted first
   const asOf = out.reduce((m, r) => Math.max(m, r[11] || 0), 0);
   return { json: JSON.stringify({ asOf, n: out.length, rows: out }), kept: out.length, total: src.length };
 }
