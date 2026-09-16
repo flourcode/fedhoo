@@ -15,14 +15,16 @@
 </head>
 <body>
 <h1>Solicitations slimmer</h1>
-<p>Drop the full SAM.gov Contract Opportunities export here (any size). This strips it to active, future-dated notices closing within 120 days, removes HTML, and downloads a <code>solicitations.csv</code> ready to upload to <code>/data/</code>. Everything runs in your browser — the file never leaves this machine.</p>
+<p>Drop the full SAM.gov Contract Opportunities export here (any size). This strips it to active, future-dated notices closing within 120 days, removes HTML, and downloads a <code>solicitations.json</code> ready to upload to <code>/data/</code>. Everything runs in your browser — the file never leaves this machine.</p>
 <div class="drop" id="drop">Drop the CSV here, or click to choose</div>
 <input type="file" id="file" accept=".csv" hidden>
 <div id="out"></div>
 <script>
 'use strict';
-const KEEP = ['Sub Tier Name','Notice ID','Contract Opportunity Type','Opportunity Title','Description',
-  'Current Response Date','Current Set Aside','NAICS','PSC','POC Name','POC Email','Last Updated Date','Status'];
+const TYPE = {'Sources Sought':'Sources Sought','Presolicitation':'Presolicitation','Solicitation':'Solicitation',
+  'Combined Synopsis/Solicitation':'Combined Synopsis','Special Notice':'Special Notice','Award Notice':'Award Notice',
+  'Justification':'Justification','Intent to Bundle Requirements (DoD- Funded)':'Intent to Bundle',
+  'Sale of Surplus Property':'Surplus Sale','Fair Opportunity / Limited Sources Justification':'Limited Sources'};
 function parseCSV(text) {
   const rows = []; let row = [], cell = '', q = false;
   for (let i = 0; i < text.length; i++) {
@@ -38,40 +40,49 @@ function parseCSV(text) {
   const hdr = rows.shift().map(h => h.replace(/^\uFEFF/, '').trim());
   return rows.map(r => Object.fromEntries(hdr.map((h, i) => [h, r[i] || ''])));
 }
-const csvCell = (v) => /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
-function slim(text) {
-  const rows = parseCSV(text);
-  const now = Date.now(), horizon = now + 120 * 864e5;
-  const out = [KEEP.join(',')];
-  let kept = 0;
-  for (const r of rows) {
+const clean = (t, n) => String(t || '').replace(/<[^>]*>?/g, ' ').replace(/https?:\/\/\S+/g, '')
+  .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&[a-z]+;?/g, ' ')
+  .replace(/\s+/g, ' ').trim().slice(0, n);
+const titleCase = (s) => String(s || '').trim().replace(/\s+/g, ' ').toLowerCase()
+  .replace(/\b\w/g, c => c.toUpperCase()).slice(0, 34);
+function setAside(s) {
+  s = String(s || '').trim();
+  if (!s || s.toLowerCase() === 'none') return '';
+  return s.replace(/\s*\(FAR[^)]*\)/, '').replace('SBA Certified ', '').replace('Service-Disabled ', 'SD')
+    .replace(' Program Set-Aside', '').replace(' Set-Aside', '').slice(0, 38);
+}
+function build(text) {
+  const src = parseCSV(text);
+  const now = Date.now(), horizon = now + 120 * 864e5, stale = now - 180 * 864e5;
+  const out = [];
+  for (const r of src) {
     if ((r['Status'] || '').trim().toLowerCase() !== 'active') continue;
-    const due = Date.parse(r['Current Response Date'] || '');
-    const upd = Date.parse(r['Last Updated Date'] || '');
-    const datedOK = due && due > now && due <= horizon;
-    const openOK = !due && upd && upd >= now - 180 * 864e5;   // fresh open-ended notices
-    if (!datedOK && !openOK) continue;
-    const s = {};
-    for (const k of KEEP) s[k] = (r[k] || '').trim();
-    s['Description'] = s['Description'].replace(/<[^>]+>/g, ' ')
-      .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-      .replace(/\s+/g, ' ').trim().slice(0, 160);
-    s['Opportunity Title'] = s['Opportunity Title'].slice(0, 140);
-    out.push(KEEP.map(k => csvCell(s[k])).join(','));
-    kept++;
+    const due = Date.parse(r['Current Response Date'] || '') || 0;
+    const upd = Date.parse(r['Last Updated Date'] || '') || 0;
+    if (!((due && due > now && due <= horizon) || (!due && upd && upd >= stale))) continue;
+    let poc = (r['POC Name'] || '').trim();
+    if (poc.length > 34 || /solicitation|questions|buyer|listed|document/i.test(poc)) poc = '';
+    out.push([(r['Sub Tier Name'] || '').trim().slice(0, 60), (r['Notice ID'] || '').trim(),
+      TYPE[(r['Contract Opportunity Type'] || '').trim()] || (r['Contract Opportunity Type'] || '').trim().slice(0, 20),
+      (r['Opportunity Title'] || '').replace(/\s+/g, ' ').trim().slice(0, 130), clean(r['Description'], 150),
+      due, setAside(r['Current Set Aside']), titleCase(r['NAICS']), titleCase(r['PSC']),
+      poc, (r['POC Email'] || '').trim(), upd]);
   }
-  return { csv: out.join('\r\n'), kept, total: rows.length };
+  out.sort((a, b) => (a[5] ? 0 : 1) - (b[5] ? 0 : 1) || (a[5] && b[5] ? a[5] - b[5] : b[11] - a[11]));
+  const asOf = out.reduce((m, r) => Math.max(m, r[11] || 0), 0);
+  return { json: JSON.stringify({ asOf, n: out.length, rows: out }), kept: out.length, total: src.length };
 }
 function handle(file) {
   const rd = new FileReader();
+  document.getElementById('out').textContent = 'Working\u2026';
   rd.onload = () => {
-    const { csv, kept, total } = slim(rd.result);
+    const { json, kept, total } = build(rd.result);
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-    a.download = 'solicitations.csv';
+    a.href = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+    a.download = 'solicitations.json';
     document.body.appendChild(a); a.click(); a.remove();
     document.getElementById('out').textContent =
-      'Done: ' + kept + ' notices kept of ' + total + ' (' + Math.round(csv.length / 1024) + ' KB). Upload the downloaded file to /data/solicitations.csv and invalidate.';
+      'Done: ' + kept + ' notices kept of ' + total + ' (' + Math.round(json.length / 1024) + ' KB). Upload to /data/solicitations.json and invalidate the CDN.';
   };
   rd.readAsText(file);
 }
