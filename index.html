@@ -2667,7 +2667,10 @@ async searchAwards(keywords) {
     // (e.g. "U.S. Special Operations Command") won't resolve. Pre-warm the cache by firing
     // the agency autocomplete — but only cache results where the agency name closely matches
     // the query, to avoid polluting the cache with unrelated suggestions for vendor queries.
-    if (Object.keys(Utils.dynamicAgencies).length === 0) {
+    // A pure NAICS/PSC code is never an agency name, so the autocomplete
+    // round trip in front of the search is pure latency for those queries.
+    const _isCodeQuery = /^\s*\d{4,6}\s*$|^\s*[A-Za-z]\d{3}\s*$/.test(String(keywords || ''));
+    if (!_isCodeQuery && Object.keys(Utils.dynamicAgencies).length === 0) {
       try {
         const res = await fetch(App.PROXY_ENDPOINT, {
           method: 'POST',
@@ -4443,6 +4446,12 @@ const App = {
   },
 
   renderExpiring() {
+
+    // Card retired (hidden by CSS since v10). No-op keeps every call site
+
+    // safe while skipping a full dataset pass + innerHTML write per search.
+
+    return;
     const nowTs = Date.now();
     const cutoffTs = nowTs + 90 * 86400000;
     const data = this.searchData.active
@@ -4458,6 +4467,12 @@ const App = {
   },
 
   renderRecent() {
+
+    // Card retired (hidden by CSS since v10). No-op keeps every call site
+
+    // safe while skipping a full dataset pass + innerHTML write per search.
+
+    return;
     const nowTs = Date.now();
     const cutoffTs = nowTs - 90 * 86400000;
     const data = this.searchData.active
@@ -4472,6 +4487,12 @@ const App = {
   },
 
   renderContracts() {
+
+    // Card retired (hidden by CSS since v10). No-op keeps every call site
+
+    // safe while skipping a full dataset pass + innerHTML write per search.
+
+    return;
     const data = [...this.searchData.active].sort((a, b) =>
       (parseFloat(b['Award Amount']) || 0) - (parseFloat(a['Award Amount']) || 0)
     );
@@ -4528,10 +4549,10 @@ const App = {
 
     // Cache for sub-sankey and reveal the third chart tab
     this._subawardData = subs;
+    // Only PartnerFit consumes subaward data. Deals, IsvCard and OppsCard read
+    // searchData/_lastKeywords, unchanged since runSearch rendered them — this
+    // block was doing the whole card pass a second time on every search.
     if (window.PartnerFit) PartnerFit.render();
-    if (window.Deals) Deals.render();
-    if (window.IsvCard) IsvCard.render();
-    if (window.OppsCard) OppsCard.render();
     DOM.get('tabSubSankey')?.classList.remove('hidden');
     DOM.get('dotSubSankey')?.classList.remove('hidden');
 
@@ -4933,6 +4954,12 @@ const App = {
   },
 
   renderPrimes() {
+
+    // Card retired (hidden by CSS since v10). No-op keeps every call site
+
+    // safe while skipping a full dataset pass + innerHTML write per search.
+
+    return;
     const data = this.searchData.active;
     const list = this.UI.primesList;
     const card = this.UI.primesCard;
@@ -8799,19 +8826,36 @@ const AG=0, ID=1, TYPE=2, TITLE=3, DESC=4, DUE=5, SA=6, NAICS=7, PSC=8, POCN=9, 
 const EARLY = /sources sought|presolicitation|special notice|intent to bundle/i;
 
 let _data = null, _loading = null, _asOf = 0, _expanded = false;
-function load() {
+// Viewport-gated: the file is only fetched once the card's slot is close to
+// being seen, at low priority. Search requests never share bandwidth with it.
+function nearViewport(el) {
+  return new Promise(res => {
+    if (!el || !('IntersectionObserver' in window)) return res();
+    const r = el.getBoundingClientRect();
+    if (r.top < window.innerHeight + 800) return res();
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some(e => e.isIntersecting)) { io.disconnect(); res(); }
+    }, { rootMargin: '800px 0px' });
+    io.observe(el);
+    setTimeout(() => { io.disconnect(); res(); }, 15000);
+  });
+}
+function load(slot) {
   if (_data) return Promise.resolve(_data);
   if (_loading) return _loading;
-  _loading = new Promise(res => {
-    let done = false;
-    const go = () => { if (!done) { done = true; res(); } };
-    if ('requestIdleCallback' in window) requestIdleCallback(go, { timeout: 2500 });
-    setTimeout(go, 3000);
-  })
+  _loading = nearViewport(slot)
+    .then(() => new Promise(res => {
+      let done = false;
+      const go = () => { if (!done) { done = true; res(); } };
+      if ('requestIdleCallback' in window) requestIdleCallback(go, { timeout: 2000 });
+      setTimeout(go, 2500);
+    }))
     .then(() => {
       const ctrl = ('AbortController' in window) ? new AbortController() : null;
-      if (ctrl) setTimeout(() => ctrl.abort(), 12000);
-      return fetch('/data/solicitations.json', ctrl ? { signal: ctrl.signal } : {});
+      if (ctrl) setTimeout(() => ctrl.abort(), 15000);
+      const opts = ctrl ? { signal: ctrl.signal } : {};
+      opts.priority = 'low';   // honoured where supported; harmless elsewhere
+      return fetch('/data/solicitations.json', opts);
     })
     .then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json(); })
     .then(j => { _data = j.rows || []; _asOf = j.asOf || 0; return _data; })
@@ -8864,7 +8908,7 @@ window.OppsCard = {
       card.style.display = 'none';
       anchor.parentNode.insertBefore(card, anchor.nextSibling);
     }
-    const rows = await load();
+    const rows = await load(card);
     if (!rows.length) { if (card) card.remove(); return; }
     const kws = (app._lastKeywords && app._lastKeywords.length ? app._lastKeywords
                 : [app.currentQuery || '']).map(k => String(k).trim().toLowerCase()).filter(k => k.length >= 3);
