@@ -9001,7 +9001,7 @@ window.OppsCard = {
     if (!rows.length) { if (card) card.remove(); window.AnswerBar?.setOpps({ total: 0, soon: 0 }); return; }
     if (!_schemaOK) {
       card.style.display = '';
-      card.innerHTML = `<div class="card-header"><div><div class="card-title">Open right now</div>
+      card.innerHTML = `<div class="card-header"><div><div class="card-title">Just dropped</div>
         <div class="card-desc">The solicitations snapshot is in an older format, so it is not being shown rather than shown wrong. Re-run the slimmer and upload a fresh <code>solicitations.json</code>.</div></div></div>`;
       window.AnswerBar?.setOpps({ total: 0, soon: 0 });
       return;
@@ -9086,7 +9086,7 @@ window.OppsCard = {
     const sortUI = `<div class="opp-sorts" role="tablist" aria-label="Sort notices">
       <button class="opp-sort${_sort === 'newest' ? ' active' : ''}" data-oppsort="newest">Newest</button>
       <button class="opp-sort${_sort === 'closing' ? ' active' : ''}" data-oppsort="closing">Closing soon</button></div>`;
-    card.innerHTML = `<div class="card-header" style="align-items:flex-start;gap:12px;"><div style="flex:1;min-width:0;"><div class="card-title">Open right now${scopeLabel ? ' \u00B7 ' + esc(shortAg(scopeLabel)) : ''}<span class="tempo tempo-open">OPEN \u00B7 LAST ${spanDays || _days || 30} DAYS</span><span class="tempo tempo-stale"${snapAge >= 2 ? '' : ' hidden'}>${snapAge} DAYS OLD</span></div>
+    card.innerHTML = `<div class="card-header" style="align-items:flex-start;gap:12px;"><div style="flex:1;min-width:0;"><div class="card-title">Just dropped${spanDays ? ` \u00B7 last ${spanDays} days` : ''}${scopeLabel ? ' \u00B7 ' + esc(shortAg(scopeLabel)) : ''}<span class="tempo tempo-open">SAM SNAPSHOT</span><span class="tempo tempo-stale"${snapAge >= 2 ? '' : ' hidden'}>${snapAge} DAYS OLD</span></div>
       <div class="card-desc">${stats.join(' \u00B7 ')}.${scopeNote} ${spanDays ? `Everything posted in the last ${spanDays} days` : 'Latest snapshot'}${snapAge >= 2 ? `, last refreshed ${snapAge} days ago \u2014 newer notices are not in here yet` : ` \u00B7 refreshed ${_asOf ? dayMon(_asOf) : 'recently'}`}. Notice links open SAM.gov \u2014 you\u2019ll need to be signed in there for the full package (SAM\u2019s rule, not ours). Email goes straight to the contracting officer.</div></div>${sortUI}</div>${body}${more}${less}`;
     const mb = card.querySelector('[data-oppmore]'), lb = card.querySelector('[data-oppless]');
     if (mb) mb.addEventListener('click', () => { _expanded = true; this.render(); });
