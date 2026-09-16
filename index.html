@@ -1118,14 +1118,23 @@ a, button, input, select { touch-action: manipulation; }
 
 
 /* ── open solicitations card ── */
-.opp-line1 { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.opp-title { font-weight: 800; font-size: var(--text-base, 15px); color: var(--text-title, inherit); line-height: 1.35; min-width: 0; }
-.opp-days { flex-shrink: 0; font-size: 12px; font-weight: 800; border-radius: 9999px; padding: 2px 10px; white-space: nowrap; }
-.opp-view { font-weight: 800; color: var(--accent); text-decoration: none; white-space: nowrap; }
-.opp-view:hover { text-decoration: underline; }
-.opp-poc { display: inline-block; font-weight: 700; color: var(--accent); background: var(--accent-dim, rgba(70,68,110,0.10)); border-radius: 9999px; padding: 1px 10px; text-decoration: none; white-space: nowrap; }
+.opp-row { padding: 14px 0; cursor: default; }
+.opp-line1 { display: flex; align-items: baseline; gap: 12px; }
+.opp-title { flex: 1 1 auto; font-weight: 800; font-size: var(--text-base, 15px); color: var(--text-title, inherit); line-height: 1.35; min-width: 0; }
+.opp-days { flex: 0 0 auto; margin-left: auto; font-size: 12px; font-weight: 800; border-radius: 9999px; padding: 2px 10px; white-space: nowrap; }
+.opp-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 5px; font-size: 12.5px; color: var(--text-secondary); }
+.opp-dot { opacity: 0.45; }
+.opp-type { font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; border-radius: 4px; padding: 2px 7px; background: rgba(70,68,110,0.10); color: var(--accent); }
+.opp-type-early { background: #FEF3C7; color: #92400E; }
+.opp-code { font-size: 11px; font-weight: 700; letter-spacing: 0.02em; color: var(--text-tertiary, #8A8570); background: rgba(43,42,36,0.06); border-radius: 4px; padding: 1px 6px; }
+.opp-desc { font-size: 13px; line-height: 1.5; opacity: 0.85; margin-top: 6px; }
+.opp-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 9px; }
+.opp-view { font-weight: 800; font-size: 12.5px; color: var(--accent); text-decoration: none; white-space: nowrap; border: 1.5px solid var(--accent); border-radius: 9999px; padding: 2px 10px; }
+.opp-view:hover { background: var(--accent); color: #fff; }
+.opp-poc { font-weight: 700; font-size: 12.5px; color: var(--accent); background: var(--accent-dim, rgba(70,68,110,0.10)); border-radius: 9999px; padding: 3px 11px; text-decoration: none; white-space: nowrap; }
 .opp-poc:hover { filter: brightness(0.92); }
-.opp-desc { opacity: 0.8; margin-top: 3px; }
+.opp-more { display: block; width: 100%; margin-top: 12px; font: inherit; font-size: 13px; font-weight: 800; color: var(--accent); background: none; border: 1.5px dashed var(--accent); border-radius: 10px; padding: 9px; cursor: pointer; }
+.opp-more:hover { background: var(--accent-dim, rgba(70,68,110,0.08)); }
 .opp-hot { background: #FEE2E2; color: #B91C1C; }
 .opp-warm { background: #FEF3C7; color: #92400E; }
 .opp-cool { background: rgba(43,42,36,0.08); color: var(--text-secondary); }
@@ -3272,6 +3281,7 @@ const App = {
     const ql = DOM.get('sheetQuestionLabel'); if (ql) { ql.textContent = ''; ql.classList.add('hidden'); }
     document.getElementById('isvCard')?.remove();
     document.getElementById('oppsCard')?.remove();
+    window.OppsCard?.reset();
     DOM.hide('expiringCard');
     DOM.hide('recentCard');
     DOM.hide('primesCard');
@@ -8751,93 +8761,87 @@ window.__fhHighlight = function (el, rows) {
 
 <script>
 // ═══ OPEN RIGHT NOW — live solicitations matched to the search ═══
-// Data: /data/solicitations.csv, a SAM.gov Contract Opportunities export
-// Mark refreshes by re-uploading. Matching is client-side with word
-// boundaries against the SAME expanded keywords the search used, so a
-// three-letter query can never substring-match its way to $214B again.
+// Data: /data/solicitations.json (compact row arrays — native JSON.parse is
+// ~10x faster than parsing CSV in JS, which mattered: the old path blocked
+// the main thread for ~340ms). Refresh via /tools/slim-solicitations.html.
 (function () {
 'use strict';
 const A = () => (typeof App !== 'undefined' && App) ? App : window.App;
 const esc = (s) => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 const tc = (s) => String(s || '').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
-// Title-case ALL-CAPS text but keep short tokens and digit-bearing tokens
-// as they were: "FCI LA TUNA - 1ST QTR FY2027" -> "FCI LA TUNA - 1st Qtr FY2027"
 const smartTitle = (s) => {
   s = String(s || '').trim();
-  if (s !== s.toUpperCase()) return s;   // mixed case already — trust it
+  if (s !== s.toUpperCase()) return s;
   return s.split(/\s+/).map(w => {
     const bare = w.replace(/[^A-Za-z0-9]/g, '');
-    if (/\d/.test(bare) && /[A-Za-z]/.test(bare)) return w;         // FY2027, W564KV
-    if (bare.length <= 4 && bare === bare.toUpperCase() && bare.length >= 2) return w;  // FCI, DFAC, INL
+    if (/\d/.test(bare) && /[A-Za-z]/.test(bare)) return w;
+    if (bare.length <= 4 && bare === bare.toUpperCase() && bare.length >= 2) return w;
     return w.charAt(0) + w.slice(1).toLowerCase();
   }).join(' ');
 };
-const pocLabel = (name) => {
-  const n = String(name || '').trim();
-  if (!n || n.length > 34 || /solicitation|questions|buyer|listed|document/i.test(n)) return 'Email the buyer';
-  return tc(n);
-};
 const samUrl = (id) => 'https://sam.gov/search/?keywords=' + encodeURIComponent(String(id || '').trim());
+const dayMon = (ts) => new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+// column indices in the compact row arrays
+const AG=0, ID=1, TYPE=2, TITLE=3, DESC=4, DUE=5, SA=6, NAICS=7, PSC=8, POCN=9, POCE=10, UPD=11;
+// notice types that are not a bid yet — worth flagging, they change the play
+const EARLY = /sources sought|presolicitation|special notice|intent to bundle/i;
 
-function parseCSV(text) {
-  const rows = []; let row = [], cell = '', q = false;
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (q) {
-      if (c === '"') { if (text[i+1] === '"') { cell += '"'; i++; } else q = false; }
-      else cell += c;
-    } else if (c === '"') q = true;
-    else if (c === ',') { row.push(cell); cell = ''; }
-    else if (c === '\n' || c === '\r') {
-      if (c === '\r' && text[i+1] === '\n') i++;
-      row.push(cell); cell = '';
-      if (row.length > 1 || row[0] !== '') rows.push(row);
-      row = [];
-    } else cell += c;
-  }
-  if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
-  const hdr = rows.shift().map(h => h.replace(/^\uFEFF/, '').trim());
-  return rows.map(r => Object.fromEntries(hdr.map((h, i) => [h, r[i] || ''])));
-}
-
-let _data = null, _loading = null, _asOf = null;
+let _data = null, _loading = null, _asOf = 0, _expanded = false;
 function load() {
-  if (_data || _loading) return _loading || Promise.resolve(_data);
-  // Deferred + bounded: wait for the browser to go idle so the 4MB CSV never
-  // competes with the search's own requests or first paint, and abort at 10s
-  // so a slow CDN can't wedge the card.
+  if (_data) return Promise.resolve(_data);
+  if (_loading) return _loading;
   _loading = new Promise(res => {
     let done = false;
     const go = () => { if (!done) { done = true; res(); } };
     if ('requestIdleCallback' in window) requestIdleCallback(go, { timeout: 2500 });
-    setTimeout(go, 3000);   // hard fallback: idle callbacks can starve
+    setTimeout(go, 3000);
   })
     .then(() => {
       const ctrl = ('AbortController' in window) ? new AbortController() : null;
-      if (ctrl) setTimeout(() => ctrl.abort(), 10000);
-      return fetch('/data/solicitations.csv', ctrl ? { signal: ctrl.signal } : {});
+      if (ctrl) setTimeout(() => ctrl.abort(), 12000);
+      return fetch('/data/solicitations.json', ctrl ? { signal: ctrl.signal } : {});
     })
-    .then(r => { if (!r.ok) throw new Error(String(r.status)); return r.text(); })
-    .then(t => {
-      _data = parseCSV(t).filter(o => (o['Status'] || '').toLowerCase() === 'active')
-        .map(o => { o._due = Date.parse(o['Current Response Date']) || 0;
-                    o._hay = [o['Opportunity Title'], o['Description'], o['NAICS'], o['PSC']].join(' ');
-                    return o; });
-      _asOf = Math.max(0, ..._data.map(o => Date.parse(o['Last Updated Date']) || 0));
-      return _data;
-    })
+    .then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json(); })
+    .then(j => { _data = j.rows || []; _asOf = j.asOf || 0; return _data; })
     .catch(() => { _data = []; return _data; })
     .finally(() => { _loading = null; });
   return _loading;
+}
+// lazily built match haystack, cached on the row itself
+const hayOf = (o) => o[12] || (o[12] = (o[TITLE] + ' ' + o[DESC] + ' ' + o[NAICS] + ' ' + o[PSC]).toLowerCase());
+
+function rowHtml(o, now) {
+  const id = o[ID];
+  const early = EARLY.test(o[TYPE]);
+  const pill = o[DUE]
+    ? (() => { const d = Math.ceil((o[DUE] - now) / 864e5);
+        const cls = d <= 7 ? 'opp-hot' : d <= 14 ? 'opp-warm' : 'opp-cool';
+        return `<span class="opp-days ${cls}">closes ${d}d</span>`; })()
+    : `<span class="opp-days opp-cool">no deadline</span>`;
+  const meta = [];
+  meta.push(`<span class="opp-type${early ? ' opp-type-early' : ''}">${esc(o[TYPE] || 'Notice')}</span>`);
+  meta.push(esc(smartTitle(o[AG])));
+  if (o[DUE]) meta.push(`due ${dayMon(o[DUE])}`);
+  else if (o[UPD]) meta.push(`updated ${dayMon(o[UPD])}`);
+  if (o[SA]) meta.push(`<span class="opp-sa">${esc(o[SA])}</span>`);
+  const cat = o[PSC] || o[NAICS];
+  if (cat) meta.push(`<span class="opp-code" title="${esc(o[PSC] ? 'Product/service category' : 'Industry (NAICS)')}">${esc(cat)}</span>`);
+  const actions = [];
+  if (id) actions.push(`<a class="opp-view" href="${samUrl(id)}" target="_blank" rel="noopener">${esc(id)} \u2197</a>`);
+  if (o[POCE]) actions.push(`<a class="opp-poc" href="mailto:${esc(o[POCE])}?subject=${encodeURIComponent((id ? id + ' \u2014 ' : '') + o[TITLE])}">\u2709 ${esc(o[POCN] ? tc(o[POCN]) : 'Email the buyer')}</a>`);
+  return `<div class="dl-row opp-row">
+    <div class="dl-main">
+      <div class="opp-line1"><span class="opp-title">${esc(smartTitle(o[TITLE]).slice(0, 110))}</span>${pill}</div>
+      <div class="opp-meta">${meta.join('<span class="opp-dot">\u00B7</span>')}</div>
+      ${o[DESC] ? `<div class="opp-desc">${esc(o[DESC])}\u2026</div>` : ''}
+      ${actions.length ? `<div class="opp-actions">${actions.join('')}</div>` : ''}
+    </div></div>`;
 }
 
 window.OppsCard = {
   async render() {
     const app = A();
     const anchor = document.getElementById('marketCard') || document.getElementById('dealsCard');
-    // Claim the shell BEFORE any await: two render chains fire near-
-    // simultaneously after a search, and an async existence check let both
-    // create the card. Synchronous claim makes the second call find it.
     document.querySelectorAll('#oppsCard').forEach((el, i) => { if (i > 0) el.remove(); });
     let card = document.getElementById('oppsCard');
     if (!app || !app.searchData || !app.searchData.loaded || !anchor) { if (card) card.remove(); return; }
@@ -8846,72 +8850,50 @@ window.OppsCard = {
       card.id = 'oppsCard';
       card.className = 'app-card wide';
       card.style.display = 'none';
-      anchor.parentNode.insertBefore(card, anchor.nextSibling);   // right below the treemap
+      anchor.parentNode.insertBefore(card, anchor.nextSibling);
     }
-    const opps = await load();
-    if (!opps.length) { if (card) card.remove(); return; }
-    // match on the search's own expanded keywords, word-bounded
+    const rows = await load();
+    if (!rows.length) { if (card) card.remove(); return; }
     const kws = (app._lastKeywords && app._lastKeywords.length ? app._lastKeywords
-                : [app.currentQuery || '']).map(k => String(k).trim()).filter(k => k.length >= 3);
+                : [app.currentQuery || '']).map(k => String(k).trim().toLowerCase()).filter(k => k.length >= 3);
     if (!kws.length) { if (card) card.remove(); return; }
     const res = kws.map(k => new RegExp('\\b' + k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+') + '\\b', 'i'));
     const now = Date.now();
-    const matches = opps.filter(o => res.some(re => re.test(o._hay)));
-    let hits = matches.filter(o => o._due > now);
-    let openEnded = matches.filter(o => !o._due);
-    // drill scope: match sub-tier name against the drilled agency, loosely
+    let hits = rows.filter(o => { const h = hayOf(o); return res.some(re => re.test(h)); });
     const ds = app.drillState || { level: 0 };
-    const scopeLabel = ds.level >= 2 && ds.currentSubAgency ? ds.currentSubAgency
-                     : ds.level >= 1 ? ds.currentAgency : null;
+    const scopeLabel = ds.level >= 2 && ds.currentSubAgency ? ds.currentSubAgency : ds.level >= 1 ? ds.currentAgency : null;
     if (scopeLabel) {
-      const norm = (x) => String(x || '').toLowerCase().replace(/^department of( the)? /, '').replace(/^u\.s\. /, '');
+      const norm = (x) => String(x || '').toLowerCase().replace(/^department of( the)? /, '').replace(/^u\.s\. /, '').replace(/^dept of( the)? /, '');
       const target = norm(scopeLabel);
-      const inScope = (o) => { const st = norm(o['Sub Tier Name']); return st.includes(target) || target.includes(st); };
-      const scoped = hits.filter(inScope);
+      const scoped = hits.filter(o => { const st = norm(o[AG]); return st.includes(target) || target.includes(st); });
       if (scoped.length) hits = scoped;
-      const scopedOpen = openEnded.filter(inScope);
-      if (scoped.length || scopedOpen.length) openEnded = scopedOpen;
     }
-    if (!hits.length && !openEnded.length) { if (card) card.remove(); return; }
-    hits.sort((a, b) => a._due - b._due);
-    openEnded.sort((a, b) => (Date.parse(b['Last Updated Date']) || 0) - (Date.parse(a['Last Updated Date']) || 0));
-    if (!card) return;   // shell claimed above; if gone, a new search cleared us
+    if (!hits.length) { if (card) card.remove(); return; }
+    // deadlines first (soonest), then open-ended by recency
+    hits.sort((a, b) => (a[DUE] ? 0 : 1) - (b[DUE] ? 0 : 1) || (a[DUE] && b[DUE] ? a[DUE] - b[DUE] : b[UPD] - a[UPD]));
+    if (!card) return;
     card.style.display = '';
-    const oppRow = (o, pillHtml, extraMeta) => {
-      const id = String(o['Notice ID'] || '').trim();
-      const sa = o['Current Set Aside'] && !/^none$/i.test(o['Current Set Aside'])
-        ? ` \u00B7 <span class="opp-sa">${esc(o['Current Set Aside'].replace(/\s*\(FAR[^)]*\)/, '').replace(/^(SBA Certified |Service-Disabled )/,'').replace(/ Program Set-Aside| Set-Aside/,''))}</span>` : '';
-      const meta = [esc(smartTitle(o['Sub Tier Name']))]
-        .concat(extraMeta || [])
-        .concat(id ? [`<a class="opp-view" href="${samUrl(id)}" target="_blank" rel="noopener">${esc(id)} \u2197</a>`] : [])
-        .join(' \u00B7 ') + sa;
-      const poc = o['POC Email']
-        ? `<a class="opp-poc" href="mailto:${esc(o['POC Email'])}?subject=${encodeURIComponent((id ? id + ' \u2014 ' : '') + o['Opportunity Title'])}">\u2709 ${esc(pocLabel(o['POC Name']))}</a>` : '';
-      const desc = String(o['Description'] || '').replace(/https?:\/\/\S+/g, '').replace(/\s+/g, ' ').trim();
-      return `<div class="dl-row" style="cursor:default;">
-        <div class="dl-main">
-          <div class="opp-line1"><span class="opp-title">${esc(smartTitle(o['Opportunity Title']).slice(0, 96))}</span>${pillHtml}</div>
-          <div class="dl-line2">${meta}${poc ? ' \u00B7 ' + poc : ''}</div>
-          ${desc ? `<div class="dl-line2 opp-desc">${esc(desc.slice(0, 140))}\u2026</div>` : ''}
-        </div></div>`;
-    };
-    const rows = hits.slice(0, 8).map(o => {
-      const days = Math.ceil((o._due - now) / 864e5);
-      const cls = days <= 7 ? 'opp-hot' : days <= 14 ? 'opp-warm' : 'opp-cool';
-      return oppRow(o, `<span class="opp-days ${cls}">closes ${days}d</span>`);
-    }).join('');
-    const openRows = openEnded.slice(0, 4).map(o => {
-      const upd = Date.parse(o['Last Updated Date']) || 0;
-      const extra = [esc(o['Contract Opportunity Type'] || 'Notice')];
-      if (upd) extra.push('updated ' + new Date(upd).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
-      return oppRow(o, `<span class="opp-days opp-cool">open</span>`, extra);
-    }).join('');
-    const asOf = _asOf ? new Date(_asOf).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
-    card.innerHTML = `<div class="card-header"><div><div class="card-title">Open right now${scopeLabel && (hits.length || openEnded.length) ? ' \u00B7 ' + esc(String(scopeLabel).replace(/^Department of( the)? /i, '')) : ''}</div>
-      <div class="card-desc">${hits.length ? hits.length + ' active solicitation' + (hits.length === 1 ? '' : 's') + ' with deadlines, closing soonest first' : 'Open notices matching this search'}${openEnded.length ? ' \u00B7 ' + openEnded.length + ' open-ended notice' + (openEnded.length === 1 ? '' : 's') : ''}. Snapshot as of ${asOf}. Notice links open SAM.gov \u2014 you\u2019ll need to be signed in there for the full package (SAM\u2019s rule, not ours). Email goes straight to the contracting officer.</div></div></div>
-      ${rows}
-      ${openRows ? `<div class="dl-line2" style="margin-top:12px;font-weight:800;letter-spacing:0.06em;font-size:11px;">NO STATED DEADLINE \u2014 SOURCES SOUGHT &amp; OPEN NOTICES</div>${openRows}` : ''}`;
+    const dated = hits.filter(o => o[DUE]).length;
+    const open = hits.length - dated;
+    const soon = hits.filter(o => o[DUE] && o[DUE] - now <= 14 * 864e5).length;
+    const setAsides = hits.filter(o => o[SA]).length;
+    const SHOW = _expanded ? 40 : 6;
+    const body = hits.slice(0, SHOW).map(o => rowHtml(o, now)).join('');
+    const more = hits.length > SHOW
+      ? `<button class="opp-more" data-oppmore>Show ${Math.min(hits.length, 40) - SHOW} more \u2193</button>` : '';
+    const less = _expanded && hits.length > 6 ? `<button class="opp-more" data-oppless>Show fewer \u2191</button>` : '';
+    const stats = [];
+    if (dated) stats.push(`<strong>${dated}</strong> with deadlines`);
+    if (soon) stats.push(`<strong>${soon}</strong> closing within 14 days`);
+    if (open) stats.push(`<strong>${open}</strong> open-ended`);
+    if (setAsides) stats.push(`<strong>${setAsides}</strong> set-aside`);
+    card.innerHTML = `<div class="card-header"><div><div class="card-title">Open right now${scopeLabel ? ' \u00B7 ' + esc(String(scopeLabel).replace(/^Department of( the)? /i, '')) : ''}</div>
+      <div class="card-desc">${stats.join(' \u00B7 ')}. Snapshot as of ${_asOf ? dayMon(_asOf) : 'recently'}. Notice links open SAM.gov \u2014 you\u2019ll need to be signed in there for the full package (SAM\u2019s rule, not ours). Email goes straight to the contracting officer.</div></div></div>${body}${more}${less}`;
+    const mb = card.querySelector('[data-oppmore]'), lb = card.querySelector('[data-oppless]');
+    if (mb) mb.addEventListener('click', () => { _expanded = true; this.render(); });
+    if (lb) lb.addEventListener('click', () => { _expanded = false; this.render(); });
   },
+  reset() { _expanded = false; },
 };
 })();
 </script>
