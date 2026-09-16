@@ -1117,6 +1117,26 @@ a, button, input, select { touch-action: manipulation; }
 .cross-nav-cta:hover { color: #5E5B92; }
 
 
+/* ── answer bar ── */
+.answer-bar { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; margin: 0 0 14px; }
+@media (max-width: 640px) {
+  .answer-bar { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .answer-bar::-webkit-scrollbar { display: none; }
+  .ab-seg { flex: 0 0 auto; min-width: 108px; padding: 9px 12px; }
+  .ab-num, .ab-wait { font-size: 17px; }
+}
+.ab-seg { display: flex; flex-direction: column; gap: 2px; flex: 1 1 130px; min-width: 120px; padding: 10px 14px;
+  background: var(--card-bg, #fff); border: 1px solid var(--border, rgba(43,42,36,0.12)); border-radius: 12px;
+  font: inherit; text-align: left; cursor: pointer; }
+.ab-seg:hover { border-color: var(--accent); }
+.ab-seg[disabled] { cursor: default; opacity: 0.75; }
+.ab-num { font-size: 20px; font-weight: 900; color: var(--text-title, inherit); line-height: 1.1; }
+.ab-num-hot { color: #B91C1C; }
+.ab-lab { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-tertiary, #8A8570); }
+.ab-wait { font-size: 20px; font-weight: 900; color: var(--text-tertiary, #8A8570); line-height: 1.1; opacity: 0.55; }
+.tempo { font-size: 9.5px; font-weight: 800; letter-spacing: 0.08em; border-radius: 4px; padding: 2px 6px; margin-left: 8px; vertical-align: 2px; }
+.tempo-awarded { background: rgba(70,68,110,0.10); color: var(--accent); }
+.tempo-open { background: #DCFCE7; color: #166534; }
 /* ── open solicitations card ── */
 .opp-row { padding: 14px 0; cursor: default; }
 .opp-line1 { display: flex; align-items: baseline; gap: 12px; }
@@ -1337,6 +1357,9 @@ a, button, input, select { touch-action: manipulation; }
   <!-- LANDING PROMPT, shown only before first search -->
   
 
+    <!-- ANSWER BAR: the whole market in one line, above the fold -->
+  <div class="answer-bar hidden" id="answerBar" aria-label="Market summary"></div>
+
     <!-- RESULTS GRID -->
   <div class="tools-grid hidden" id="resultsGrid">
 
@@ -1450,7 +1473,7 @@ a, button, input, select { touch-action: manipulation; }
     <!-- DEALS CARD — unified contracts, sortable -->
     <div class="app-card wide result-panel hidden" id="dealsCard">
       <div class="card-header-row">
-        <h2 class="card-title card-title--flush">Contracts<span class="scope-chip" id="dlScope"></span></h2>
+        <h2 class="card-title card-title--flush">Contracts<span class="tempo tempo-awarded">AWARDED</span><span class="scope-chip" id="dlScope"></span></h2>
         <div class="dl-sorts" role="tablist" aria-label="Sort contracts">
           <button class="dl-sort active" data-sort="ending" onclick="Deals.sort('ending')">Ending soon</button>
           <button class="dl-sort" data-sort="newest" onclick="Deals.sort('newest')">Newest</button>
@@ -3285,6 +3308,7 @@ const App = {
     document.getElementById('isvCard')?.remove();
     document.getElementById('oppsCard')?.remove();
     window.OppsCard?.reset();
+    window.AnswerBar?.clear();
     DOM.hide('expiringCard');
     DOM.hide('recentCard');
     DOM.hide('primesCard');
@@ -3459,6 +3483,7 @@ const App = {
         if (window.Deals) Deals.render();
     if (window.IsvCard) IsvCard.render();
     if (window.OppsCard) OppsCard.render();
+    if (window.AnswerBar) AnswerBar.render();
         if (window.ChartCaptions) ChartCaptions.update(App._chartView || 'treemap');
         if (window.MatchScope) MatchScope.init();
         if (this._reportIntent) { this._reportIntent = false; setTimeout(() => window.Editorial && Editorial.showInline(), 400); }
@@ -7595,6 +7620,7 @@ window.SyncCards = {
     if (window.Deals) Deals.render();
     if (window.IsvCard) IsvCard.render();
     if (window.OppsCard) OppsCard.render();
+    if (window.AnswerBar) AnswerBar.render();
     if (window.ChartCaptions) ChartCaptions.update(app._chartView || 'treemap');
     const ds = app.drillState || { level: 0 };
     const clean = (typeof Utils !== 'undefined' && Utils.cleanAgency) ? Utils.cleanAgency : (x => x);
@@ -8909,7 +8935,7 @@ window.OppsCard = {
       anchor.parentNode.insertBefore(card, anchor.nextSibling);
     }
     const rows = await load(card);
-    if (!rows.length) { if (card) card.remove(); return; }
+    if (!rows.length) { if (card) card.remove(); window.AnswerBar?.setOpps({ total: 0, soon: 0 }); return; }
     const kws = (app._lastKeywords && app._lastKeywords.length ? app._lastKeywords
                 : [app.currentQuery || '']).map(k => String(k).trim().toLowerCase()).filter(k => k.length >= 3);
     if (!kws.length) { if (card) card.remove(); return; }
@@ -8944,7 +8970,11 @@ window.OppsCard = {
       if (scoped.length) { hits = scoped; scopeLabel = drilled; }
       else scopeMissed = drilled;
     }
-    if (!hits.length) { if (card) card.remove(); return; }
+    if (!hits.length) {
+      if (card) card.remove();
+      window.AnswerBar?.setOpps({ total: 0, soon: 0 });
+      return;
+    }
     // deadlines first (soonest), then open-ended by recency
     hits.sort((a, b) => (a[DUE] ? 0 : 1) - (b[DUE] ? 0 : 1) || (a[DUE] && b[DUE] ? a[DUE] - b[DUE] : b[UPD] - a[UPD]));
     if (!card) return;
@@ -8953,6 +8983,7 @@ window.OppsCard = {
     const open = hits.length - dated;
     const soon = hits.filter(o => o[DUE] && o[DUE] - now <= 14 * 864e5).length;
     const setAsides = hits.filter(o => o[SA]).length;
+    window.AnswerBar?.setOpps({ total: hits.length, soon });
     const SHOW = _expanded ? 40 : 6;
     const body = hits.slice(0, SHOW).map(o => rowHtml(o, now)).join('');
     const more = hits.length > SHOW
@@ -8969,13 +9000,77 @@ window.OppsCard = {
       : scopeMissed
         ? ` No open notices at <strong>${esc(shortAg(scopeMissed))}</strong> match this search \u2014 showing government-wide.`
         : '';
-    card.innerHTML = `<div class="card-header"><div><div class="card-title">Open right now${scopeLabel ? ' \u00B7 ' + esc(shortAg(scopeLabel)) : ''}</div>
+    card.innerHTML = `<div class="card-header"><div><div class="card-title">Open right now${scopeLabel ? ' \u00B7 ' + esc(shortAg(scopeLabel)) : ''}<span class="tempo tempo-open">OPEN \u00B7 SAM SNAPSHOT</span></div>
       <div class="card-desc">${stats.join(' \u00B7 ')}.${scopeNote} Snapshot as of ${_asOf ? dayMon(_asOf) : 'recently'}. Notice links open SAM.gov \u2014 you\u2019ll need to be signed in there for the full package (SAM\u2019s rule, not ours). Email goes straight to the contracting officer.</div></div></div>${body}${more}${less}`;
     const mb = card.querySelector('[data-oppmore]'), lb = card.querySelector('[data-oppless]');
     if (mb) mb.addEventListener('click', () => { _expanded = true; this.render(); });
     if (lb) lb.addEventListener('click', () => { _expanded = false; this.render(); });
   },
   reset() { _expanded = false; },
+};
+})();
+</script>
+
+<script>
+// ═══ ANSWER BAR — the market in one line, above the fold ═══
+// Two datasets, two tempos: awarded money (USASpending, live query) and open
+// bids (SAM, dated snapshot). The bar states both so nobody has to guess
+// which half of the page is current.
+(function () {
+'use strict';
+const A = () => (typeof App !== 'undefined' && App) ? App : window.App;
+const money = (n) => { const x = Number(n) || 0;
+  if (x >= 1e9) return '$' + (x / 1e9).toFixed(1) + 'B';
+  if (x >= 1e6) return '$' + (x / 1e6).toFixed(1) + 'M';
+  if (x >= 1e3) return '$' + (x / 1e3).toFixed(0) + 'K';
+  return '$' + Math.round(x); };
+let _opps = null;   // {total, soon} once the solicitations file lands
+
+function seg(num, lab, target, hot) {
+  const cls = 'ab-num' + (hot ? ' ab-num-hot' : '');
+  return `<button class="ab-seg" ${target ? `data-jump="${target}"` : 'disabled'}>
+    <span class="${cls}">${num}</span><span class="ab-lab">${lab}</span></button>`;
+}
+
+window.AnswerBar = {
+  render() {
+    const app = A();
+    const bar = document.getElementById('answerBar');
+    if (!bar) return;
+    if (!app || !app.searchData || !app.searchData.loaded) { bar.classList.add('hidden'); return; }
+    const rows = app.searchData.active || [];
+    if (!rows.length) { bar.classList.add('hidden'); return; }
+    const now = Date.now(), cut = now + 548 * 864e5;
+    let total = 0, exp = 0;
+    const vendors = new Set();
+    for (const c of rows) {
+      const amt = parseFloat(c['Award Amount']) || 0;
+      total += amt;
+      vendors.add(c['Recipient Name'] || '');
+      const end = c._endTs || Date.parse(c['End Date']) || 0;
+      if (end > now && end <= cut) exp += amt;
+    }
+    const parts = [
+      seg(money(total), 'Awarded \u00B7 12 mo', 'marketCard'),
+      seg(String(vendors.size), 'Vendors', 'marketCard'),
+      seg(money(exp), 'Expiring \u2264 18 mo', 'dealsCard'),
+    ];
+    if (_opps) {
+      parts.push(seg(String(_opps.total), 'Open bids', _opps.total ? 'oppsCard' : null));
+      if (_opps.soon) parts.push(seg(String(_opps.soon), 'Closing \u2264 14 days', 'oppsCard', true));
+    } else {
+      parts.push(`<button class="ab-seg" disabled><span class="ab-wait">\u2026</span><span class="ab-lab">Open bids</span></button>`);
+    }
+    bar.innerHTML = parts.join('');
+    bar.classList.remove('hidden');
+    bar.querySelectorAll('[data-jump]').forEach(b => b.addEventListener('click', () => {
+      const el = document.getElementById(b.dataset.jump);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }));
+  },
+  // called by OppsCard once the snapshot has been filtered for this search
+  setOpps(stats) { _opps = stats; this.render(); },
+  clear() { _opps = null; const bar = document.getElementById('answerBar'); if (bar) { bar.innerHTML = ''; bar.classList.add('hidden'); } },
 };
 })();
 </script>
