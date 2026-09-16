@@ -8916,13 +8916,33 @@ window.OppsCard = {
     const res = kws.map(k => new RegExp('\\b' + k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+') + '\\b', 'i'));
     const now = Date.now();
     let hits = rows.filter(o => { const h = hayOf(o); return res.some(re => re.test(h)); });
+    // ── drill scoping ────────────────────────────────────────────────
+    // SAM names agencies differently from USASpending ("DEPT OF THE ARMY" vs
+    // "Department of the Army", "VETERANS AFFAIRS, DEPARTMENT OF"), so compare
+    // on a normalised core. When nothing matches in scope we say so and show
+    // government-wide rather than labelling everything with the drilled agency.
+    const agKey = (x) => String(x || '')
+      .toLowerCase()
+      .replace(/\(.*?\)/g, ' ')                      // drop "(DARPA)" etc
+      .replace(/[.,\/&']/g, ' ')
+      .replace(/\bdept\b/g, 'department')
+      .replace(/^\s*(.+?)\s+department of\s*$/, 'department of $1')  // "State, Department Of"
+      .replace(/\bdepartment of the\b/g, '')
+      .replace(/\bdepartment of\b/g, '')
+      .replace(/\bu s\b|\bunited states\b/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
     const ds = app.drillState || { level: 0 };
-    const scopeLabel = ds.level >= 2 && ds.currentSubAgency ? ds.currentSubAgency : ds.level >= 1 ? ds.currentAgency : null;
-    if (scopeLabel) {
-      const norm = (x) => String(x || '').toLowerCase().replace(/^department of( the)? /, '').replace(/^u\.s\. /, '').replace(/^dept of( the)? /, '');
-      const target = norm(scopeLabel);
-      const scoped = hits.filter(o => { const st = norm(o[AG]); return st.includes(target) || target.includes(st); });
-      if (scoped.length) hits = scoped;
+    const drilled = ds.level >= 1 ? ds.currentAgency : null;
+    const officeLabel = ds.level >= 2 && ds.currentSubAgency ? ds.currentSubAgency : null;
+    let scopeLabel = null, scopeMissed = null;
+    if (drilled) {
+      const target = agKey(drilled);
+      const scoped = target.length >= 3
+        ? hits.filter(o => { const st = agKey(o[AG]); return st === target || st.includes(target) || target.includes(st); })
+        : [];
+      if (scoped.length) { hits = scoped; scopeLabel = drilled; }
+      else scopeMissed = drilled;
     }
     if (!hits.length) { if (card) card.remove(); return; }
     // deadlines first (soonest), then open-ended by recency
@@ -8943,8 +8963,14 @@ window.OppsCard = {
     if (soon) stats.push(`<strong>${soon}</strong> closing within 14 days`);
     if (open) stats.push(`<strong>${open}</strong> open-ended`);
     if (setAsides) stats.push(`<strong>${setAsides}</strong> set-aside`);
-    card.innerHTML = `<div class="card-header"><div><div class="card-title">Open right now${scopeLabel ? ' \u00B7 ' + esc(String(scopeLabel).replace(/^Department of( the)? /i, '')) : ''}</div>
-      <div class="card-desc">${stats.join(' \u00B7 ')}. Snapshot as of ${_asOf ? dayMon(_asOf) : 'recently'}. Notice links open SAM.gov \u2014 you\u2019ll need to be signed in there for the full package (SAM\u2019s rule, not ours). Email goes straight to the contracting officer.</div></div></div>${body}${more}${less}`;
+    const shortAg = (x) => String(x || '').replace(/^Department of( the)? /i, '');
+    const scopeNote = scopeLabel
+      ? ` Scoped to <strong>${esc(shortAg(scopeLabel))}</strong>${officeLabel ? ' (SAM lists notices by agency, not by office, so this is the whole agency)' : ''}.`
+      : scopeMissed
+        ? ` No open notices at <strong>${esc(shortAg(scopeMissed))}</strong> match this search \u2014 showing government-wide.`
+        : '';
+    card.innerHTML = `<div class="card-header"><div><div class="card-title">Open right now${scopeLabel ? ' \u00B7 ' + esc(shortAg(scopeLabel)) : ''}</div>
+      <div class="card-desc">${stats.join(' \u00B7 ')}.${scopeNote} Snapshot as of ${_asOf ? dayMon(_asOf) : 'recently'}. Notice links open SAM.gov \u2014 you\u2019ll need to be signed in there for the full package (SAM\u2019s rule, not ours). Email goes straight to the contracting officer.</div></div></div>${body}${more}${less}`;
     const mb = card.querySelector('[data-oppmore]'), lb = card.querySelector('[data-oppless]');
     if (mb) mb.addEventListener('click', () => { _expanded = true; this.render(); });
     if (lb) lb.addEventListener('click', () => { _expanded = false; this.render(); });
