@@ -1144,6 +1144,7 @@ a, button, input, select { touch-action: manipulation; }
 .tempo { font-size: 9.5px; font-weight: 800; letter-spacing: 0.08em; border-radius: 4px; padding: 2px 6px; margin-left: 8px; vertical-align: 2px; }
 .tempo-awarded { background: rgba(70,68,110,0.10); color: var(--accent); }
 .tempo-open { background: #DCFCE7; color: #166534; }
+.tempo-stale { background: #FEF3C7; color: #92400E; }
 /* ── open solicitations card ── */
 .opp-row { padding: 14px 0; cursor: default; }
 .opp-line1 { display: flex; align-items: baseline; gap: 12px; }
@@ -8829,19 +8830,36 @@ window.__fhHighlight = function (el, rows) {
 const A = () => (typeof App !== 'undefined' && App) ? App : window.App;
 const esc = (s) => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 const tc = (s) => String(s || '').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+// SAM titles arrive shouting. Title-case every word, but leave genuine
+// acronyms and anything with a digit alone: "FIT CHECK SOLO" -> "Fit Check
+// Solo", while "N00174-26" and "DHA" survive intact.
+const ACRO = new Set(('usaf,usmc,usn,usa,dha,dod,dla,darpa,faa,fbi,cbp,tsa,cisa,ice,va,hhs,nih,cdc,fda,doe,doi,dot,gsa,nasa,noaa,nga,nsa,dia,uscg,navfac,nswc,nawc,afrl,arl,onr,socom,centcom,indopacom,eucom,northcom,southcom,'
+  + 'it,ai,ml,hpc,saas,paas,iaas,api,erp,crm,edr,siem,zta,ztna,pki,vpn,lan,wan,sdwan,ems,emt,hvac,uav,uas,c2,c4isr,isr,ew,rf,gis,cad,plc,scada,'
+  + 'rfp,rfi,rfq,ifb,idiq,matoc,satoc,bpa,gwac,sewp,seta,ansi,nist,fips,cui,cmmc,fedramp,ato,sbir,sttr,ota,fss,mas,lpta,'
+  + 'llc,inc,corp,usa,us,dc,hq,ops,poc,cor,ko,pm,sme,oss,mcce,pmp,phd,rn,md,aka,tbd,na,cnects,caeo').split(','));
 const smartTitle = (s) => {
   s = String(s || '').trim();
-  if (s !== s.toUpperCase()) return s;
   return s.split(/\s+/).map(w => {
-    const bare = w.replace(/[^A-Za-z0-9]/g, '');
-    if (/\d/.test(bare) && /[A-Za-z]/.test(bare)) return w;
-    if (bare.length <= 4 && bare === bare.toUpperCase() && bare.length >= 2) return w;
-    return w.charAt(0) + w.slice(1).toLowerCase();
+    if (/\d/.test(w)) return w;                          // N00174-26, FY27, 25 MXS, 3D
+    // Anything already bracketed or quoted in caps is an acronym by
+    // convention: "(CNECTS)", "AKA \"CONNECT\"" keep their shape.
+    const inner = w.replace(/[^A-Za-z]/g, '');
+    if (/^[("'\u201C].*[)"'\u201D]?$/.test(w) && inner && inner === inner.toUpperCase() && inner.length >= 2) return w;
+    return w.split('-').map(part => {
+      const bare = part.replace(/[^A-Za-z]/g, '');
+      if (!bare) return part;
+      if (ACRO.has(bare.toLowerCase())) return part.toUpperCase();
+      return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
+    }).join('-');
   }).join(' ');
 };
 // SAM's search only loads a keyword when it arrives as a simpleSearch
 // keywordTag (lowercased), not as ?keywords= alone. This shape opens the
 // notice's result page without a login.
+// Trim to a word boundary so titles never end mid-word.
+const clip = (s, n) => { s = String(s || ''); if (s.length <= n) return s;
+  const cut = s.slice(0, n); const sp = cut.lastIndexOf(' ');
+  return (sp > n * 0.6 ? cut.slice(0, sp) : cut).replace(/[\s,;:.-]+$/, '') + '\u2026'; };
 const samUrl = (id) => {
   const raw = String(id || '').trim();
   const lower = encodeURIComponent(raw.toLowerCase());
@@ -8854,12 +8872,27 @@ const samUrl = (id) => {
 };
 const dayMon = (ts) => new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 // column indices in the compact row arrays
-const AG=0, ID=1, TYPE=2, TITLE=3, DESC=4, DUE=5, SA=6, NAICS=7, PSC=8, POCN=9, POCE=10, UPD=11, POSTED=12;
-const HAY=13;   // lazily cached lowercase haystack
+// Column indices are read from the file's own `cols` list (schema v2) so a
+// format change shows up as a clear message instead of a degraded card.
+// Legacy 13-column files still load through the fallback map below.
+const LEGACY = ['ag','id','type','title','desc','due','sa','naics','psc','pocn','poce','upd','posted'];
+let IX = {}, HAY = 20;
+let _schemaOK = true;
+function setCols(cols) {
+  // The file must declare its own columns. Guessing an order is how a row ends
+  // up showing a URL where the title goes, so an undeclared file is refused.
+  _schemaOK = !!(cols && cols.length);
+  const list = _schemaOK ? cols : LEGACY;
+  IX = {}; list.forEach((c, i) => { IX[c] = i; });
+  if (IX.id === undefined && IX.sol !== undefined) IX.id = IX.sol;
+  HAY = list.length + 1;
+}
+setCols(null);
+const F = (o, k) => (IX[k] === undefined ? '' : (o[IX[k]] || ''));
 // notice types that are not a bid yet — worth flagging, they change the play
 const EARLY = /sources sought|presolicitation|special notice|intent to bundle/i;
 
-let _data = null, _loading = null, _asOf = 0, _expanded = false, _sort = 'newest';
+let _data = null, _loading = null, _asOf = 0, _expanded = false, _sort = 'newest', _days = 0, _span = 0;
 // Viewport-gated: the file is only fetched once the card's slot is close to
 // being seen, at low priority. Search requests never share bandwidth with it.
 function nearViewport(el) {
@@ -8892,43 +8925,60 @@ function load(slot) {
       return fetch('/data/solicitations.json', opts);
     })
     .then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json(); })
-    .then(j => { _data = j.rows || []; _asOf = j.asOf || 0; return _data; })
+    .then(j => {
+      setCols(j.cols); _data = j.rows || []; _asOf = j.asOf || 0; _days = j.days || 0;
+      // Coverage is a property of the file, not of whatever the user searched:
+      // measure the oldest posting once, across every row.
+      let oldest = 0;
+      for (const o of _data) { const pv = Number(F(o, 'posted')) || 0; if (pv && (!oldest || pv < oldest)) oldest = pv; }
+      _span = oldest ? Math.max(1, Math.round((Date.now() - oldest) / 864e5)) : (_days || 0);
+      return _data;
+    })
     .catch(() => { _data = []; return _data; })
     .finally(() => { _loading = null; });
   return _loading;
 }
 // lazily built match haystack, cached on the row itself
-const hayOf = (o) => o[HAY] || (o[HAY] = (o[TITLE] + ' ' + o[DESC] + ' ' + o[NAICS] + ' ' + o[PSC]).toLowerCase());
+const hayOf = (o) => o[HAY] || (o[HAY] = (F(o,'title') + ' ' + F(o,'desc') + ' ' + F(o,'naics') + ' ' + F(o,'psc')).toLowerCase());
 
 function rowHtml(o, now) {
-  const id = o[ID];
-  const early = EARLY.test(o[TYPE]);
-  const pill = o[DUE]
-    ? (() => { const d = Math.ceil((o[DUE] - now) / 864e5);
+  const id = String(F(o, 'id') || '').trim();
+  const link = String(F(o, 'link') || '').trim();
+  const due = Number(F(o, 'due')) || 0;
+  const posted = Number(F(o, 'posted')) || 0;
+  const early = EARLY.test(F(o, 'type'));
+  const pill = due
+    ? (() => { const d = Math.ceil((due - now) / 864e5);
         const cls = d <= 7 ? 'opp-hot' : d <= 14 ? 'opp-warm' : 'opp-cool';
         return `<span class="opp-days ${cls}">closes ${d}d</span>`; })()
     : `<span class="opp-days opp-cool">no deadline</span>`;
   const meta = [];
-  meta.push(`<span class="opp-type${early ? ' opp-type-early' : ''}">${esc(o[TYPE] || 'Notice')}</span>`);
-  meta.push(esc(smartTitle(o[AG])));
-  if (o[POSTED]) {
-    const age = Math.floor((now - o[POSTED]) / 864e5);
+  meta.push(`<span class="opp-type${early ? ' opp-type-early' : ''}">${esc(F(o, 'type') || 'Notice')}</span>`);
+  meta.push(esc(smartTitle(F(o, 'ag'))));
+  if (posted) {
+    const age = Math.floor((now - posted) / 864e5);
     meta.push(age <= 7 ? `<span class="opp-new">posted ${age <= 0 ? 'today' : age + 'd ago'}</span>`
-                       : `posted ${dayMon(o[POSTED])}`);
+                       : `posted ${dayMon(posted)}`);
   }
-  if (o[DUE]) meta.push(`due ${dayMon(o[DUE])}`);
-  else if (o[UPD]) meta.push(`updated ${dayMon(o[UPD])}`);
-  if (o[SA]) meta.push(`<span class="opp-sa">${esc(o[SA])}</span>`);
-  const cat = o[PSC] || o[NAICS];
-  if (cat) meta.push(`<span class="opp-code" title="${esc(o[PSC] ? 'Product/service category' : 'Industry (NAICS)')}">${esc(cat)}</span>`);
+  if (due) meta.push(`due ${dayMon(due)}`);
+  const state = F(o, 'state');
+  if (state) meta.push(esc(state));
+  const sa = F(o, 'sa');
+  if (sa) meta.push(`<span class="opp-sa">${esc(sa)}</span>`);
+  const naics = F(o, 'naics'), psc = F(o, 'psc');
+  if (naics) meta.push(`<span class="opp-code" title="NAICS">NAICS ${esc(naics)}</span>`);
+  if (psc) meta.push(`<span class="opp-code" title="Product/service code">PSC ${esc(psc)}</span>`);
   const actions = [];
-  if (id) actions.push(`<a class="opp-view" href="${samUrl(id)}" target="_blank" rel="noopener">${esc(id)} \u2197</a>`);
-  if (o[POCE]) actions.push(`<a class="opp-poc" href="mailto:${esc(o[POCE])}?subject=${encodeURIComponent((id ? id + ' \u2014 ' : '') + o[TITLE])}">\u2709 ${esc(o[POCN] ? tc(o[POCN]) : 'Email the buyer')}</a>`);
+  const href = link || (id ? samUrl(id) : '');
+  if (href) actions.push(`<a class="opp-view" href="${esc(href)}" target="_blank" rel="noopener">${id ? esc(id) + ' \u2197' : 'Open on SAM.gov \u2197'}</a>`);
+  const poce = F(o, 'poce'), pocn = F(o, 'pocn');
+  if (poce) actions.push(`<a class="opp-poc" href="mailto:${esc(poce)}?subject=${encodeURIComponent((id ? id + ' \u2014 ' : '') + F(o, 'title'))}" title="${esc(pocn || 'Contracting officer')}">\u2709 ${esc(poce)}</a>`);
+  const desc = String(F(o, 'desc') || '').replace(/https?:\/\/\S+/g, '').replace(/\s+/g, ' ').trim();
   return `<div class="dl-row opp-row">
     <div class="dl-main">
-      <div class="opp-line1"><span class="opp-title">${esc(smartTitle(o[TITLE]).slice(0, 110))}</span>${pill}</div>
+      <div class="opp-line1"><span class="opp-title">${esc(clip(smartTitle(F(o, 'title')), 104))}</span>${pill}</div>
       <div class="opp-meta">${meta.join('<span class="opp-dot">\u00B7</span>')}</div>
-      ${o[DESC] ? `<div class="opp-desc">${esc(o[DESC])}\u2026</div>` : ''}
+      ${desc ? `<div class="opp-desc">${esc(clip(desc, 140))}</div>` : ''}
       ${actions.length ? `<div class="opp-actions">${actions.join('')}</div>` : ''}
     </div></div>`;
 }
@@ -8949,6 +8999,13 @@ window.OppsCard = {
     }
     const rows = await load(card);
     if (!rows.length) { if (card) card.remove(); window.AnswerBar?.setOpps({ total: 0, soon: 0 }); return; }
+    if (!_schemaOK) {
+      card.style.display = '';
+      card.innerHTML = `<div class="card-header"><div><div class="card-title">Open right now</div>
+        <div class="card-desc">The solicitations snapshot is in an older format, so it is not being shown rather than shown wrong. Re-run the slimmer and upload a fresh <code>solicitations.json</code>.</div></div></div>`;
+      window.AnswerBar?.setOpps({ total: 0, soon: 0 });
+      return;
+    }
     const kws = (app._lastKeywords && app._lastKeywords.length ? app._lastKeywords
                 : [app.currentQuery || '']).map(k => String(k).trim().toLowerCase()).filter(k => k.length >= 3);
     if (!kws.length) { if (card) card.remove(); return; }
@@ -8978,7 +9035,7 @@ window.OppsCard = {
     if (drilled) {
       const target = agKey(drilled);
       const scoped = target.length >= 3
-        ? hits.filter(o => { const st = agKey(o[AG]); return st === target || st.includes(target) || target.includes(st); })
+        ? hits.filter(o => { const st = agKey(F(o,'ag')); return st === target || st.includes(target) || target.includes(st); })
         : [];
       if (scoped.length) { hits = scoped; scopeLabel = drilled; }
       else scopeMissed = drilled;
@@ -8991,18 +9048,23 @@ window.OppsCard = {
     // Freshest first by default: what hit the street this week is the reason to
     // check daily. Closing-soon triage stays one tap away.
     if (_sort === 'closing') {
-      hits.sort((a, b) => (a[DUE] ? 0 : 1) - (b[DUE] ? 0 : 1) || (a[DUE] && b[DUE] ? a[DUE] - b[DUE] : (b[POSTED] || 0) - (a[POSTED] || 0)));
+      const d = (x) => Number(F(x,'due')) || 0, p = (x) => Number(F(x,'posted')) || 0;
+      hits.sort((a, b) => (d(a) ? 0 : 1) - (d(b) ? 0 : 1) || (d(a) && d(b) ? d(a) - d(b) : p(b) - p(a)));
     } else {
-      hits.sort((a, b) => (b[POSTED] || b[UPD] || 0) - (a[POSTED] || a[UPD] || 0));
+      hits.sort((a, b) => (Number(F(b,'posted')) || Number(F(b,'upd')) || 0) - (Number(F(a,'posted')) || Number(F(a,'upd')) || 0));
     }
     if (!card) return;
     card.style.display = '';
-    const dated = hits.filter(o => o[DUE]).length;
+    const dated = hits.filter(o => Number(F(o,'due'))).length;
     const open = hits.length - dated;
-    const soon = hits.filter(o => o[DUE] && o[DUE] - now <= 14 * 864e5).length;
-    const fresh7 = hits.filter(o => o[POSTED] && now - o[POSTED] <= 7 * 864e5).length;
-    const fresh14 = hits.filter(o => o[POSTED] && now - o[POSTED] <= 14 * 864e5).length;
-    const setAsides = hits.filter(o => o[SA]).length;
+    const soon = hits.filter(o => Number(F(o,'due')) && Number(F(o,'due')) - now <= 14 * 864e5).length;
+    const fresh7 = hits.filter(o => Number(F(o,'posted')) && now - Number(F(o,'posted')) <= 7 * 864e5).length;
+    const fresh14 = hits.filter(o => Number(F(o,'posted')) && now - Number(F(o,'posted')) <= 14 * 864e5).length;
+    const setAsides = hits.filter(o => F(o,'sa')).length;
+    // The window is measured from the data, not from what the export claimed:
+    // a file generated for 7 days but uploaded 4 days ago really covers 11.
+    const spanDays = _span || _days || 0;
+    const snapAge = _asOf ? Math.floor((now - _asOf) / 864e5) : 0;
     window.AnswerBar?.setOpps({ total: hits.length, soon, fresh14 });
     const SHOW = _expanded ? 40 : 6;
     const body = hits.slice(0, SHOW).map(o => rowHtml(o, now)).join('');
@@ -9024,8 +9086,8 @@ window.OppsCard = {
     const sortUI = `<div class="opp-sorts" role="tablist" aria-label="Sort notices">
       <button class="opp-sort${_sort === 'newest' ? ' active' : ''}" data-oppsort="newest">Newest</button>
       <button class="opp-sort${_sort === 'closing' ? ' active' : ''}" data-oppsort="closing">Closing soon</button></div>`;
-    card.innerHTML = `<div class="card-header" style="align-items:flex-start;gap:12px;"><div style="flex:1;min-width:0;"><div class="card-title">Open right now${scopeLabel ? ' \u00B7 ' + esc(shortAg(scopeLabel)) : ''}<span class="tempo tempo-open">OPEN \u00B7 SAM SNAPSHOT</span></div>
-      <div class="card-desc">${stats.join(' \u00B7 ')}.${scopeNote} Snapshot as of ${_asOf ? dayMon(_asOf) : 'recently'}. Notice links open SAM.gov \u2014 you\u2019ll need to be signed in there for the full package (SAM\u2019s rule, not ours). Email goes straight to the contracting officer.</div></div>${sortUI}</div>${body}${more}${less}`;
+    card.innerHTML = `<div class="card-header" style="align-items:flex-start;gap:12px;"><div style="flex:1;min-width:0;"><div class="card-title">Open right now${scopeLabel ? ' \u00B7 ' + esc(shortAg(scopeLabel)) : ''}<span class="tempo tempo-open">OPEN \u00B7 LAST ${spanDays || _days || 30} DAYS</span><span class="tempo tempo-stale"${snapAge >= 2 ? '' : ' hidden'}>${snapAge} DAYS OLD</span></div>
+      <div class="card-desc">${stats.join(' \u00B7 ')}.${scopeNote} ${spanDays ? `Everything posted in the last ${spanDays} days` : 'Latest snapshot'}${snapAge >= 2 ? `, last refreshed ${snapAge} days ago \u2014 newer notices are not in here yet` : ` \u00B7 refreshed ${_asOf ? dayMon(_asOf) : 'recently'}`}. Notice links open SAM.gov \u2014 you\u2019ll need to be signed in there for the full package (SAM\u2019s rule, not ours). Email goes straight to the contracting officer.</div></div>${sortUI}</div>${body}${more}${less}`;
     const mb = card.querySelector('[data-oppmore]'), lb = card.querySelector('[data-oppless]');
     if (mb) mb.addEventListener('click', () => { _expanded = true; this.render(); });
     if (lb) lb.addEventListener('click', () => { _expanded = false; this.render(); });
