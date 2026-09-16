@@ -1117,13 +1117,20 @@ a, button, input, select { touch-action: manipulation; }
 .cross-nav-cta:hover { color: #5E5B92; }
 
 
+/* ── notice sort toggle + freshness badge ── */
+.opp-sorts { display: flex; gap: 4px; flex: 0 0 auto; }
+.opp-sort { font: inherit; font-size: 12px; font-weight: 700; color: var(--text-secondary); background: none;
+  border: 1.5px solid var(--border, rgba(43,42,36,0.14)); border-radius: 9999px; padding: 3px 11px; cursor: pointer; }
+.opp-sort.active { color: #fff; background: var(--accent); border-color: var(--accent); }
+.opp-new { font-weight: 800; color: #166534; background: #DCFCE7; border-radius: 4px; padding: 1px 6px; }
 /* ── answer bar ── */
 .answer-bar { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; margin: 0 0 14px; }
 @media (max-width: 640px) {
-  .answer-bar { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-  .answer-bar::-webkit-scrollbar { display: none; }
-  .ab-seg { flex: 0 0 auto; min-width: 108px; padding: 9px 12px; }
-  .ab-num, .ab-wait { font-size: 17px; }
+  /* 2x2 grid beats a side-scroller: every number is visible without a gesture */
+  .answer-bar { flex-wrap: wrap; gap: 6px; }
+  .ab-seg { flex: 1 1 calc(50% - 3px); min-width: 0; padding: 8px 11px; }
+  .ab-num, .ab-wait { font-size: 18px; }
+  .ab-lab { font-size: 10px; letter-spacing: 0.03em; }
 }
 .ab-seg { display: flex; flex-direction: column; gap: 2px; flex: 1 1 130px; min-width: 120px; padding: 10px 14px;
   background: var(--card-bg, #fff); border: 1px solid var(--border, rgba(43,42,36,0.12)); border-radius: 12px;
@@ -8847,11 +8854,12 @@ const samUrl = (id) => {
 };
 const dayMon = (ts) => new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 // column indices in the compact row arrays
-const AG=0, ID=1, TYPE=2, TITLE=3, DESC=4, DUE=5, SA=6, NAICS=7, PSC=8, POCN=9, POCE=10, UPD=11;
+const AG=0, ID=1, TYPE=2, TITLE=3, DESC=4, DUE=5, SA=6, NAICS=7, PSC=8, POCN=9, POCE=10, UPD=11, POSTED=12;
+const HAY=13;   // lazily cached lowercase haystack
 // notice types that are not a bid yet — worth flagging, they change the play
 const EARLY = /sources sought|presolicitation|special notice|intent to bundle/i;
 
-let _data = null, _loading = null, _asOf = 0, _expanded = false;
+let _data = null, _loading = null, _asOf = 0, _expanded = false, _sort = 'newest';
 // Viewport-gated: the file is only fetched once the card's slot is close to
 // being seen, at low priority. Search requests never share bandwidth with it.
 function nearViewport(el) {
@@ -8890,7 +8898,7 @@ function load(slot) {
   return _loading;
 }
 // lazily built match haystack, cached on the row itself
-const hayOf = (o) => o[12] || (o[12] = (o[TITLE] + ' ' + o[DESC] + ' ' + o[NAICS] + ' ' + o[PSC]).toLowerCase());
+const hayOf = (o) => o[HAY] || (o[HAY] = (o[TITLE] + ' ' + o[DESC] + ' ' + o[NAICS] + ' ' + o[PSC]).toLowerCase());
 
 function rowHtml(o, now) {
   const id = o[ID];
@@ -8903,6 +8911,11 @@ function rowHtml(o, now) {
   const meta = [];
   meta.push(`<span class="opp-type${early ? ' opp-type-early' : ''}">${esc(o[TYPE] || 'Notice')}</span>`);
   meta.push(esc(smartTitle(o[AG])));
+  if (o[POSTED]) {
+    const age = Math.floor((now - o[POSTED]) / 864e5);
+    meta.push(age <= 7 ? `<span class="opp-new">posted ${age <= 0 ? 'today' : age + 'd ago'}</span>`
+                       : `posted ${dayMon(o[POSTED])}`);
+  }
   if (o[DUE]) meta.push(`due ${dayMon(o[DUE])}`);
   else if (o[UPD]) meta.push(`updated ${dayMon(o[UPD])}`);
   if (o[SA]) meta.push(`<span class="opp-sa">${esc(o[SA])}</span>`);
@@ -8975,21 +8988,29 @@ window.OppsCard = {
       window.AnswerBar?.setOpps({ total: 0, soon: 0 });
       return;
     }
-    // deadlines first (soonest), then open-ended by recency
-    hits.sort((a, b) => (a[DUE] ? 0 : 1) - (b[DUE] ? 0 : 1) || (a[DUE] && b[DUE] ? a[DUE] - b[DUE] : b[UPD] - a[UPD]));
+    // Freshest first by default: what hit the street this week is the reason to
+    // check daily. Closing-soon triage stays one tap away.
+    if (_sort === 'closing') {
+      hits.sort((a, b) => (a[DUE] ? 0 : 1) - (b[DUE] ? 0 : 1) || (a[DUE] && b[DUE] ? a[DUE] - b[DUE] : (b[POSTED] || 0) - (a[POSTED] || 0)));
+    } else {
+      hits.sort((a, b) => (b[POSTED] || b[UPD] || 0) - (a[POSTED] || a[UPD] || 0));
+    }
     if (!card) return;
     card.style.display = '';
     const dated = hits.filter(o => o[DUE]).length;
     const open = hits.length - dated;
     const soon = hits.filter(o => o[DUE] && o[DUE] - now <= 14 * 864e5).length;
+    const fresh7 = hits.filter(o => o[POSTED] && now - o[POSTED] <= 7 * 864e5).length;
+    const fresh14 = hits.filter(o => o[POSTED] && now - o[POSTED] <= 14 * 864e5).length;
     const setAsides = hits.filter(o => o[SA]).length;
-    window.AnswerBar?.setOpps({ total: hits.length, soon });
+    window.AnswerBar?.setOpps({ total: hits.length, soon, fresh14 });
     const SHOW = _expanded ? 40 : 6;
     const body = hits.slice(0, SHOW).map(o => rowHtml(o, now)).join('');
     const more = hits.length > SHOW
       ? `<button class="opp-more" data-oppmore>Show ${Math.min(hits.length, 40) - SHOW} more \u2193</button>` : '';
     const less = _expanded && hits.length > 6 ? `<button class="opp-more" data-oppless>Show fewer \u2191</button>` : '';
     const stats = [];
+    if (fresh7) stats.push(`<strong>${fresh7}</strong> posted this week`);
     if (dated) stats.push(`<strong>${dated}</strong> with deadlines`);
     if (soon) stats.push(`<strong>${soon}</strong> closing within 14 days`);
     if (open) stats.push(`<strong>${open}</strong> open-ended`);
@@ -9000,13 +9021,19 @@ window.OppsCard = {
       : scopeMissed
         ? ` No open notices at <strong>${esc(shortAg(scopeMissed))}</strong> match this search \u2014 showing government-wide.`
         : '';
-    card.innerHTML = `<div class="card-header"><div><div class="card-title">Open right now${scopeLabel ? ' \u00B7 ' + esc(shortAg(scopeLabel)) : ''}<span class="tempo tempo-open">OPEN \u00B7 SAM SNAPSHOT</span></div>
-      <div class="card-desc">${stats.join(' \u00B7 ')}.${scopeNote} Snapshot as of ${_asOf ? dayMon(_asOf) : 'recently'}. Notice links open SAM.gov \u2014 you\u2019ll need to be signed in there for the full package (SAM\u2019s rule, not ours). Email goes straight to the contracting officer.</div></div></div>${body}${more}${less}`;
+    const sortUI = `<div class="opp-sorts" role="tablist" aria-label="Sort notices">
+      <button class="opp-sort${_sort === 'newest' ? ' active' : ''}" data-oppsort="newest">Newest</button>
+      <button class="opp-sort${_sort === 'closing' ? ' active' : ''}" data-oppsort="closing">Closing soon</button></div>`;
+    card.innerHTML = `<div class="card-header" style="align-items:flex-start;gap:12px;"><div style="flex:1;min-width:0;"><div class="card-title">Open right now${scopeLabel ? ' \u00B7 ' + esc(shortAg(scopeLabel)) : ''}<span class="tempo tempo-open">OPEN \u00B7 SAM SNAPSHOT</span></div>
+      <div class="card-desc">${stats.join(' \u00B7 ')}.${scopeNote} Snapshot as of ${_asOf ? dayMon(_asOf) : 'recently'}. Notice links open SAM.gov \u2014 you\u2019ll need to be signed in there for the full package (SAM\u2019s rule, not ours). Email goes straight to the contracting officer.</div></div>${sortUI}</div>${body}${more}${less}`;
     const mb = card.querySelector('[data-oppmore]'), lb = card.querySelector('[data-oppless]');
     if (mb) mb.addEventListener('click', () => { _expanded = true; this.render(); });
     if (lb) lb.addEventListener('click', () => { _expanded = false; this.render(); });
+    card.querySelectorAll('[data-oppsort]').forEach(btn => btn.addEventListener('click', () => {
+      _sort = btn.dataset.oppsort; this.render();
+    }));
   },
-  reset() { _expanded = false; },
+  reset() { _expanded = false; _sort = 'newest'; },
 };
 })();
 </script>
@@ -9050,14 +9077,16 @@ window.AnswerBar = {
       const end = c._endTs || Date.parse(c['End Date']) || 0;
       if (end > now && end <= cut) exp += amt;
     }
+    // Four segments, max. Vendor count and anything else already visible in
+    // the cards below is noise here; open-bid counts appear nowhere else.
     const parts = [
       seg(money(total), 'Awarded \u00B7 12 mo', 'marketCard'),
-      seg(String(vendors.size), 'Vendors', 'marketCard'),
       seg(money(exp), 'Expiring \u2264 18 mo', 'dealsCard'),
     ];
     if (_opps) {
       parts.push(seg(String(_opps.total), 'Open bids', _opps.total ? 'oppsCard' : null));
-      if (_opps.soon) parts.push(seg(String(_opps.soon), 'Closing \u2264 14 days', 'oppsCard', true));
+      if (_opps.fresh14) parts.push(seg(String(_opps.fresh14), 'New \u2264 14 days', 'oppsCard', true));
+      else if (_opps.soon) parts.push(seg(String(_opps.soon), 'Closing \u2264 14 days', 'oppsCard', true));
     } else {
       parts.push(`<button class="ab-seg" disabled><span class="ab-wait">\u2026</span><span class="ab-lab">Open bids</span></button>`);
     }
