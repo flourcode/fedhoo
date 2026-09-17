@@ -9,6 +9,7 @@
 <meta property="og:description" content="Find the hole in your deal before pipeline review does. One minute, no CRM, nothing saved.">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>😵</text></svg>">
 <meta name="theme-color" content="#FEF7FF">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -33,7 +34,11 @@
   .mono { font-family:'Roboto Mono',ui-monospace,monospace; }
   .wrap { max-width:520px; margin:0 auto; padding:14px 16px calc(28px + env(safe-area-inset-bottom)); }
   header { display:flex; align-items:center; justify-content:space-between; height:52px; }
-  .logo { font-size:17px; font-weight:500; }
+  .logo { display:inline-flex; align-items:center; gap:8px; font:inherit; font-size:17px; font-weight:500;
+    color:var(--on-surface); background:none; border:0; padding:8px 8px 8px 0; margin-left:-2px;
+    white-space:nowrap; cursor:pointer; border-radius:10px; }
+  .logo:hover { color:var(--primary); }
+  .logo-face { font-size:22px; line-height:1; }
   .home-link { font:inherit; font-size:14px; font-weight:500; color:var(--primary);
     background:none; border:0; cursor:pointer; padding:8px; }
 
@@ -221,7 +226,7 @@
 <body>
 <div class="wrap">
   <header>
-    <div class="logo">Kill My Deal</div>
+    <button class="logo" id="logoHome" aria-label="Kill My Deal — start over"><span class="logo-face" aria-hidden="true">😵</span> Kill My Deal</button>
   </header>
   <div id="screen" aria-live="polite"></div>
   <footer>
@@ -330,6 +335,7 @@ function home() {
     <div class="private">Nothing is saved, sent, or stored. It runs entirely on your phone.
       Close the tab and it's gone.</div>`;
   window.KMD_BUILD = '2026-09-17.1830';
+document.getElementById('logoHome').onclick = home;
 document.getElementById('prep').onclick = () => ask(0);
 }
 
