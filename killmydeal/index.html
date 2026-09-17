@@ -5,10 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Kill My Deal — five questions before your manager asks them</title>
 <meta name="description" content="Pressure-test a federal deal in five taps. Private by design. No customer names, no CRM, nothing leaves your phone.">
+<meta property="og:title" content="Kill My Deal — five questions before your manager asks them">
+<meta property="og:description" content="Pressure-test a federal deal in a minute. No login, no CRM, nothing saved.">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#FEF7FF">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0&display=block" rel="stylesheet">
 <style>
   :root {
     --primary:#6750A4; --on-primary:#FFF;
@@ -60,7 +65,9 @@
   .a-yes { background:var(--success-container); color:var(--on-success-container); }
   .a-sort { background:var(--warn-container); color:var(--on-warn-container); }
   .a-no { background:var(--error-container); color:var(--on-error-container); }
-  .ans:active { filter:brightness(.95); }
+  .ans { display:flex; align-items:center; gap:12px; }
+  .sr { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden;
+    clip:rect(0,0,0,0); white-space:nowrap; border:0; }
   .back { font:inherit; font-size:14px; font-weight:500; color:var(--on-surface-variant);
     background:none; border:0; padding:14px 4px; cursor:pointer; }
 
@@ -120,6 +127,79 @@
   footer { margin-top:44px; border-top:1px solid var(--outline-variant); padding-top:16px;
     font-size:12px; line-height:1.6; color:var(--on-surface-variant); }
   footer a { color:var(--primary); }
+
+  /* the five questions, previewed on the home screen */
+  .peek { background:var(--sc-low); border-radius:16px; padding:16px 18px; margin:22px 0 4px; }
+  .peek-k { font-size:11px; letter-spacing:.7px; text-transform:uppercase; color:var(--on-surface-variant); margin-bottom:10px; }
+  .peek-row { font-size:14.5px; line-height:1.5; padding:5px 0; color:var(--on-surface-variant); }
+  .peek-row b { color:var(--on-surface); font-weight:500; letter-spacing:.4px; margin-right:6px; }
+
+  /* Mark */
+  .markblk { display:grid; grid-template-columns:64px 1fr; gap:16px; align-items:start;
+    background:var(--sc-low); border-radius:20px; padding:20px; margin-top:28px; }
+  .markblk.nophoto { grid-template-columns:1fr; }
+  .mark-photo { width:64px; height:64px; border-radius:50%; object-fit:cover; }
+  .mark-body { min-width:0; }
+  .mark-name { font-size:17px; font-weight:500; margin-bottom:6px; }
+  .mark-p { font-size:14px; line-height:1.55; color:var(--on-surface-variant); margin:0 0 10px; }
+  .mark-cta { display:inline-block; background:var(--primary); color:var(--on-primary);
+    text-decoration:none; font-size:14.5px; font-weight:500; border-radius:100px; padding:12px 20px; }
+  .mark-fine { font-size:12px; line-height:1.5; color:var(--on-surface-variant); margin-top:10px; }
+  @media (max-width:420px) { .markblk { grid-template-columns:1fr; } }
+
+  /* ── M3: motion tokens (emphasized easing, standard durations) ── */
+  :root {
+    --ease-emph: cubic-bezier(.2, 0, 0, 1);
+    --ease-emph-dec: cubic-bezier(.05, .7, .1, 1);
+    --dur-short: 200ms; --dur-medium: 350ms;
+    --state-hover: .08; --state-focus: .10; --state-press: .10;
+  }
+  /* ── M3: icons ── */
+  .msym { font-family:'Material Symbols Rounded'; font-weight:400; font-style:normal;
+    font-size:20px; line-height:1; letter-spacing:normal; text-transform:none; display:inline-block;
+    white-space:nowrap; direction:ltr; -webkit-font-feature-settings:'liga';
+    -webkit-font-smoothing:antialiased; vertical-align:-4px; }
+  .msym-lg { font-size:24px; vertical-align:-6px; }
+
+  /* ── M3: state layers. Every interactive surface gets hover/focus/press
+     overlays at the specified opacities, rather than ad-hoc filter tricks. ── */
+  .big, .ghost, .act, .ans, .mark-cta, .home-link, .mode {
+    position:relative; overflow:hidden; isolation:isolate;
+    transition:box-shadow var(--dur-short) var(--ease-emph); }
+  .big::after, .ghost::after, .act::after, .ans::after, .mark-cta::after,
+  .home-link::after, .mode::after {
+    content:''; position:absolute; inset:0; background:currentColor; opacity:0;
+    transition:opacity var(--dur-short) var(--ease-emph); pointer-events:none; z-index:-1; }
+  .big:hover::after, .ghost:hover::after, .act:hover::after, .ans:hover::after,
+  .mark-cta:hover::after, .home-link:hover::after, .mode:hover::after { opacity:var(--state-hover); }
+  .big:active::after, .ghost:active::after, .act:active::after, .ans:active::after,
+  .mark-cta:active::after, .home-link:active::after, .mode:active::after { opacity:var(--state-press); }
+
+  /* ── M3: visible focus indicator, 3px, 2px offset ── */
+  :focus-visible { outline:3px solid var(--primary); outline-offset:2px; border-radius:8px; }
+  .ans:focus-visible, .big:focus-visible, .act:focus-visible { outline-offset:3px; }
+
+  /* ── M3: respect reduced motion ── */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration:.01ms !important; transition-duration:.01ms !important; }
+  }
+
+  /* ── M3: dark colour scheme ── */
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --primary:#D0BCFF; --on-primary:#381E72;
+      --primary-container:#4F378B; --on-primary-container:#EADDFF;
+      --secondary-container:#4A4458; --on-secondary-container:#E8DEF8;
+      --tertiary-container:#633B48; --on-tertiary-container:#FFD8E4;
+      --error:#F2B8B5; --error-container:#8C1D18; --on-error-container:#F9DEDC;
+      --success:#7CD992; --success-container:#005321; --on-success-container:#C4EED0;
+      --warn:#E8C468; --warn-container:#5C4200; --on-warn-container:#FFDF9A;
+      --surface:#141218; --sc-low:#1D1B20; --sc:#211F26; --sc-high:#2B2930;
+      --on-surface:#E6E0E9; --on-surface-variant:#CAC4D0;
+      --outline:#938F99; --outline-variant:#49454F;
+      --elev1:0 1px 3px rgba(0,0,0,.5);
+    }
+  }
 </style>
 </head>
 <body>
@@ -128,7 +208,7 @@
     <div class="logo">Kill My Deal</div>
     <button class="home-link" id="homeBtn" hidden>Start over</button>
   </header>
-  <div id="screen"></div>
+  <div id="screen" aria-live="polite"></div>
   <footer>
     Built by <a href="https://fedhoo.com" target="_blank" rel="noopener">fedhoo</a>.
     Everything runs on this device. Nothing is uploaded, no account, no customer names.
@@ -155,6 +235,7 @@ const P = [
 ];
 const VAL = { yes:92, sort:50, no:8 };
 const MARK = { yes:'✓', sort:'?', no:'✗' };
+const ICON = { yes:'check_circle', sort:'help', no:'cancel' };
 
 /* the three questions a manager asks when a pillar is soft */
 const GRILL = {
@@ -209,12 +290,6 @@ function score(a) {
            strongOnes };
 }
 
-/* ── storage: local only ── */
-const HKEY = 'kmd_pipeline_v3';
-const all = () => { try { return JSON.parse(localStorage.getItem(HKEY) || '[]'); } catch { return []; } };
-const save = (d) => { try { const a = all().filter(x => x.name.toLowerCase() !== d.name.toLowerCase());
-  a.push(d); localStorage.setItem(HKEY, JSON.stringify(a)); } catch {} };
-
 /* ── state ── */
 let mode = 'seller', nick = '', answers = {}, step = 0, grillStep = 0, grillOuch = 0, lastScore = null;
 const setHome = (on) => { document.getElementById('homeBtn').hidden = !on; };
@@ -225,17 +300,18 @@ function home() {
   setHome(false);
   el().innerHTML = `
     <h1>Don't get killed in pipeline review.</h1>
-    <p class="dek">Pressure-test your deal before your manager does. Five questions, about a minute.</p>
-    <button class="big" id="prep">PREP MY DEAL</button>
-    <button class="big alt" id="inspect">INSPECT A DEAL</button>
-    <button class="ghost" id="pipe">See my pipeline</button>
-    <div class="private">🔒 Private by design. No customer names required.</div>`;
-  document.getElementById('prep').onclick = () => nickname('seller');
-  document.getElementById('inspect').onclick = () => nickname('manager');
-  document.getElementById('pipe').onclick = pipeline;
+    <p class="dek">Five questions before your manager asks them. Takes a minute, works on your phone
+      in the parking lot.</p>
+    <button class="big" id="prep"><span class="msym" aria-hidden="true">bolt</span> PRESSURE-TEST MY DEAL</button>
+    <div class="peek">
+      <div class="peek-k mono">The five questions</div>
+      ${P.map(p => `<div class="peek-row"><b>${p.n}</b> ${esc(p.short)}</div>`).join('')}
+    </div>
+    <div class="private"><span class="msym" aria-hidden="true">lock</span> Nothing is saved, sent, or stored. Close the tab and it's gone.</div>`;
+  document.getElementById('prep').onclick = () => ask(0);
 }
 
-function nickname(which) {
+function nicknameUNUSED(which) {
   mode = which; setHome(true);
   el().innerHTML = `
     <h1>${which === 'seller' ? 'What are you carrying?' : 'Which deal are you inspecting?'}</h1>
@@ -260,11 +336,13 @@ function ask(i) {
   const p = P[i];
   el().innerHTML = `
     <div class="dots">${P.map((_, j) => `<span class="dot${j <= i ? ' done' : ''}"></span>`).join('')}</div>
-    <div class="qnum mono">${esc(nick)} · ${p.n}</div>
+    <div class="qnum mono">${p.n} · question ${i + 1} of ${P.length}</div>
     <div class="qt">${esc(mode === 'manager' ? p.q : p.q)}</div>
-    <button class="ans a-yes" data-v="yes">YES</button>
-    <button class="ans a-sort" data-v="sort">SORT OF</button>
-    <button class="ans a-no" data-v="no">NO</button>
+    <div role="radiogroup" aria-label="${esc(p.q)}">
+      <button class="ans a-yes" data-v="yes" role="radio" aria-checked="false"><span class="msym msym-lg" aria-hidden="true">check_circle</span> YES</button>
+      <button class="ans a-sort" data-v="sort" role="radio" aria-checked="false"><span class="msym msym-lg" aria-hidden="true">help</span> SORT OF</button>
+      <button class="ans a-no" data-v="no" role="radio" aria-checked="false"><span class="msym msym-lg" aria-hidden="true">cancel</span> NO</button>
+    </div>
     ${i > 0 ? '<button class="back" id="back">← Back</button>' : ''}`;
   el().querySelectorAll('.ans').forEach(b => b.onclick = () => {
     answers[p.k] = b.dataset.v;
@@ -279,11 +357,8 @@ function ask(i) {
 function result() {
   const s = score(answers);
   lastScore = s;
-  save({ name:nick, ts:Date.now(), total:s.total, label:s.label, cls:s.cls,
-         hole:s.total >= 75 ? '—' : s.weak.n, answers:{ ...answers } });
   setHome(true);
   el().innerHTML = `
-    <div class="qnum mono">${esc(nick)}</div>
     <div class="headline-row"><span class="score">${s.total}</span>
       <span class="verdict v-${s.cls}">${s.label}</span></div>
     <div class="attack">${esc(s.attack)}</div>
@@ -291,7 +366,7 @@ function result() {
     <div class="pillars">
       ${P.map(p => `<div class="pill-row">
         <span class="pill-n">${p.n}<div class="pill-q">${esc(p.short)}</div></span>
-        <span class="mark m-${answers[p.k]}">${MARK[answers[p.k]]}</span>
+        <span class="mark m-${answers[p.k]}"><span class="msym msym-lg" aria-hidden="true">${ICON[answers[p.k]]}</span><span class="sr">${answers[p.k] === 'yes' ? 'yes' : answers[p.k] === 'sort' ? 'sort of' : 'no'}</span></span>
       </div>`).join('')}
     </div>
 
@@ -301,10 +376,9 @@ function result() {
     </div>`}
 
     <div class="acts">
-      <button class="act act-p" id="grill">GRILL ME →</button>
-      <button class="act" id="again">Run it again</button>
-      ${mode === 'manager' ? '<button class="act" id="nextDeal">Next deal →</button>' : ''}
-      <button class="act" id="pipe2">My pipeline</button>
+      <button class="act act-p" id="grill"><span class="msym" aria-hidden="true">gavel</span> GRILL ME</button>
+      <button class="act" id="copy"><span class="msym" aria-hidden="true">content_copy</span> Copy for the review</button>
+      <button class="act" id="again"><span class="msym" aria-hidden="true">refresh</span> Another deal</button>
     </div>
 
     <details class="why"><summary>Why this score?</summary>
@@ -317,9 +391,14 @@ function result() {
     </details>`;
   document.getElementById('grill').onclick = () => { grillStep = 0; grillOuch = 0; grill(); };
   document.getElementById('again').onclick = () => { answers = {}; ask(0); };
-  document.getElementById('pipe2').onclick = pipeline;
-  const nd = document.getElementById('nextDeal');
-  if (nd) nd.onclick = () => { answers = {}; nickname('manager'); };
+  document.getElementById('copy').onclick = () => {
+    const txt = `${s.total} — ${s.label}\n${s.attack}\n`
+      + P.map(p => `${MARK[answers[p.k]]} ${p.n}`).join('  ')
+      + `\nBe ready for: "${GRILL[s.weak.k][0]}"\nBefore the review: ${FIX[s.weak.k]}\n\nkillmydeal.com`;
+    try { navigator.clipboard.writeText(txt); } catch {}
+    document.getElementById('copy').textContent = 'Copied ✓';
+  };
+  mountMark();
   window.scrollTo({ top:0 });
 }
 
@@ -331,8 +410,10 @@ function grill() {
   el().innerHTML = `
     <div class="grill-sub mono">Your manager · question ${grillStep + 1} of 3</div>
     <div class="grill-q">“${esc(qs[grillStep])}”</div>
-    <button class="ans a-yes" data-v="ok">I CAN ANSWER THAT</button>
-    <button class="ans a-no" data-v="ouch">OUCH</button>`;
+    <div role="radiogroup" aria-label="Can you answer this?">
+      <button class="ans a-yes" data-v="ok" role="radio" aria-checked="false"><span class="msym msym-lg" aria-hidden="true">thumb_up</span> I CAN ANSWER THAT</button>
+      <button class="ans a-no" data-v="ouch" role="radio" aria-checked="false"><span class="msym msym-lg" aria-hidden="true">sentiment_dissatisfied</span> OUCH</button>
+    </div>`;
   el().querySelectorAll('.ans').forEach(b => b.onclick = () => {
     if (b.dataset.v === 'ouch') grillOuch++;
     grillStep++;
@@ -357,63 +438,34 @@ function grillDone() {
       <button class="act" id="another">Score another deal</button>
     </div>`;
   document.getElementById('back2').onclick = result;
-  document.getElementById('another').onclick = () => { answers = {}; nickname(mode); };
+  document.getElementById('another').onclick = () => { answers = {}; ask(0); };
+  mountMark();
   window.scrollTo({ top:0 });
 }
 
-/* ── pipeline ── */
-function pipeline() {
-  setHome(true);
-  const deals = all().sort((a, b) => a.total - b.total);
-  if (!deals.length) {
-    el().innerHTML = `<h1>My pipeline</h1>
-      <div class="empty">Nothing scored on this device yet. Prep a deal or inspect one and it lands here,
-        weakest first — which is where a pipeline review should start.</div>
-      <button class="big" id="h">Back</button>`;
-    document.getElementById('h').onclick = home;
-    return;
-  }
-  const ready = deals.filter(d => d.total >= 75).length;
-  const proof = deals.filter(d => d.total >= 55 && d.total < 75).length;
-  const dont  = deals.filter(d => d.total < 55).length;
-  const holes = {};
-  for (const d of deals) if (d.hole && d.hole !== '—') holes[d.hole] = (holes[d.hole] || 0) + 1;
-  const top = Object.entries(holes).sort((a, b) => b[1] - a[1])[0];
-  const moneyGaps = deals.filter(d => d.answers && d.answers.money !== 'yes').length;
-  const diagOK = !top || top[1] < 2;
-  el().innerHTML = `
-    <h1>My pipeline</h1>
-    <div class="diag${diagOK ? ' ok' : ''}">
-      <div class="diag-t">${diagOK ? 'No single pattern yet.' : `Your pipeline has a ${esc(top[0].toLowerCase())} problem.`}</div>
-      <div class="diag-b">${deals.length} deal${deals.length === 1 ? '' : 's'} reviewed.
-        ${moneyGaps ? `${moneyGaps} of ${deals.length} lack confirmed funding.` : 'Every deal has confirmed funding.'}</div>
-    </div>
-    <div class="counts">
-      <div class="cnt"><div class="cnt-v">${ready}</div><div class="cnt-k">Ready</div></div>
-      <div class="cnt"><div class="cnt-v">${proof}</div><div class="cnt-k">Need proof</div></div>
-      <div class="cnt"><div class="cnt-v">${dont}</div><div class="cnt-k">Shouldn't carry</div></div>
-    </div>
-    ${deals.map(d => `<div class="drow">
-      <div class="dname">${esc(d.name)}<div class="dhole">${d.hole === '—' ? 'No obvious hole' : 'Weakest: ' + esc(d.hole)} · ${new Date(d.ts).toLocaleDateString('en-US',{month:'short',day:'numeric'})}</div></div>
-      <div class="dscore">${d.total}</div>
-    </div>`).join('')}
-    <div class="acts">
-      <button class="act act-p" id="add">Inspect another</button>
-      <button class="act" id="copyAll">Copy summary</button>
-      <button class="act" id="wipe">Delete all</button>
-    </div>
-    <div class="fine" style="margin-top:14px;">Stored on this device only. Nothing is uploaded.</div>`;
-  document.getElementById('add').onclick = () => { answers = {}; nickname('manager'); };
-  document.getElementById('wipe').onclick = () => { localStorage.removeItem(HKEY); pipeline(); };
-  document.getElementById('copyAll').onclick = () => {
-    const txt = `PIPELINE — ${deals.length} deals\n`
-      + `${ready} ready · ${proof} need proof · ${dont} shouldn't be carried\n`
-      + (moneyGaps ? `${moneyGaps} of ${deals.length} lack confirmed funding\n\n` : '\n')
-      + deals.map(d => `${d.total}  ${d.name} — ${d.hole === '—' ? 'no obvious hole' : d.hole.toLowerCase()}`).join('\n');
-    try { navigator.clipboard.writeText(txt); } catch {}
-    document.getElementById('copyAll').textContent = 'Copied ✓';
-  };
-  window.scrollTo({ top:0 });
+
+/* ── Mark, after the work is done. One ask, no pitch. ── */
+function mountMark() {
+  if (document.getElementById('markBlock')) return;
+  const w = document.createElement('div');
+  w.id = 'markBlock';
+  w.className = 'markblk';
+  w.innerHTML = `
+    <img class="mark-photo" src="https://fedhoo.com/images/mark.jpg" alt="Mark Flournoy"
+         onerror="this.closest('.markblk').classList.add('nophoto'); this.remove();">
+    <div class="mark-body">
+      <div class="mark-name">I'm Mark.</div>
+      <p class="mark-p">Six years leading Federal Partner Sales at AWS, before that F5 and Red Hat,
+        and 20 years a Marine officer. I've been the seller, the manager, and the person explaining
+        the forecast to somebody above me.</p>
+      <p class="mark-p">If a deal on this list is worth more than an afternoon, it's worth an hour
+        with someone who has already argued about it.</p>
+      <a class="mark-cta" href="https://calendly.com/markflournoy/deepdive?utm_source=killmydeal&utm_medium=result&utm_content=after_score"
+         target="_blank" rel="noopener"><span class="msym" aria-hidden="true">event</span> Work it through with Mark</a>
+      <div class="mark-fine">One hour, $250. Bring the deal you just scored. Nothing you typed here
+        goes with it — there was nothing to send.</div>
+    </div>`;
+  el().appendChild(w);
 }
 
 document.getElementById('homeBtn').onclick = home;
