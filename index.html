@@ -21,72 +21,91 @@
 <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap" rel="stylesheet">
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-T343V4RFHV"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-T343V4RFHV');</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
 /* ── TOKENS, vocaLICIOUS exact ── */
 :root {
-  --bg:        #F4F3F8;
-  --bg-app:    #FFFFFF;
-  --bg-hover:  rgba(70,68,110,0.06);
-  --bg-active: rgba(70,68,110,0.11);
-  --text-primary:    #393640;
-  --text-secondary:  #535059;
-  --text-tertiary:   #7572B7;
-  --text-quaternary: #ACAAD4;
-  --border:       #E8E6F0;
-  --border-inner: #F0EEF8;
-  --btn-bg:    #46446E;
-  --btn-text:  #FFFFFF;
-  --btn-hover: #5E5B92;
-  --chip-bg:   #ECEAF6;
-  --chip-hover:#ACAAD4;
-  --go-bg:    rgba(52,199,89,0.08);   --go-text:   #1A6E31;
-  --warn-bg:  rgba(200,160,0,0.09);   --warn-text: #6B5000;
-  --crit-bg:  rgba(200,50,30,0.08);   --crit-text: #8C1A0E;
-  --accent:     #46446E;
-  --accent-mid: #5E5B92;
-  --accent-dim: #ECEAF6;
+  /* ── Material 3 baseline scheme, mapped onto fedhoo's existing tokens ──
+     Nothing structural changes: every component keeps its class names and
+     reads these variables, so the whole app restyles from one place. */
+  --m3-primary: #6750A4;          --m3-on-primary: #FFFFFF;
+  --m3-primary-container: #EADDFF; --m3-on-primary-container: #21005D;
+  --m3-secondary-container: #E8DEF8; --m3-on-secondary-container: #1D192B;
+  --m3-tertiary: #7D5260;         --m3-tertiary-container: #FFD8E4;
+  --m3-surface: #FEF7FF;          --m3-surface-container-low: #F7F2FA;
+  --m3-surface-container: #F3EDF7; --m3-surface-container-high: #ECE6F0;
+  --m3-on-surface: #1D1B20;       --m3-on-surface-variant: #49454F;
+  --m3-outline: #79747E;          --m3-outline-variant: #CAC4D0;
+  --m3-error: #B3261E;            --m3-error-container: #F9DEDC; --m3-on-error-container: #410E0B;
+  --m3-success: #146C2E;          --m3-success-container: #C4EED0; --m3-on-success-container: #00210B;
+  --m3-warn: #7A5900;             --m3-warn-container: #FFDF9A;   --m3-on-warn-container: #261A00;
+  --m3-elev1: 0 1px 2px rgba(0,0,0,.30), 0 1px 3px 1px rgba(0,0,0,.15);
+  --m3-elev2: 0 1px 2px rgba(0,0,0,.30), 0 2px 6px 2px rgba(0,0,0,.15);
+
+  --bg:        var(--m3-surface);
+  --bg-app:    var(--m3-surface-container-low);
+  --bg-hover:  rgba(103,80,164,0.08);
+  --bg-active: rgba(103,80,164,0.12);
+  --text-primary:    var(--m3-on-surface);
+  --text-secondary:  var(--m3-on-surface-variant);
+  --text-tertiary:   var(--m3-primary);
+  --text-quaternary: var(--m3-outline);
+  --border:       var(--m3-outline-variant);
+  --border-inner: #E7E0EC;
+  --btn-bg:    var(--m3-primary);
+  --btn-text:  var(--m3-on-primary);
+  --btn-hover: #7965AF;
+  --chip-bg:   var(--m3-secondary-container);
+  --chip-hover:#D9CBF3;
+  --go-bg:    var(--m3-success-container);  --go-text:   var(--m3-on-success-container);
+  --warn-bg:  var(--m3-warn-container);     --warn-text: var(--m3-on-warn-container);
+  --crit-bg:  var(--m3-error-container);    --crit-text: var(--m3-on-error-container);
+  --accent:     var(--m3-primary);
+  --accent-mid: #7F67BE;
+  --accent-dim: var(--m3-primary-container);
   --radius:    16px;
-  --radius-xs: 10px;
-  --shadow:    0 1px 3px rgba(44,41,51,0.03), 0 6px 16px rgba(44,41,51,0.05);
-  --shadow-sm: 0 1px 2px rgba(44,41,51,0.04);
-  --font: 'Google Sans Flex', -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
-  --transition: all 0.16s cubic-bezier(0.4,0,0.2,1);
+  --radius-xs: 12px;
+  --shadow:    var(--m3-elev1);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.12);
+  --font: Roboto, 'Google Sans Flex', -apple-system, BlinkMacSystemFont, sans-serif;
+  --transition: all 0.16s cubic-bezier(0.2,0,0,1);
   --safe-top:    env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --text-xs:   0.72rem;
-  --text-sm:   0.85rem;
-  --text-base: 0.9375rem;
-  --text-lg:   1.1rem;
-  --text-xl:   1.35rem;
-  --text-2xl:  1.65rem;
-  --text-hero: clamp(2rem, 4.5vw, 2.75rem);
+  --text-xs:   0.75rem;
+  --text-sm:   0.875rem;
+  --text-base: 1rem;
+  --text-lg:   1.125rem;
+  --text-xl:   1.375rem;
+  --text-2xl:  1.75rem;
+  --text-hero: clamp(2.25rem, 5vw, 3.5rem);
 }
 
 /* ── DARK MODE — applied via .dark class (JS handles system preference in init) ── */
 :root.dark {
-    --bg:        #0F0E13;
-    --bg-app:    #1A1820;
-    --bg-hover:  rgba(180,175,220,0.07);
-    --bg-active: rgba(180,175,220,0.13);
-    --text-primary:    #E8E6F0;
-    --text-secondary:  #B8B5C8;
-    --text-tertiary:   #9B98C8;
-    --text-quaternary: #5A5870;
-    --border:       #2E2B3A;
-    --border-inner: #252233;
-    --btn-bg:    #7572B7;
-    --btn-text:  #FFFFFF;
-    --btn-hover: #8885C8;
-    --chip-bg:   #252233;
-    --chip-hover:#302D42;
-    --go-bg:    rgba(52,199,89,0.12);   --go-text:   #4ADA7A;
-    --warn-bg:  rgba(200,160,0,0.12);   --warn-text: #E0B840;
-    --crit-bg:  rgba(200,50,30,0.12);   --crit-text: #F07060;
-    --accent:     #9B98C8;
-    --accent-mid: #7572B7;
-    --accent-dim: #252233;
-    --shadow:    0 1px 3px rgba(0,0,0,0.3);
-    --shadow-sm: 0 1px 2px rgba(0,0,0,0.25);
+    /* Material 3 dark scheme */
+    --m3-primary: #D0BCFF;          --m3-on-primary: #381E72;
+    --m3-primary-container: #4F378B; --m3-on-primary-container: #EADDFF;
+    --m3-secondary-container: #4A4458; --m3-on-secondary-container: #E8DEF8;
+    --m3-tertiary: #EFB8C8;         --m3-tertiary-container: #633B48;
+    --m3-surface: #141218;          --m3-surface-container-low: #1D1B20;
+    --m3-surface-container: #211F26; --m3-surface-container-high: #2B2930;
+    --m3-on-surface: #E6E0E9;       --m3-on-surface-variant: #CAC4D0;
+    --m3-outline: #938F99;          --m3-outline-variant: #49454F;
+    --m3-error: #F2B8B5;            --m3-error-container: #8C1D18; --m3-on-error-container: #F9DEDC;
+    --m3-success: #7CD992;          --m3-success-container: #005321; --m3-on-success-container: #C4EED0;
+    --m3-warn: #E8C468;             --m3-warn-container: #5C4200;   --m3-on-warn-container: #FFDF9A;
+    --m3-elev1: 0 1px 3px rgba(0,0,0,.45);
+    --m3-elev2: 0 2px 8px rgba(0,0,0,.5);
+    --bg-hover:  rgba(208,188,255,0.10);
+    --bg-active: rgba(208,188,255,0.16);
+    --btn-hover: #DCCBFF;
+    --chip-hover:#3A3543;
+    --accent-mid: #B9A3F0;
+    --border-inner: #332F3A;
+    --shadow:    var(--m3-elev1);
+    --shadow-sm: 0 1px 2px rgba(0,0,0,.4);
 }
 .dark .site-header { background: rgba(15,14,19,0.96) !important; }
 .dark .arti-sheet  { background: #1A1820 !important; }
@@ -1192,6 +1211,91 @@ a, button, input, select { touch-action: manipulation; }
 .fh-hl-agency { background: rgba(139,92,246,0.10); box-shadow: inset 0 -1px 0 rgba(139,92,246,0.25); }
 .dark .fh-hl-vendor { background: rgba(249,115,22,0.18); }
 .dark .fh-hl-agency { background: rgba(139,92,246,0.20); }
+
+
+/* ═══════════ MATERIAL 3 COMPONENT LAYER ═══════════
+   Shapes, elevation and states per m3.material.io. Appended last so it wins
+   the cascade without editing any of the rules above. */
+
+body { font-family: Roboto, var(--font); letter-spacing: 0.1px; }
+
+/* Cards: surface-container-low, 16px corners, no hairline border */
+.app-card {
+  background: var(--m3-surface-container-low);
+  border: none;
+  border-radius: 16px;
+  box-shadow: none;
+}
+.app-card:hover { box-shadow: none; }
+
+/* Buttons: full-round, label-large type, tonal or filled */
+.hw-book-btn, .bio-btn, .search-submit, .cta-btn, .offer-cta {
+  border-radius: 100px !important;
+  font-weight: 500;
+  letter-spacing: 0.1px;
+  box-shadow: var(--m3-elev1);
+  transition: box-shadow .2s, filter .2s;
+}
+.hw-book-btn:hover, .bio-btn:hover, .search-submit:hover, .cta-btn:hover, .offer-cta:hover {
+  box-shadow: var(--m3-elev2); filter: brightness(1.06);
+}
+.pf-link, .dl-sort, .opp-sort, .opp-more, .ab-seg {
+  border-radius: 100px;
+  font-weight: 500;
+  letter-spacing: 0.1px;
+}
+.opp-more { border-radius: 12px; border-style: solid; }
+.ab-seg { border-radius: 12px; border-color: var(--m3-outline-variant); background: var(--m3-surface-container-low); }
+.ab-seg:hover { background: var(--m3-surface-container); border-color: var(--m3-outline); }
+.opp-sort.active { background: var(--m3-primary); color: var(--m3-on-primary); border-color: transparent; }
+
+/* Chips: 8px corners, secondary-container tone */
+.chip, .chip-tray-item, .tag, .inline-tag, .veh-chip, .cloud-chip, .opp-sa, .scope-chip, .tempo {
+  border-radius: 8px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+}
+.chip-tray-item { background: var(--m3-surface-container); color: var(--m3-on-surface-variant); border: none; }
+.chip-tray-item:hover { background: var(--m3-secondary-container); color: var(--m3-on-secondary-container); }
+.veh-chip { background: var(--m3-secondary-container); color: var(--m3-on-secondary-container); }
+.tempo-open { background: var(--m3-success-container); color: var(--m3-on-success-container); }
+
+/* Search: M3 search bar — 28px round, surface-container-high, no outline */
+.search-bar-inner {
+  border-radius: 28px;
+  background: var(--m3-surface-container-high);
+  border: none;
+  box-shadow: none;
+}
+.search-bar-inner:focus-within { box-shadow: var(--m3-elev1); }
+.search-input { font-size: 16px; letter-spacing: 0.5px; }
+
+/* Text fields elsewhere: filled style */
+.seller-context-input {
+  background: var(--m3-surface-container-high);
+  border: none; border-bottom: 1px solid var(--m3-outline);
+  border-radius: 4px 4px 0 0;
+}
+.seller-context-input:focus { border-bottom: 2px solid var(--m3-primary); }
+
+/* Typography scale: headline / title / body */
+.card-title { font-size: 1.125rem; font-weight: 500; letter-spacing: 0; }
+.card-desc { font-size: 0.875rem; line-height: 1.43; letter-spacing: 0.25px; color: var(--m3-on-surface-variant); }
+.market-hero-number { font-weight: 500; letter-spacing: -1px; }
+.dl-vendor, .opp-title { font-weight: 500; }
+
+/* Answer bar numbers read as M3 display-small */
+.ab-num { font-weight: 500; letter-spacing: 0; color: var(--m3-primary); }
+.ab-num-hot { color: var(--m3-error); }
+.ab-lab { letter-spacing: 0.5px; color: var(--m3-on-surface-variant); }
+
+/* Dividers */
+.dl-row, .opp-row, .pf-row { border-color: var(--m3-outline-variant); }
+
+/* Focus ring for keyboard users, per M3 accessibility guidance */
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
+  outline: 3px solid var(--m3-primary); outline-offset: 2px; border-radius: 8px;
+}
 
 </style>
 </head>
