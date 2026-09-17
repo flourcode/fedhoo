@@ -515,6 +515,40 @@ document.querySelectorAll('.ex[data-ex]').forEach(b => b.onclick = () => {
   else { document.getElementById('agency').value = 'VA'; document.getElementById('value').value = '$12M'; document.getElementById('crm').value = '60%'; }
 });
 
+// Tells apart "the lambda is broken or not deployed" from "the lambda is fine
+// and the model call failed", which look identical in a browser console.
+async function runDiagnostics() {
+  const box = document.getElementById('diagout');
+  box.style.display = 'block';
+  box.textContent = 'Checking…';
+  const lines = [];
+  // 1. is the new route deployed at all?
+  try {
+    const r = await fetch(ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ request_type: 'deal_ping' }) });
+    const t = await r.text();
+    lines.push(`deal_ping  -> HTTP ${r.status}`);
+    lines.push(`           ${t.slice(0, 300)}`);
+    if (r.status === 400) lines.push('  => The lambda is running OLD code. Redeploy it.');
+    if (r.status === 502 || r.status === 500) lines.push('  => The lambda itself is failing before it reaches any route. Check its CloudWatch logs.');
+  } catch (e) {
+    lines.push('deal_ping  -> could not reach the endpoint at all: ' + e.message);
+  }
+  // 2. the real call, with the raw body shown
+  try {
+    const r = await fetch(ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ request_type: 'deal_qualification',
+        deal: { notes: 'VA is replacing an identity platform that goes end of life in March. Program office confirmed FY27 money. We met the program manager twice and they asked for a demo. Would buy through SEWP.' } }) });
+    const t = await r.text();
+    lines.push('');
+    lines.push(`judge call -> HTTP ${r.status}`);
+    lines.push(`           ${t.slice(0, 500)}`);
+  } catch (e) {
+    lines.push('judge call -> failed: ' + e.message);
+  }
+  box.textContent = lines.join('\n');
+}
+
 document.getElementById('run').onclick = async () => {
   const notes = document.getElementById('notes').value.trim();
   const err = document.getElementById('err');
@@ -534,7 +568,10 @@ document.getElementById('run').onclick = async () => {
   } catch (e) {
     stop();
     document.getElementById('runner').classList.remove('on');
-    err.innerHTML = `<div class="err">${esc(e.message || 'Something went wrong.')} Try again in a moment.</div>`;
+    err.innerHTML = `<div class="err">${esc(e.message || 'Something went wrong.')}</div>
+      <button class="ex" id="diag" style="margin-top:10px;">Run diagnostics</button>
+      <pre id="diagout" class="mono" style="display:none;white-space:pre-wrap;font-size:12px;color:var(--mut);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:10px;"></pre>`;
+    document.getElementById('diag').onclick = runDiagnostics;
   } finally { btn.disabled = false; btn.textContent = 'KILL MY DEAL →'; }
 };
 </script>
