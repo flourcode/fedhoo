@@ -147,8 +147,11 @@
   .mark-body { min-width:0; }
   .mark-name { font-size:17px; font-weight:500; margin-bottom:6px; }
   .mark-p { font-size:14px; line-height:1.55; color:var(--on-surface-variant); margin:0 0 10px; }
-  .mark-cta { display:inline-block; background:var(--primary); color:var(--on-primary);
-    text-decoration:none; font-size:14.5px; font-weight:500; border-radius:100px; padding:12px 20px; }
+  .mark-cta { display:block; width:100%; box-sizing:border-box; text-align:center;
+    background:var(--primary); color:var(--on-primary); text-decoration:none;
+    font-size:15px; font-weight:500; letter-spacing:.3px; border-radius:100px;
+    padding:15px 20px; white-space:normal; overflow-wrap:anywhere; }
+  .mark-fine { font-size:12.5px; color:var(--on-surface-variant); text-align:center; margin-top:8px; }
   .mark-fine { font-size:12px; line-height:1.5; color:var(--on-surface-variant); margin-top:10px; }
   @media (max-width:420px) { .markblk { grid-template-columns:1fr; } }
 
@@ -219,6 +222,7 @@
   .markblk { display:block; background:var(--sc-low); border-radius:20px; padding:20px; margin-top:32px; }
   .build { opacity:.55; }
 
+  .math { font-size:12.5px; opacity:.7; margin-top:8px; }
   .move-list { margin:10px 0 0; padding-left:20px; }
   .move-list li { font-size:16px; line-height:1.5; font-weight:500; margin-bottom:8px; }
 </style>
@@ -393,7 +397,6 @@ function plainWhy(s) {
   if (firm.length) bits.push(cap(`${firm[0]} is your strongest signal`));
   let out = bits.join('. ') + '.';
   if (s.caps.length) out += ` Score capped because ${s.caps[0]}.`;
-  out += ` Weighting: money 26, power 22, customer 20, path 16, now 16. YES counts 92, SORT OF 50, NO 8.`;
   return out;
 }
 
@@ -414,10 +417,10 @@ function result() {
       </div>`).join('')}
     </div>
 
-    ${s.total >= 75 ? '' : `<div class="ready-for">
-      <div class="ready-k">Be ready for</div>
+    <div class="ready-for">
+      <div class="ready-k">${s.total >= 75 ? 'They will still ask' : 'Be ready for'}</div>
       <div class="ready-q">“${esc(GRILL[s.weak.k][0])}”</div>
-    </div>`}
+    </div>
 
     <div class="do-first">
       <div class="ready-k">${s.moves.length > 1 ? 'Do this, in this order' : 'Do this first'}</div>
@@ -435,6 +438,8 @@ function result() {
 
     <details class="why"><summary>Why ${s.total}?</summary>
       <div class="body">${esc(plainWhy(s))}</div>
+      <div class="body math">Weighting: money 26 · power 22 · customer 20 · path 16 · now 16.
+        YES counts 92, SORT OF 50, NO 8.</div>
     </details>`;
   document.getElementById('grill').onclick = () => { grillStep = 0; grillOuch = 0; grill(); };
   document.getElementById('again').onclick = () => { answers = {}; ask(0); };
@@ -500,9 +505,10 @@ function mountMark() {
   w.innerHTML = `
     <div class="mark-name">Want another set of eyes on a real pursuit?</div>
     <p class="mark-p">I'm Mark Flournoy. Six years leading Federal Partner Sales at AWS, before that
-      F5 and Red Hat. Thirty minutes, no pitch — bring the deal you just scored.</p>
+      F5 and Red Hat. Bring the deal you just scored.</p>
     <a class="mark-cta" href="https://calendly.com/markflournoy/chat-with-mark?utm_source=killmydeal&utm_medium=result&utm_content=after_score"
-       target="_blank" rel="noopener">TALK IT THROUGH WITH MARK — FREE 30 MIN →</a>`;
+       target="_blank" rel="noopener">TALK TO MARK →</a>
+    <div class="mark-fine">Free, 30 minutes, no pitch.</div>`;
   el().appendChild(w);
 }
 
