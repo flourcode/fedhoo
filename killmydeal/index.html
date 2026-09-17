@@ -3,23 +3,22 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Kill My Deal — six taps before your pipeline review</title>
-<meta name="description" content="Score a federal pursuit in six taps. Nothing leaves your phone. Built for the ten minutes before a pipeline review.">
+<title>Kill My Deal — five questions before your manager asks them</title>
+<meta name="description" content="Pressure-test a federal deal in five taps. Private by design. No customer names, no CRM, nothing leaves your phone.">
 <meta name="theme-color" content="#FEF7FF">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --primary:#6750A4; --on-primary:#FFFFFF;
+    --primary:#6750A4; --on-primary:#FFF;
     --primary-container:#EADDFF; --on-primary-container:#21005D;
     --secondary-container:#E8DEF8; --on-secondary-container:#1D192B;
     --tertiary-container:#FFD8E4; --on-tertiary-container:#31111D;
     --error:#B3261E; --error-container:#F9DEDC; --on-error-container:#410E0B;
     --success:#146C2E; --success-container:#C4EED0; --on-success-container:#00210B;
     --warn:#7A5900; --warn-container:#FFDF9A; --on-warn-container:#261A00;
-    --surface:#FEF7FF; --surface-dim:#DED8E1;
-    --sc-low:#F7F2FA; --sc:#F3EDF7; --sc-high:#ECE6F0;
+    --surface:#FEF7FF; --sc-low:#F7F2FA; --sc:#F3EDF7; --sc-high:#ECE6F0;
     --on-surface:#1D1B20; --on-surface-variant:#49454F;
     --outline:#79747E; --outline-variant:#CAC4D0;
     --elev1:0 1px 2px rgba(0,0,0,.28), 0 1px 3px 1px rgba(0,0,0,.12);
@@ -28,93 +27,97 @@
   html,body { margin:0; background:var(--surface); color:var(--on-surface);
     font-family:Roboto,system-ui,-apple-system,sans-serif; -webkit-font-smoothing:antialiased; }
   .mono { font-family:'Roboto Mono',ui-monospace,monospace; }
-  .wrap { max-width:560px; margin:0 auto; padding:16px 16px calc(28px + env(safe-area-inset-bottom)); }
+  .wrap { max-width:520px; margin:0 auto; padding:14px 16px calc(28px + env(safe-area-inset-bottom)); }
+  header { display:flex; align-items:center; justify-content:space-between; height:52px; }
+  .logo { font-size:17px; font-weight:500; }
+  .home-link { font:inherit; font-size:14px; font-weight:500; color:var(--primary);
+    background:none; border:0; cursor:pointer; padding:8px; }
 
-  header { display:flex; align-items:center; justify-content:space-between; height:56px; gap:12px; }
-  .logo { font-size:18px; font-weight:500; white-space:nowrap; }
-  .modes { display:inline-flex; background:var(--sc); border-radius:100px; padding:3px; }
-  .mode { font:inherit; font-size:13px; font-weight:500; border:0; background:none;
-    color:var(--on-surface-variant); border-radius:100px; padding:8px 14px; cursor:pointer; }
-  .mode.on { background:var(--primary); color:var(--on-primary); }
-
-  h1 { font-size:30px; font-weight:400; line-height:1.15; letter-spacing:-.4px; margin:16px 0 10px; }
-  .dek { font-size:15px; line-height:1.5; color:var(--on-surface-variant); margin:0 0 20px; }
-  .lock { display:flex; gap:10px; align-items:center; background:var(--secondary-container);
-    color:var(--on-secondary-container); border-radius:12px; padding:12px 14px; font-size:13.5px;
-    line-height:1.45; margin-bottom:20px; }
-  .start { width:100%; background:var(--primary); color:var(--on-primary); border:0; border-radius:100px;
-    font:inherit; font-size:17px; font-weight:500; padding:18px; cursor:pointer; box-shadow:var(--elev1); }
+  h1 { font-size:32px; font-weight:400; line-height:1.14; letter-spacing:-.5px; margin:20px 0 10px; }
+  .dek { font-size:16px; line-height:1.5; color:var(--on-surface-variant); margin:0 0 26px; }
+  .big { width:100%; background:var(--primary); color:var(--on-primary); border:0; border-radius:100px;
+    font:inherit; font-size:17px; font-weight:500; padding:19px; cursor:pointer; box-shadow:var(--elev1);
+    margin-bottom:12px; }
+  .big.alt { background:var(--secondary-container); color:var(--on-secondary-container); box-shadow:none; }
   .ghost { width:100%; background:none; color:var(--primary); border:1px solid var(--outline);
-    border-radius:100px; font:inherit; font-size:15px; font-weight:500; padding:15px; cursor:pointer; margin-top:10px; }
-  .fine { font-size:12px; color:var(--on-surface-variant); line-height:1.5; }
+    border-radius:100px; font:inherit; font-size:15px; font-weight:500; padding:15px; cursor:pointer; }
+  .private { font-size:13px; color:var(--on-surface-variant); text-align:center; margin-top:18px; }
+  .fine { font-size:12.5px; color:var(--on-surface-variant); line-height:1.5; }
 
-  .card { display:none; }
-  .card.on { display:block; animation:slide .22s cubic-bezier(.2,0,0,1); }
-  @keyframes slide { from { opacity:0; transform:translateX(12px); } }
-  .dots { display:flex; gap:6px; margin:8px 0 22px; }
+  input { width:100%; background:var(--sc-high); color:var(--on-surface); border:0;
+    border-bottom:1px solid var(--outline); border-radius:6px 6px 0 0; font:inherit; font-size:17px;
+    padding:16px; outline:none; }
+  input:focus { border-bottom:2px solid var(--primary); padding-bottom:15px; }
+  label.fld { display:block; font-size:12.5px; letter-spacing:.3px; color:var(--on-surface-variant); margin:0 0 8px; }
+
+  .dots { display:flex; gap:6px; margin:6px 0 26px; }
   .dot { flex:1; height:4px; border-radius:2px; background:var(--sc-high); }
   .dot.done { background:var(--primary); }
-  .qnum { font-size:12px; letter-spacing:.5px; color:var(--on-surface-variant); text-transform:uppercase; }
-  .qt { font-size:26px; font-weight:400; line-height:1.2; letter-spacing:-.2px; margin:6px 0; }
-  .qh { font-size:14px; color:var(--on-surface-variant); line-height:1.45; margin-bottom:20px; }
-  .opt { display:block; width:100%; text-align:left; font:inherit; font-size:16px; line-height:1.35;
-    color:var(--on-surface); background:var(--sc-low); border:1px solid transparent; border-radius:16px;
-    padding:18px; margin-bottom:10px; cursor:pointer; min-height:60px; }
-  .opt:active { background:var(--sc-high); }
-  .opt.sel { background:var(--secondary-container); color:var(--on-secondary-container); font-weight:500; }
-  .navrow { display:flex; gap:10px; margin-top:6px; }
+  .qnum { font-size:11.5px; letter-spacing:.7px; color:var(--on-surface-variant); text-transform:uppercase; }
+  .qt { font-size:28px; font-weight:400; line-height:1.18; letter-spacing:-.3px; margin:8px 0 28px; }
+  .ans { display:block; width:100%; font:inherit; font-size:19px; font-weight:500; letter-spacing:.3px;
+    border:0; border-radius:20px; padding:22px; margin-bottom:12px; cursor:pointer; }
+  .a-yes { background:var(--success-container); color:var(--on-success-container); }
+  .a-sort { background:var(--warn-container); color:var(--on-warn-container); }
+  .a-no { background:var(--error-container); color:var(--on-error-container); }
+  .ans:active { filter:brightness(.95); }
   .back { font:inherit; font-size:14px; font-weight:500; color:var(--on-surface-variant);
-    background:none; border:0; padding:12px 4px; cursor:pointer; }
+    background:none; border:0; padding:14px 4px; cursor:pointer; }
 
-  .res { display:none; }
-  .res.on { display:block; }
-  .verdict-row { display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; }
-  .score { font-size:88px; font-weight:900; line-height:.95; letter-spacing:-4px; color:var(--primary); }
-  .verdict { font-size:26px; font-weight:700; border-radius:100px; padding:8px 18px; }
-  .v-pursue{background:var(--success-container);color:var(--on-success-container);}
-  .v-prove{background:var(--warn-container);color:var(--on-warn-container);}
-  .v-park{background:var(--tertiary-container);color:var(--on-tertiary-container);}
-  .v-kill{background:var(--error-container);color:var(--on-error-container);}
-  .headline { font-size:20px; font-weight:500; line-height:1.3; margin:16px 0 4px; }
-  .pnote { font-size:15px; color:var(--on-surface-variant); }
-
-  .say { background:var(--primary-container); color:var(--on-primary-container);
-    border-radius:16px; padding:18px; margin:22px 0; }
-  .say-k { font-size:11px; letter-spacing:.6px; text-transform:uppercase; opacity:.8; }
-  .say-t { font-size:17px; line-height:1.45; font-weight:500; margin-top:6px; }
-
-  .block { background:var(--sc-low); border-radius:16px; padding:18px; margin-bottom:14px; }
-  .block-k { font-size:11px; letter-spacing:.6px; text-transform:uppercase; color:var(--on-surface-variant); margin-bottom:10px; }
-  .ask { font-size:15.5px; line-height:1.45; padding:9px 0; border-top:1px solid var(--outline-variant); }
-  .ask:first-of-type { border-top:0; padding-top:0; }
-  .three, .totals { display:grid; gap:10px; margin:18px 0; }
-  .three { grid-template-columns:repeat(3,1fr); }
-  .totals { grid-template-columns:1fr 1fr; }
-  .mini { background:var(--sc-low); border-radius:14px; padding:14px 12px; text-align:center; }
-  .mini-v { font-size:26px; font-weight:500; color:var(--primary); line-height:1.1; }
-  .mini-k { font-size:11px; letter-spacing:.4px; text-transform:uppercase; color:var(--on-surface-variant); margin-top:4px; }
-  details.more { margin-top:8px; }
-  details.more summary { font-size:14px; font-weight:500; color:var(--primary); cursor:pointer; padding:10px 0; }
-  .bar-row { display:grid; grid-template-columns:104px 1fr 30px; align-items:center; gap:10px; margin:8px 0; }
-  .bar-l { font-size:13px; color:var(--on-surface-variant); }
-  .bar-t { display:block; height:8px; background:var(--surface-dim); border-radius:4px; overflow:hidden; }
-  .bar-f { display:block; height:100%; background:var(--primary); border-radius:4px; }
-  .bar-f.low { background:var(--error); } .bar-f.mid { background:#B98900; }
-  .bar-n { font-size:13px; font-weight:500; text-align:right; }
-  .acts { display:flex; flex-wrap:wrap; gap:10px; margin-top:20px; }
-  .act { flex:1 1 auto; font:inherit; font-size:14px; font-weight:500; color:var(--primary);
-    background:none; border:1px solid var(--outline); border-radius:100px; padding:14px 18px; cursor:pointer; }
+  /* result: one screen */
+  .headline-row { display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; margin-top:6px; }
+  .score { font-size:76px; font-weight:900; line-height:1; letter-spacing:-3px; color:var(--primary); }
+  .verdict { font-size:15px; font-weight:700; letter-spacing:.6px; text-transform:uppercase;
+    border-radius:100px; padding:7px 16px; }
+  .v-ready{background:var(--success-container);color:var(--on-success-container);}
+  .v-proof{background:var(--warn-container);color:var(--on-warn-container);}
+  .v-prove{background:var(--tertiary-container);color:var(--on-tertiary-container);}
+  .v-dont{background:var(--error-container);color:var(--on-error-container);}
+  .attack { font-size:22px; font-weight:500; line-height:1.3; margin:18px 0 20px; }
+  .pillars { display:flex; flex-direction:column; gap:2px; margin-bottom:22px; }
+  .pill-row { display:flex; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid var(--outline-variant); }
+  .pill-n { flex:1; font-size:16px; font-weight:500; letter-spacing:.4px; }
+  .pill-q { font-size:13px; color:var(--on-surface-variant); }
+  .mark { font-size:20px; font-weight:700; width:28px; text-align:center; }
+  .m-yes { color:var(--success); } .m-sort { color:var(--warn); } .m-no { color:var(--error); }
+  .ready-for { background:var(--primary-container); color:var(--on-primary-container);
+    border-radius:16px; padding:18px; margin-bottom:18px; }
+  .ready-k { font-size:11px; letter-spacing:.7px; text-transform:uppercase; opacity:.8; }
+  .ready-q { font-size:18px; font-weight:500; line-height:1.4; margin-top:8px; }
+  .acts { display:flex; flex-wrap:wrap; gap:10px; margin-top:8px; }
+  .act { flex:1 1 140px; font:inherit; font-size:15px; font-weight:500; color:var(--primary);
+    background:none; border:1px solid var(--outline); border-radius:100px; padding:15px; cursor:pointer; }
   .act-p { background:var(--primary); color:var(--on-primary); border-color:transparent; }
+  details.why { margin-top:18px; }
+  details.why summary { font-size:14px; font-weight:500; color:var(--primary); cursor:pointer; padding:10px 0; }
+  details.why .body { font-size:14px; line-height:1.6; color:var(--on-surface-variant); }
 
-  .mrow { display:flex; align-items:center; gap:12px; padding:14px 0; border-top:1px solid var(--outline-variant); }
-  .mrow:first-of-type { border-top:0; }
-  .pill { font-size:12px; font-weight:700; border-radius:100px; padding:4px 10px; white-space:nowrap; }
-  .mmain { flex:1; min-width:0; }
-  .mname { font-size:15.5px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .mmeta { font-size:12.5px; color:var(--on-surface-variant); }
-  .mstat { text-align:right; font-size:12.5px; color:var(--on-surface-variant); white-space:nowrap; }
-  .empty { font-size:14.5px; color:var(--on-surface-variant); line-height:1.5; padding:18px 0; }
-  footer { margin-top:40px; border-top:1px solid var(--outline-variant); padding-top:16px;
+  /* grill */
+  .grill-q { font-size:26px; font-weight:400; line-height:1.25; margin:24px 0 32px; }
+  .grill-sub { font-size:13px; letter-spacing:.6px; text-transform:uppercase; color:var(--on-surface-variant); }
+  .verdict-big { font-size:30px; font-weight:500; line-height:1.25; margin:20px 0 10px; }
+
+  /* manager */
+  .askbox { background:var(--sc-low); border-radius:16px; padding:18px; margin-bottom:18px; }
+  .askrow { font-size:16px; line-height:1.45; padding:10px 0; border-top:1px solid var(--outline-variant); }
+  .askrow:first-of-type { border-top:0; padding-top:0; }
+  .askrow b { font-weight:500; letter-spacing:.4px; }
+  .diag { background:var(--error-container); color:var(--on-error-container);
+    border-radius:16px; padding:20px; margin-bottom:16px; }
+  .diag.ok { background:var(--success-container); color:var(--on-success-container); }
+  .diag-t { font-size:22px; font-weight:500; line-height:1.25; }
+  .diag-b { font-size:15px; line-height:1.5; margin-top:8px; }
+  .counts { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:18px; }
+  .cnt { background:var(--sc-low); border-radius:14px; padding:14px 10px; text-align:center; }
+  .cnt-v { font-size:26px; font-weight:500; color:var(--primary); }
+  .cnt-k { font-size:11px; letter-spacing:.3px; text-transform:uppercase; color:var(--on-surface-variant); margin-top:2px; }
+  .drow { display:flex; align-items:center; gap:12px; padding:13px 0; border-top:1px solid var(--outline-variant); }
+  .drow:first-of-type { border-top:0; }
+  .dname { flex:1; font-size:15.5px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .dhole { font-size:12.5px; color:var(--on-surface-variant); }
+  .dscore { font-size:15px; font-weight:500; white-space:nowrap; }
+  .empty { font-size:15px; color:var(--on-surface-variant); line-height:1.55; padding:14px 0; }
+  footer { margin-top:44px; border-top:1px solid var(--outline-variant); padding-top:16px;
     font-size:12px; line-height:1.6; color:var(--on-surface-variant); }
   footer a { color:var(--primary); }
 </style>
@@ -123,332 +126,298 @@
 <div class="wrap">
   <header>
     <div class="logo">Kill My Deal</div>
-    <div class="modes">
-      <button class="mode on" id="mSeller">My deal</button>
-      <button class="mode" id="mMgr">My pipeline</button>
-    </div>
+    <button class="home-link" id="homeBtn" hidden>Start over</button>
   </header>
-
-  <section id="intro">
-    <h1>Six taps before your pipeline review.</h1>
-    <p class="dek">Find the hole your boss will find, before they find it. About thirty seconds.</p>
-    <div class="lock">🔒 Nothing leaves your phone. No customer names, no CRM, no account.</div>
-    <button class="start" id="begin">Start →</button>
-    <button class="ghost" id="seeSample">See what you get</button>
-  </section>
-
-  <section id="quiz" hidden>
-    <div class="dots" id="dots"></div>
-    <div id="cards"></div>
-    <div class="navrow"><button class="back" id="backBtn" hidden>← Back</button></div>
-  </section>
-
-  <section class="res" id="res"></section>
-
-  <section id="mgr" hidden>
-    <h1>Inspect the pipeline.</h1>
-    <p class="dek">Every deal you score lands here, sorted by what is least proven — so the review starts
-      where the risk is.</p>
-    <div class="lock">🔒 Stored on this device only. Nothing is uploaded.</div>
-    <div id="mgrBody"></div>
-    <div class="acts">
-      <button class="act act-p" id="addDeal">Score another deal</button>
-      <button class="act" id="exportM">Export</button>
-      <button class="act" id="wipeM">Delete all</button>
-    </div>
-  </section>
-
+  <div id="screen"></div>
   <footer>
-    Built by <a href="https://fedhoo.com" target="_blank" rel="noopener">fedhoo</a>. Scoring runs in this browser;
-    the weights are in this page's source. Not affiliated with the U.S. government.
+    Built by <a href="https://fedhoo.com" target="_blank" rel="noopener">fedhoo</a>.
+    Everything runs on this device. Nothing is uploaded, no account, no customer names.
   </footer>
 </div>
 
 <script>
 'use strict';
 const esc = (s) => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const el = () => document.getElementById('screen');
 
-/* Six questions. Each option carries the score it implies and the fact it
-   establishes. Six is what a person will actually finish on a phone between
-   meetings, and these six carry most of the signal. */
-const Q = [
-  { k:'funding', g:'real', t:'Where does the money come from?',
-    h:'The most inflated field in every federal pipeline.',
-    o:[['Nobody has said',8], ['We assume it exists',22],
-       ['The customer says it exists',55,'money'],
-       ['A funding source was named',80,'money'],
-       ['Programmed or appropriated',95,'money']] },
-  { k:'event', g:'real', t:'What forces them to act?',
-    h:'If nothing does, it slips. Every time.',
-    o:[['Nothing we know of',8], ['General modernization talk',32],
-       ['A contract or budget is expiring',80,'clock'],
-       ['A mandate, incident, or end of life',95,'clock']] },
-  { k:'path', g:'real', t:'How would they actually buy it?',
-    h:'A named mechanism, not a hope.',
-    o:[['No idea',8], ['Some vehicle probably works',30],
-       ['A likely vehicle identified',65,'path'],
-       ['Vehicle and contracting office confirmed',95,'path']] },
-  { k:'timing', g:'real', t:'Where is the acquisition right now?',
-    h:'Be honest about the stage, not the hope.',
-    o:[['Rumor',10], ['Market research',32],
-       ['Requirements forming',58,'docs'],
-       ['Pre-solicitation',78,'docs'],
-       ['Solicitation is out',95,'docs']] },
-  { k:'power', g:'win', t:'Most senior person you have actually met?',
-    h:'Met. Not emailed into the void.',
-    o:[['Nobody yet',5], ['A user',30,'met'],
-       ['A technical evaluator',55,'met'],
-       ['The program manager',80,'met'],
-       ['Someone who controls money',95,'power']] },
-  { k:'champion', g:'win', t:'Is anyone inside pulling for you?',
-    h:'Someone who tells you things you did not have to ask for.',
-    o:[['Nobody',5], ['Someone friendly',30],
-       ['Someone who shares information',68,'champion'],
-       ['Someone acting on your behalf',95,'champion']] },
+/* ── Five things. Five words a manager can remember without opening this. ── */
+const P = [
+  { k:'customer', n:'CUSTOMER', short:'Do they actually want this?',
+    q:'Has the customer actually said they want to solve this?', w:20 },
+  { k:'money', n:'MONEY', short:'Is there actually funding?',
+    q:'Do you know where the money comes from?', w:26 },
+  { k:'power', n:'POWER', short:'Are you connected to someone who can make it happen?',
+    q:'Are you talking to someone who can make this happen?', w:22 },
+  { k:'path', n:'PATH', short:'Do you know how they buy?',
+    q:'Do you know how they will buy it?', w:16 },
+  { k:'now', n:'NOW', short:'Is something forcing action?',
+    q:'Is there a real reason this happens now?', w:16 },
 ];
-const FACTS = [
-  { k:'money', label:'Funding evidence' }, { k:'clock', label:'A forcing event' },
-  { k:'path', label:'A named buying path' }, { k:'docs', label:'Something written down' },
-  { k:'met', label:'A real customer meeting' }, { k:'power', label:'Access to money' },
-  { k:'champion', label:'Someone inside helping' },
-];
-const WEIGHT = { funding:22, event:16, path:16, timing:10, power:20, champion:16 };
-const LABEL = { funding:'Funding', event:'Forcing event', path:'Buying path',
-                timing:'Stage', power:'Access', champion:'Champion' };
+const VAL = { yes:92, sort:50, no:8 };
+const MARK = { yes:'✓', sort:'?', no:'✗' };
 
-function score(ans) {
-  const v = (k) => Q.find(q => q.k === k).o[ans[k]][1];
-  const facts = new Set();
-  for (const q of Q) { const o = q.o[ans[q.k]]; if (o[2]) facts.add(o[2]); }
-  if (facts.has('power')) facts.add('met');
-
-  const grp = (g) => {
-    const ks = Q.filter(q => q.g === g).map(q => q.k);
-    const w = ks.reduce((s,k) => s + WEIGHT[k], 0);
-    return Math.round(ks.reduce((s,k) => s + v(k) * WEIGHT[k], 0) / w);
-  };
-  const real = grp('real'), win = grp('win');
-  let total = Math.round(Q.reduce((s,q) => s + v(q.k) * WEIGHT[q.k], 0) /
-                         Q.reduce((s,q) => s + WEIGHT[q.k], 0));
-  const proof = Math.round(facts.size / FACTS.length * 100);
-
-  const caps = [];
-  if (v('funding') < 25) { caps.push('No funding evidence'); total = Math.min(total, 60); }
-  if (v('path') < 20) { caps.push('No buying path'); total = Math.min(total, 65); }
-  if (v('power') < 20) { caps.push('No customer contact'); total = Math.min(total, 55); }
-
-  const call = real < 40 ? 'KILL' : proof < 45 ? 'PROVE' : win < 45 ? 'PARK' : 'PURSUE';
-  const NOTE = { PURSUE:'Real, positioned, and you can prove it.',
-    PROVE:'It may be real. Most of it is still your word.',
-    PARK:'Real enough, but you are not positioned to win it yet.',
-    KILL:'The procurement itself does not hold up.' };
-  const ranked = Q.map(q => ({ k:q.k, v:v(q.k) })).sort((a,b) => a.v - b.v);
-  const weakest = ranked[0], best = ranked[ranked.length - 1];
-  const HEAD = { funding:'No money behind this yet', event:'Nothing is forcing them to act',
-    path:'Nobody has named how this gets bought', timing:'This is earlier than it feels',
-    power:'You are selling to a building, not a person', champion:'Nobody inside is pulling for you' };
-  const STRONG = { funding:'The money is real and somebody said so', event:'Something is forcing them to act',
-    path:'There is a named way to buy this', timing:'The acquisition is already moving',
-    power:'You know someone who can move money', champion:'Someone inside wants you to win' };
-  let headline = call === 'PURSUE' ? STRONG[best.k] : HEAD[weakest.k];
-  if (real >= 60 && proof < 45) headline = 'Good deal, thin proof';
-
-  return { total, real, win, proof, call, note:NOTE[call], caps, weakest, best, ranked,
-           headline, facts, factCount:facts.size, factTotal:FACTS.length, v };
-}
-
-const BOSS = {
-  funding:'What funding line is this coming out of, and who told you?',
-  event:'What happens to them if they do nothing this year?',
-  path:'How would they actually award this, and through which office?',
-  timing:'What is the next dated step in their acquisition?',
-  power:'Who have you met who can actually move this?',
-  champion:'Who inside wants you to win, and what have they done for you?' };
-const MOVE = {
-  funding:'Get the funding line named by someone at the customer this week.',
-  event:'Find the deadline: expiring contract, end of life, mandate, or budget year.',
-  path:'Ask which contracting office and vehicle they would use.',
-  timing:'Ask what the next dated step is and who owns it.',
+/* the three questions a manager asks when a pillar is soft */
+const GRILL = {
+  customer: ['What has the customer actually done that proves they intend to buy?',
+             'Who said they want this, and what exactly did they say?',
+             'What happens to them if they do nothing?'],
+  money: ['Who exactly has told you the money is available?',
+          'What budget does it come out of?',
+          'What happens to your date if the funding slips a quarter?'],
+  power: ['Who have you met who can actually move this forward?',
+          'Who signs, and have you ever been in a room with them?',
+          'Who inside is telling you things you did not have to ask for?'],
+  path: ['How would they award this, and through which contracting office?',
+         'What vehicle would it go through, and are you on it?',
+         'Who else can they buy this from more easily than you?'],
+  now: ['What is forcing them to act this year instead of next?',
+        'What is the next dated step in their process?',
+        'Who owns that date on their side?'],
+};
+const FIX = {
+  customer:'Get the customer to say the problem out loud, in their words.',
+  money:'Get one person at the customer to name the funding line this week.',
   power:'Get one meeting above your current contact.',
-  champion:'Ask your best contact to introduce you to whoever owns the problem.' };
-function saying(s) {
-  if (s.call === 'PURSUE') return 'This one is real, funded, and I am positioned. I can defend the date.';
-  if (s.call === 'PROVE') return `It looks real, but only ${s.factCount} of ${s.factTotal} facts are established. I am not defending a close date until ${LABEL[s.weakest.k].toLowerCase()} is confirmed.`;
-  if (s.call === 'PARK') return 'The procurement is real, but I am not positioned. I would rather work it than forecast it.';
-  return 'I cannot defend this one. I am taking it out of the forecast rather than carrying it.';
+  path:'Ask which contracting office and vehicle they would use.',
+  now:'Find the deadline: expiring contract, end of life, mandate, or budget year.',
+};
+
+function score(a) {
+  const v = (k) => VAL[a[k]];
+  let total = Math.round(P.reduce((s,p) => s + v(p.k) * p.w, 0) / P.reduce((s,p) => s + p.w, 0));
+  const caps = [];
+  if (a.money === 'no') { caps.push('no funding evidence'); total = Math.min(total, 55); }
+  if (a.power === 'no') { caps.push('no access to anyone who can act'); total = Math.min(total, 60); }
+  if (a.customer === 'no') { caps.push('the customer has not said they want this'); total = Math.min(total, 45); }
+  const label = total >= 75 ? ['READY TO DEFEND','ready'] :
+                total >= 55 ? ['NEEDS PROOF','proof'] :
+                total >= 35 ? ['PROVE IT FIRST','prove'] : ['DO NOT CARRY IT','dont'];
+  // weakest pillar, money breaking ties because that is what gets attacked
+  const ranked = [...P].map(p => ({ ...p, v:v(p.k) }))
+    .sort((x,y) => x.v - y.v || (y.k === 'money') - (x.k === 'money'));
+  const weak = ranked[0];
+  const ATTACK = {
+    customer:'Your boss will ask whether the customer actually wants this.',
+    money:'Your boss is going to come after the money.',
+    power:'Your boss will ask who you have actually met.',
+    path:'Your boss will ask how this even gets bought.',
+    now:'Your boss will ask why this happens now and not next year.',
+  };
+  const strongOnes = P.filter(p => a[p.k] === 'yes').map(p => p.n.toLowerCase());
+  return { total, label:label[0], cls:label[1], weak, caps, ranked,
+           attack: total >= 75 ? 'Nothing obvious to attack. Bring the proof anyway.' : ATTACK[weak.k],
+           strongOnes };
 }
 
-const answers = {};
-let step = 0;
-const HKEY = 'kmd_deals_v2';
+/* ── storage: local only ── */
+const HKEY = 'kmd_pipeline_v3';
 const all = () => { try { return JSON.parse(localStorage.getItem(HKEY) || '[]'); } catch { return []; } };
 const save = (d) => { try { const a = all().filter(x => x.name.toLowerCase() !== d.name.toLowerCase());
   a.push(d); localStorage.setItem(HKEY, JSON.stringify(a)); } catch {} };
 
-function renderCards() {
-  document.getElementById('cards').innerHTML = Q.map((q, i) => `
-    <div class="card${i === 0 ? ' on' : ''}" data-step="${i}">
-      <div class="qnum mono">Question ${i + 1} of ${Q.length}</div>
-      <div class="qt">${esc(q.t)}</div>
-      <div class="qh">${esc(q.h)}</div>
-      ${q.o.map((o, j) => `<button class="opt" data-k="${q.k}" data-j="${j}">${esc(o[0])}</button>`).join('')}
-    </div>`).join('');
-  document.getElementById('dots').innerHTML = Q.map((_, i) => `<span class="dot" data-d="${i}"></span>`).join('');
-  document.querySelectorAll('.opt').forEach(b => b.onclick = () => {
-    answers[b.dataset.k] = Number(b.dataset.j);
-    document.querySelectorAll('.opt[data-k="' + b.dataset.k + '"]').forEach(x => x.classList.remove('sel'));
-    b.classList.add('sel');
-    setTimeout(next, 140);
+/* ── state ── */
+let mode = 'seller', nick = '', answers = {}, step = 0, grillStep = 0, grillOuch = 0, lastScore = null;
+const setHome = (on) => { document.getElementById('homeBtn').hidden = !on; };
+
+/* ── screens ── */
+function home() {
+  mode = 'seller'; answers = {}; step = 0; nick = '';
+  setHome(false);
+  el().innerHTML = `
+    <h1>Don't get killed in pipeline review.</h1>
+    <p class="dek">Pressure-test your deal before your manager does. Five questions, about a minute.</p>
+    <button class="big" id="prep">PREP MY DEAL</button>
+    <button class="big alt" id="inspect">INSPECT A DEAL</button>
+    <button class="ghost" id="pipe">See my pipeline</button>
+    <div class="private">🔒 Private by design. No customer names required.</div>`;
+  document.getElementById('prep').onclick = () => nickname('seller');
+  document.getElementById('inspect').onclick = () => nickname('manager');
+  document.getElementById('pipe').onclick = pipeline;
+}
+
+function nickname(which) {
+  mode = which; setHome(true);
+  el().innerHTML = `
+    <h1>${which === 'seller' ? 'What are you carrying?' : 'Which deal are you inspecting?'}</h1>
+    <p class="dek">Give it a nickname. Don't use the customer name.</p>
+    <label class="fld" for="nick">Nickname</label>
+    <input id="nick" placeholder="Big Q2 deal" autocomplete="off">
+    <div style="height:20px"></div>
+    <button class="big" id="go">START →</button>
+    ${which === 'manager' ? `<div class="askbox" style="margin-top:22px;">
+      <div class="qnum mono" style="margin-bottom:10px;">Ask the seller these five questions</div>
+      ${P.map(p => `<div class="askrow"><b>${p.n}</b> — ${esc(p.q)}</div>`).join('')}
+    </div>` : ''}`;
+  const input = document.getElementById('nick');
+  const start = () => { nick = input.value.trim() || (which === 'manager' ? 'Deal ' + (all().length + 1) : 'My deal'); ask(0); };
+  document.getElementById('go').onclick = start;
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') start(); });
+  input.focus();
+}
+
+function ask(i) {
+  step = i; setHome(true);
+  const p = P[i];
+  el().innerHTML = `
+    <div class="dots">${P.map((_, j) => `<span class="dot${j <= i ? ' done' : ''}"></span>`).join('')}</div>
+    <div class="qnum mono">${esc(nick)} · ${p.n}</div>
+    <div class="qt">${esc(mode === 'manager' ? p.q : p.q)}</div>
+    <button class="ans a-yes" data-v="yes">YES</button>
+    <button class="ans a-sort" data-v="sort">SORT OF</button>
+    <button class="ans a-no" data-v="no">NO</button>
+    ${i > 0 ? '<button class="back" id="back">← Back</button>' : ''}`;
+  el().querySelectorAll('.ans').forEach(b => b.onclick = () => {
+    answers[p.k] = b.dataset.v;
+    if (i < P.length - 1) setTimeout(() => ask(i + 1), 120);
+    else setTimeout(result, 120);
   });
+  const bk = document.getElementById('back');
+  if (bk) bk.onclick = () => ask(i - 1);
+  window.scrollTo({ top:0 });
 }
-function showStep(i) {
-  step = i;
-  document.querySelectorAll('.card').forEach(c => c.classList.toggle('on', Number(c.dataset.step) === i));
-  document.querySelectorAll('.dot').forEach((d, j) => d.classList.toggle('done', j <= i));
-  document.getElementById('backBtn').hidden = i === 0;
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-function next() { if (step < Q.length - 1) showStep(step + 1); else finish(); }
 
-function finish() {
+function result() {
   const s = score(answers);
-  let name = '';
-  try { name = (window.prompt('Name this deal (stays on your phone). Blank to skip:', '') || '').trim(); } catch {}
-  if (name) save({ name, ts:Date.now(), total:s.total, real:s.real, win:s.win,
-                   proof:s.proof, call:s.call, weak:LABEL[s.weakest.k] });
-  paint(s, name);
-}
-function paint(s, name) {
-  document.getElementById('quiz').hidden = true;
-  document.getElementById('intro').hidden = true;
-  const asks = s.ranked.slice(0, 3);
-  const missing = FACTS.filter(f => !s.facts.has(f.k));
-  const res = document.getElementById('res');
-  res.innerHTML = `
-    ${name ? `<div class="qnum mono">${esc(name)}</div>` : ''}
-    <div class="verdict-row"><span class="score">${s.total}</span>
-      <span class="verdict v-${s.call.toLowerCase()}">${s.call}</span></div>
-    <div class="headline">${esc(s.headline)}</div>
-    <div class="pnote">${esc(s.note)}</div>
+  lastScore = s;
+  save({ name:nick, ts:Date.now(), total:s.total, label:s.label, cls:s.cls,
+         hole:s.total >= 75 ? '—' : s.weak.n, answers:{ ...answers } });
+  setHome(true);
+  el().innerHTML = `
+    <div class="qnum mono">${esc(nick)}</div>
+    <div class="headline-row"><span class="score">${s.total}</span>
+      <span class="verdict v-${s.cls}">${s.label}</span></div>
+    <div class="attack">${esc(s.attack)}</div>
 
-    <div class="say"><div class="say-k">Say this in the review</div>
-      <div class="say-t">${esc(saying(s))}</div></div>
-
-    <div class="block"><div class="block-k">What your boss will ask</div>
-      ${asks.map(a => `<div class="ask">${esc(BOSS[a.k])}</div>`).join('')}</div>
-
-    <div class="block" style="background:var(--secondary-container);color:var(--on-secondary-container);">
-      <div class="block-k" style="color:inherit;opacity:.75;">Do this before the review</div>
-      <div class="say-t">${esc(MOVE[s.weakest.k])}</div></div>
-
-    <div class="three">
-      <div class="mini"><div class="mini-v">${s.real}</div><div class="mini-k">Real</div></div>
-      <div class="mini"><div class="mini-v">${s.win}</div><div class="mini-k">Position</div></div>
-      <div class="mini"><div class="mini-v">${s.proof}%</div><div class="mini-k">Proven</div></div>
+    <div class="pillars">
+      ${P.map(p => `<div class="pill-row">
+        <span class="pill-n">${p.n}<div class="pill-q">${esc(p.short)}</div></span>
+        <span class="mark m-${answers[p.k]}">${MARK[answers[p.k]]}</span>
+      </div>`).join('')}
     </div>
 
-    <details class="more"><summary>Show the detail</summary>
-      ${Q.map(q => { const v = s.v(q.k); const cls = v < 35 ? 'low' : v < 60 ? 'mid' : '';
-        return `<div class="bar-row"><span class="bar-l">${LABEL[q.k]}</span>
-          <span class="bar-t"><span class="bar-f ${cls}" style="width:${v}%"></span></span>
-          <span class="bar-n">${v}</span></div>`; }).join('')}
-      <div class="block-k" style="margin-top:14px;">Not established yet</div>
-      <div class="fine">${missing.length ? missing.map(m => esc(m.label)).join(' · ') : 'Everything on the list is established. Rare.'}</div>
-      ${s.caps.length ? `<div class="fine" style="margin-top:10px;">Capped: ${esc(s.caps.join(' · '))}.</div>` : ''}
-    </details>
+    ${s.total >= 75 ? '' : `<div class="ready-for">
+      <div class="ready-k">Be ready for</div>
+      <div class="ready-q">“${esc(GRILL[s.weak.k][0])}”</div>
+    </div>`}
 
     <div class="acts">
-      <button class="act act-p" id="again">Score another</button>
-      <button class="act" id="copy">Copy for the review</button>
-      <button class="act" id="toPipe">See my pipeline</button>
-    </div>`;
-  res.classList.add('on');
-  window.scrollTo({ top: 0 });
-  document.getElementById('again').onclick = restart;
-  document.getElementById('toPipe').onclick = showMgr;
-  document.getElementById('copy').onclick = () => {
-    const txt = `${name || 'Deal'} — ${s.total}/100 · ${s.call}\n${s.headline}\n`
-      + `Real ${s.real} · Position ${s.win} · Proven ${s.proof}% (${s.factCount}/${s.factTotal})\n`
-      + `Say: ${saying(s)}\nNext: ${MOVE[s.weakest.k]}`;
-    try { navigator.clipboard.writeText(txt); } catch {}
-    document.getElementById('copy').textContent = 'Copied ✓';
-  };
-}
-function restart() {
-  for (const k of Object.keys(answers)) delete answers[k];
-  document.querySelectorAll('.opt').forEach(o => o.classList.remove('sel'));
-  document.getElementById('res').classList.remove('on');
-  document.getElementById('mgr').hidden = true;
-  document.getElementById('quiz').hidden = false;
-  document.getElementById('mSeller').classList.add('on');
-  document.getElementById('mMgr').classList.remove('on');
-  showStep(0);
+      <button class="act act-p" id="grill">GRILL ME →</button>
+      <button class="act" id="again">Run it again</button>
+      ${mode === 'manager' ? '<button class="act" id="nextDeal">Next deal →</button>' : ''}
+      <button class="act" id="pipe2">My pipeline</button>
+    </div>
+
+    <details class="why"><summary>Why this score?</summary>
+      <div class="body">
+        Weights: money 26, power 22, customer 20, path 16, now 16. YES scores 92, SORT OF 50, NO 8.
+        ${s.caps.length ? `Capped because of ${esc(s.caps.join(' and '))}.` : ''}
+        ${s.strongOnes.length ? `You are solid on ${esc(s.strongOnes.join(', '))}.` : ''}
+        <br><br><strong>Do this first:</strong> ${esc(FIX[s.weak.k])}
+      </div>
+    </details>`;
+  document.getElementById('grill').onclick = () => { grillStep = 0; grillOuch = 0; grill(); };
+  document.getElementById('again').onclick = () => { answers = {}; ask(0); };
+  document.getElementById('pipe2').onclick = pipeline;
+  const nd = document.getElementById('nextDeal');
+  if (nd) nd.onclick = () => { answers = {}; nickname('manager'); };
+  window.scrollTo({ top:0 });
 }
 
-function showMgr() {
-  document.getElementById('intro').hidden = true;
-  document.getElementById('quiz').hidden = true;
-  document.getElementById('res').classList.remove('on');
-  document.getElementById('mgr').hidden = false;
-  document.getElementById('mSeller').classList.remove('on');
-  document.getElementById('mMgr').classList.add('on');
-  const deals = all().sort((a, b) => a.proof - b.proof || a.total - b.total);
-  const body = document.getElementById('mgrBody');
+/* ── boss mode ── */
+function grill() {
+  const qs = GRILL[lastScore.weak.k];
+  if (grillStep >= 3) return grillDone();
+  setHome(true);
+  el().innerHTML = `
+    <div class="grill-sub mono">Your manager · question ${grillStep + 1} of 3</div>
+    <div class="grill-q">“${esc(qs[grillStep])}”</div>
+    <button class="ans a-yes" data-v="ok">I CAN ANSWER THAT</button>
+    <button class="ans a-no" data-v="ouch">OUCH</button>`;
+  el().querySelectorAll('.ans').forEach(b => b.onclick = () => {
+    if (b.dataset.v === 'ouch') grillOuch++;
+    grillStep++;
+    setTimeout(grill, 120);
+  });
+  window.scrollTo({ top:0 });
+}
+function grillDone() {
+  const w = lastScore.weak;
+  const verdict = grillOuch === 0 ? 'You are ready.'
+    : grillOuch === 1 ? 'Close. One hole left.'
+    : 'You are not ready for this conversation yet.';
+  el().innerHTML = `
+    <div class="grill-sub mono">Boss mode</div>
+    <div class="verdict-big">${esc(verdict)}</div>
+    <div class="dek">${grillOuch ? `You could not answer ${grillOuch} of 3.` : 'You answered all three.'}
+      The thing you cannot bluff your way through is <strong>${w.n.toLowerCase()}</strong>.</div>
+    <div class="ready-for"><div class="ready-k">Before the review</div>
+      <div class="ready-q">${esc(FIX[w.k])}</div></div>
+    <div class="acts">
+      <button class="act act-p" id="back2">Back to the score</button>
+      <button class="act" id="another">Score another deal</button>
+    </div>`;
+  document.getElementById('back2').onclick = result;
+  document.getElementById('another').onclick = () => { answers = {}; nickname(mode); };
+  window.scrollTo({ top:0 });
+}
+
+/* ── pipeline ── */
+function pipeline() {
+  setHome(true);
+  const deals = all().sort((a, b) => a.total - b.total);
   if (!deals.length) {
-    body.innerHTML = `<div class="empty">No deals scored on this device yet. Score one and it shows up here,
-      sorted by what is least proven — which is where a pipeline review should start.</div>`;
+    el().innerHTML = `<h1>My pipeline</h1>
+      <div class="empty">Nothing scored on this device yet. Prep a deal or inspect one and it lands here,
+        weakest first — which is where a pipeline review should start.</div>
+      <button class="big" id="h">Back</button>`;
+    document.getElementById('h').onclick = home;
     return;
   }
-  const unproven = deals.filter(d => d.proof < 45).length;
-  const parked = deals.filter(d => d.call === 'KILL' || d.call === 'PARK').length;
-  body.innerHTML = `
-    <div class="totals">
-      <div class="mini"><div class="mini-v">${unproven}</div><div class="mini-k">Not defensible yet</div></div>
-      <div class="mini"><div class="mini-v">${parked}</div><div class="mini-k">Park or kill</div></div>
+  const ready = deals.filter(d => d.total >= 75).length;
+  const proof = deals.filter(d => d.total >= 55 && d.total < 75).length;
+  const dont  = deals.filter(d => d.total < 55).length;
+  const holes = {};
+  for (const d of deals) if (d.hole && d.hole !== '—') holes[d.hole] = (holes[d.hole] || 0) + 1;
+  const top = Object.entries(holes).sort((a, b) => b[1] - a[1])[0];
+  const moneyGaps = deals.filter(d => d.answers && d.answers.money !== 'yes').length;
+  const diagOK = !top || top[1] < 2;
+  el().innerHTML = `
+    <h1>My pipeline</h1>
+    <div class="diag${diagOK ? ' ok' : ''}">
+      <div class="diag-t">${diagOK ? 'No single pattern yet.' : `Your pipeline has a ${esc(top[0].toLowerCase())} problem.`}</div>
+      <div class="diag-b">${deals.length} deal${deals.length === 1 ? '' : 's'} reviewed.
+        ${moneyGaps ? `${moneyGaps} of ${deals.length} lack confirmed funding.` : 'Every deal has confirmed funding.'}</div>
     </div>
-    ${deals.map(d => `<div class="mrow">
-      <span class="pill v-${d.call.toLowerCase()}">${d.call}</span>
-      <div class="mmain"><div class="mname">${esc(d.name)}</div>
-        <div class="mmeta">Weakest: ${esc(d.weak)} · ${new Date(d.ts).toLocaleDateString('en-US',{month:'short',day:'numeric'})}</div></div>
-      <div class="mstat">${d.total}/100<br>${d.proof}% proven</div>
+    <div class="counts">
+      <div class="cnt"><div class="cnt-v">${ready}</div><div class="cnt-k">Ready</div></div>
+      <div class="cnt"><div class="cnt-v">${proof}</div><div class="cnt-k">Need proof</div></div>
+      <div class="cnt"><div class="cnt-v">${dont}</div><div class="cnt-k">Shouldn't carry</div></div>
+    </div>
+    ${deals.map(d => `<div class="drow">
+      <div class="dname">${esc(d.name)}<div class="dhole">${d.hole === '—' ? 'No obvious hole' : 'Weakest: ' + esc(d.hole)} · ${new Date(d.ts).toLocaleDateString('en-US',{month:'short',day:'numeric'})}</div></div>
+      <div class="dscore">${d.total}</div>
     </div>`).join('')}
-    <div class="fine" style="margin-top:14px;">Start the review at the top. That is the one that will not
-      survive a question.</div>`;
+    <div class="acts">
+      <button class="act act-p" id="add">Inspect another</button>
+      <button class="act" id="copyAll">Copy summary</button>
+      <button class="act" id="wipe">Delete all</button>
+    </div>
+    <div class="fine" style="margin-top:14px;">Stored on this device only. Nothing is uploaded.</div>`;
+  document.getElementById('add').onclick = () => { answers = {}; nickname('manager'); };
+  document.getElementById('wipe').onclick = () => { localStorage.removeItem(HKEY); pipeline(); };
+  document.getElementById('copyAll').onclick = () => {
+    const txt = `PIPELINE — ${deals.length} deals\n`
+      + `${ready} ready · ${proof} need proof · ${dont} shouldn't be carried\n`
+      + (moneyGaps ? `${moneyGaps} of ${deals.length} lack confirmed funding\n\n` : '\n')
+      + deals.map(d => `${d.total}  ${d.name} — ${d.hole === '—' ? 'no obvious hole' : d.hole.toLowerCase()}`).join('\n');
+    try { navigator.clipboard.writeText(txt); } catch {}
+    document.getElementById('copyAll').textContent = 'Copied ✓';
+  };
+  window.scrollTo({ top:0 });
 }
 
-function showSample() {
-  answers.funding = 2; answers.event = 2; answers.path = 2;
-  answers.timing = 1; answers.power = 3; answers.champion = 1;
-  document.querySelectorAll('.opt').forEach(o => {
-    if (answers[o.dataset.k] === Number(o.dataset.j)) o.classList.add('sel');
-  });
-  paint(score(answers), 'Sample deal');
-}
-
-renderCards();
-document.getElementById('begin').onclick = () => {
-  document.getElementById('intro').hidden = true;
-  document.getElementById('quiz').hidden = false;
-  showStep(0);
-};
-document.getElementById('seeSample').onclick = showSample;
-document.getElementById('mSeller').onclick = () => {
-  document.getElementById('mMgr').classList.remove('on');
-  document.getElementById('mSeller').classList.add('on');
-  document.getElementById('mgr').hidden = true;
-  document.getElementById('res').classList.remove('on');
-  document.getElementById('quiz').hidden = true;
-  document.getElementById('intro').hidden = false;
-};
-document.getElementById('mMgr').onclick = showMgr;
-document.getElementById('addDeal').onclick = restart;
-document.getElementById('exportM').onclick = () => {
-  const blob = new Blob([JSON.stringify(all(), null, 2)], { type:'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob); a.download = 'my-pipeline.json';
-  document.body.appendChild(a); a.click(); a.remove();
-};
-document.getElementById('wipeM').onclick = () => { localStorage.removeItem(HKEY); showMgr(); };
+document.getElementById('homeBtn').onclick = home;
+home();
 </script>
 </body>
 </html>
