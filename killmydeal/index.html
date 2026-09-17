@@ -45,8 +45,15 @@
   .go:disabled { opacity: 0.5; cursor: default; }
   .hint { font-size: 12.5px; color: var(--dim); margin-top: 10px; line-height: 1.5; }
   .examples { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .include { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-top: 14px; }
+  .inc-k, .ex-k { font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dim); margin-right: 2px; }
+  .inc { font-size: 12px; color: var(--mut); background: var(--panel); border-radius: 999px; padding: 4px 11px; }
   .ex { font-size: 12px; color: var(--mut); background: none; border: 1px solid var(--line);
     border-radius: 999px; padding: 5px 12px; cursor: pointer; font-family: inherit; }
+  .ex-primary { color: var(--cream); border-color: var(--cool); }
+  .sample-note { border: 1px solid var(--line); border-left: 3px solid var(--cool); border-radius: 10px;
+    padding: 12px 15px; font-size: 13.5px; color: var(--mut); line-height: 1.55; margin-bottom: 22px; }
+  .sample-note strong { color: var(--cream); }
   .ex:hover { border-color: var(--cool); color: var(--cream); }
 
   /* running */
@@ -143,9 +150,22 @@
 
     <button class="go" id="run">KILL MY DEAL →</button>
     <div class="hint">Write it the way you'd say it out loud. Vague is fine — vagueness is part of what gets scored.</div>
+
+    <div class="include">
+      <span class="inc-k mono">Worth including if you have it</span>
+      <span class="inc">Who you've actually talked to</span>
+      <span class="inc">What they said, in their words</span>
+      <span class="inc">Where the money comes from</span>
+      <span class="inc">What's forcing a decision</span>
+      <span class="inc">Who holds it today</span>
+      <span class="inc">How it would get bought</span>
+    </div>
+
     <div class="examples">
-      <button class="ex" data-ex="strong">Try a strong deal</button>
-      <button class="ex" data-ex="paper">Try a paper deal</button>
+      <span class="ex-k mono">Don't have one handy?</span>
+      <button class="ex" data-ex="strong">Load a real-looking deal</button>
+      <button class="ex" data-ex="paper">Load a shaky one</button>
+      <button class="ex ex-primary" id="sample">See a finished result →</button>
     </div>
     <div id="err"></div>
   </section>
@@ -304,7 +324,7 @@ async function judge(payload) {
   return res.json();
 }
 
-function render(input, d, coach) {
+function render(input, d, coach, isSample) {
   const s = compose(d);
   const out = document.getElementById('out');
   const bar = (dim) => {
@@ -325,6 +345,9 @@ function render(input, d, coach) {
   })() : '';
 
   out.innerHTML = `
+    ${isSample ? `<div class="sample-note"><strong>This is a sample.</strong> Nothing was sent anywhere —
+      it's a finished result for the example deal now sitting in the box above, so you can see what you get.
+      Edit it into your own pursuit and hit the button to run it for real.</div>` : ''}
     <div class="quote">${esc(input.notes.slice(0, 240))}${input.notes.length > 240 ? '…' : ''}</div>
     <div class="score">${s.pursuit}</div>
     <div><span class="verdict v-${s.posture.toLowerCase()}">${s.posture}</span></div>
@@ -451,7 +474,42 @@ const EXAMPLES = {
   paper: "Big opportunity at DoD for AI. We think there's a lot of budget and everyone is talking about AI right now. I met someone at a conference who said their organization is interested. Probably $50M. We'd need a partner but haven't picked one. Should close this year.",
 };
 
-document.querySelectorAll('.ex').forEach(b => b.onclick = () => {
+// Canned judgments for the two examples. Showing a finished result costs no
+// call and no wait — people need to see what comes back before they'll paste
+// anything real into a box on the internet.
+const SAMPLE_RESULTS = {
+  strong: { mission: 86, pain: 79, event: 91, funding: 83, access: 88, power: 74, path: 85,
+    position: 66, incumbent: 34, partner: 58, timing: 72,
+    ev_pain: true, ev_meeting: true, ev_power: true, ev_budget: true, ev_path: true,
+    ev_timeline: true, ev_docs: false, ev_ask: true,
+    archetype: 'Customer-Led', seller_position: 'Challenger',
+    best_line: 'They put the end-of-life date in writing.',
+    risk_line: 'Contracting has not confirmed how it gets bought.',
+    coach: ['Ask the PM to name the FY27 line the money sits on.',
+            'Get the contracting officer on the phone about the SEWP path.',
+            'Pin down the architecture board date and who sits on it.'] },
+  paper: { mission: 30, pain: 18, event: 10, funding: 9, access: 12, power: 6, path: 11,
+    position: 22, incumbent: 52, partner: 15, timing: 12,
+    ev_pain: false, ev_meeting: false, ev_power: false, ev_budget: false, ev_path: false,
+    ev_timeline: false, ev_docs: false, ev_ask: false,
+    archetype: 'Budget Fishing', seller_position: 'Unknown',
+    best_line: 'The category itself is real and funded somewhere.',
+    risk_line: 'Nobody at the agency has said anything to you.',
+    coach: ['Find one named person who owns this problem.',
+            'Ask what fiscal year money would even come from.',
+            'Stop forecasting this until someone answers.'] },
+};
+
+document.getElementById('sample').onclick = () => {
+  document.getElementById('notes').value = EXAMPLES.strong;
+  document.getElementById('agency').value = 'VA';
+  document.getElementById('value').value = '$12M';
+  document.getElementById('crm').value = '60%';
+  render({ notes: EXAMPLES.strong, agency: 'VA', value: '$12M', award: '', crm: '60%' },
+         SAMPLE_RESULTS.strong, SAMPLE_RESULTS.strong.coach, true);
+};
+
+document.querySelectorAll('.ex[data-ex]').forEach(b => b.onclick = () => {
   document.getElementById('notes').value = EXAMPLES[b.dataset.ex];
   if (b.dataset.ex === 'paper') { document.getElementById('crm').value = '70%'; document.getElementById('value').value = '$50M'; }
   else { document.getElementById('agency').value = 'VA'; document.getElementById('value').value = '$12M'; document.getElementById('crm').value = '60%'; }
