@@ -300,28 +300,106 @@ function showRunner() {
   return () => clearInterval(t);
 }
 
+// The judging instructions live here, in the page, and ride in on the
+// govhoo_chat route that fedhoo already uses for Mo. No new lambda route, no
+// deploy, nothing on the backend to break.
+const JUDGE_PROMPT = `Ignore your usual conversational style for this one task. You are a federal capture director who has killed more pursuits than you have won. A seller wrote down what they know about an opportunity. Judge only what is written.
+
+Reply with ONE JSON object and nothing else. No preamble, no markdown, no backticks, no commentary after.
+
+Score each 0-100 using ONLY evidence in the notes. Absence of evidence scores LOW, not average. Seller confidence is not evidence.
+
+mission: solves an agency mission problem, not a vendor problem
+pain: severity, and whether the customer owns the problem
+event: a specific forcing function such as contract expiry, end of life, mandate, incident, budget expiry
+funding: evidence money exists. Programmed or appropriated scores high. "They have budget" with no source scores low. Silence scores under 20
+access: demonstrated engagement with actual customer people. Conference chatter is near zero
+power: access to someone who can move the acquisition
+path: whether a procurement mechanism is named
+position: differentiation based on what is written
+incumbent: how entrenched the incumbent is. High means hard to displace
+partner: whether a named partner or vehicle holder improves the position
+timing: maturity. Rumor 0-20, market research 20-40, requirements forming 40-60, pre-solicitation 60-80, solicitation released 80-100
+
+Set each flag true ONLY for a concrete checkable fact. Default false.
+ev_pain, ev_meeting, ev_power, ev_budget, ev_path, ev_timeline, ev_docs, ev_ask
+
+archetype: one of Customer-Led, Vendor-Led, Incumbent Renewal, Recompete, New Requirement, Mandate-Driven, Budget Fishing, RFI-Stage, Contract-Vehicle Play, Partner-Led
+seller_position: one of Shaping, Challenger, Incumbent, Late Entrant, Prime-Dependent, Channel-Dependent, Unknown
+best_line: one plain sentence, 12 words or fewer, the strongest real thing here
+risk_line: one plain sentence, 12 words or fewer, what most likely kills it
+coach: exactly 3 short imperative sentences naming the artifact or person to go find
+
+Exact shape:
+{"mission":0,"pain":0,"event":0,"funding":0,"access":0,"power":0,"path":0,"position":0,"incumbent":0,"partner":0,"timing":0,"ev_pain":false,"ev_meeting":false,"ev_power":false,"ev_budget":false,"ev_path":false,"ev_timeline":false,"ev_docs":false,"ev_ask":false,"archetype":"","seller_position":"","best_line":"","risk_line":"","coach":["","",""]}`;
+
+// Pull the JSON object out of whatever came back, even if the model wrapped it
+// in a sentence or a code fence.
+function extractJson(text) {
+  const t = String(text || '').replace(/```json/gi, '').replace(/```/g, '').trim();
+  const start = t.indexOf('{');
+  if (start < 0) throw new Error('The judge replied but not with a scorecard.');
+  let depth = 0, inStr = false, esc = false;
+  for (let i = start; i < t.length; i++) {
+    const c = t[i];
+    if (inStr) { if (esc) esc = false; else if (c === '\\') esc = true; else if (c === '"') inStr = false; continue; }
+    if (c === '"') inStr = true;
+    else if (c === '{') depth++;
+    else if (c === '}') { depth--; if (depth === 0) return JSON.parse(t.slice(start, i + 1)); }
+  }
+  throw new Error('The judge was cut off mid-answer. Try again.');
+}
+
 async function judge(payload) {
+  const extras = [
+    payload.agency ? 'Agency: ' + payload.agency : '',
+    payload.value ? 'Stated value: ' + payload.value : '',
+    payload.award ? 'Expected award: ' + payload.award : '',
+    payload.crm ? 'CRM probability the seller carries: ' + payload.crm : '',
+  ].filter(Boolean).join('\n');
+
+  const content = JUDGE_PROMPT + '\n\n--- SELLER NOTES ---\n' + payload.notes +
+    (extras ? '\n\n--- STRUCTURED FIELDS ---\n' + extras : '') +
+    '\n\nReturn the JSON object now.';
+
   const res = await fetch(ENDPOINT, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ request_type: 'deal_qualification', deal: payload }),
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      request_type: 'govhoo_chat',
+      market_data: { query: 'pursuit qualification', contracts: [] },
+      history: [{ role: 'user', content }],
+      persona: 'mo',
+    }),
   });
+
   if (!res.ok) {
     let msg = 'The judge is unavailable right now (' + res.status + ').';
-    try {
-      const e = await res.json();
-      if (e && e.error) msg = e.error + (e.detail ? ' — ' + String(e.detail).slice(0, 180) : '');
-    } catch {}
+    try { const e = await res.json(); if (e && e.error) msg = e.error; } catch {}
     throw new Error(msg);
   }
-  const ct = res.headers.get('content-type') || '';
-  if (ct.includes('text/event-stream') || !ct.includes('json')) {
-    // tolerate an SSE-shaped lambda: accumulate then parse the JSON body
-    const text = await res.text();
-    const chunks = [...text.matchAll(/data:\s*(\{.*\})/g)].map(m => {
-      try { const o = JSON.parse(m[1]); return o.text || ''; } catch { return ''; } }).join('');
-    return JSON.parse((chunks || text).replace(/```json|```/g, '').trim());
+
+  // govhoo_chat streams SSE frames: {"t":"chunk","text":"..."} then {"t":"done"}
+  const reader = res.body.getReader();
+  const dec = new TextDecoder();
+  let buf = '', acc = '';
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    const lines = buf.split('\n');
+    buf = lines.pop();
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      try {
+        const m = JSON.parse(line.slice(6).trim());
+        if (m.t === 'chunk' && m.text) acc += m.text;
+        else if (m.t === 'error') throw new Error(m.msg || 'The judge hit an error.');
+      } catch (e) { if (e instanceof Error && e.message.startsWith('The judge')) throw e; }
+    }
   }
-  return res.json();
+  if (!acc.trim()) throw new Error('The judge returned nothing. Try again.');
+  return extractJson(acc);
 }
 
 function render(input, d, coach, isSample) {
@@ -515,40 +593,6 @@ document.querySelectorAll('.ex[data-ex]').forEach(b => b.onclick = () => {
   else { document.getElementById('agency').value = 'VA'; document.getElementById('value').value = '$12M'; document.getElementById('crm').value = '60%'; }
 });
 
-// Tells apart "the lambda is broken or not deployed" from "the lambda is fine
-// and the model call failed", which look identical in a browser console.
-async function runDiagnostics() {
-  const box = document.getElementById('diagout');
-  box.style.display = 'block';
-  box.textContent = 'Checking…';
-  const lines = [];
-  // 1. is the new route deployed at all?
-  try {
-    const r = await fetch(ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ request_type: 'deal_ping' }) });
-    const t = await r.text();
-    lines.push(`deal_ping  -> HTTP ${r.status}`);
-    lines.push(`           ${t.slice(0, 300)}`);
-    if (r.status === 400) lines.push('  => The lambda is running OLD code. Redeploy it.');
-    if (r.status === 502 || r.status === 500) lines.push('  => The lambda itself is failing before it reaches any route. Check its CloudWatch logs.');
-  } catch (e) {
-    lines.push('deal_ping  -> could not reach the endpoint at all: ' + e.message);
-  }
-  // 2. the real call, with the raw body shown
-  try {
-    const r = await fetch(ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ request_type: 'deal_qualification',
-        deal: { notes: 'VA is replacing an identity platform that goes end of life in March. Program office confirmed FY27 money. We met the program manager twice and they asked for a demo. Would buy through SEWP.' } }) });
-    const t = await r.text();
-    lines.push('');
-    lines.push(`judge call -> HTTP ${r.status}`);
-    lines.push(`           ${t.slice(0, 500)}`);
-  } catch (e) {
-    lines.push('judge call -> failed: ' + e.message);
-  }
-  box.textContent = lines.join('\n');
-}
-
 document.getElementById('run').onclick = async () => {
   const notes = document.getElementById('notes').value.trim();
   const err = document.getElementById('err');
@@ -568,10 +612,7 @@ document.getElementById('run').onclick = async () => {
   } catch (e) {
     stop();
     document.getElementById('runner').classList.remove('on');
-    err.innerHTML = `<div class="err">${esc(e.message || 'Something went wrong.')}</div>
-      <button class="ex" id="diag" style="margin-top:10px;">Run diagnostics</button>
-      <pre id="diagout" class="mono" style="display:none;white-space:pre-wrap;font-size:12px;color:var(--mut);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:10px;"></pre>`;
-    document.getElementById('diag').onclick = runDiagnostics;
+    err.innerHTML = `<div class="err">${esc(e.message || 'Something went wrong.')}</div>`;
   } finally { btn.disabled = false; btn.textContent = 'KILL MY DEAL →'; }
 };
 </script>
