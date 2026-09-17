@@ -1131,15 +1131,6 @@ a, button, input, select { touch-action: manipulation; }
   border: 1.5px solid var(--border, rgba(43,42,36,0.14)); border-radius: 9999px; padding: 3px 11px; cursor: pointer; }
 .opp-sort.active { color: #fff; background: var(--accent); border-color: var(--accent); }
 .opp-new { font-weight: 800; color: #166534; background: #DCFCE7; border-radius: 4px; padding: 1px 6px; }
-/* ── momentum line ── */
-.momentum { margin: -6px 0 14px; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); }
-.momentum strong { color: var(--text-title, inherit); font-weight: 800; }
-.mo-label { font-size: 11px; font-weight: 800; letter-spacing: 0.07em; text-transform: uppercase;
-  color: var(--text-tertiary, #8A8570); margin-right: 6px; }
-.mo-up { color: #15803D; font-weight: 700; }
-.mo-down { color: #B91C1C; font-weight: 700; }
-.mo-flat, .mo-new { color: var(--text-secondary); font-weight: 600; }
-.mo-src { display: block; font-size: 11.5px; color: var(--text-tertiary, #8A8570); margin-top: 2px; }
 /* ── answer bar ── */
 .answer-bar { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; margin: 0 0 14px; }
 @media (max-width: 640px) {
@@ -3304,7 +3295,6 @@ const App = {
     document.getElementById('oppsCard')?.remove();
     window.OppsCard?.reset();
     window.AnswerBar?.clear();
-    window.Momentum?.clear();
     DOM.hide('bioCard');
     DOM.get('faceScale')?.classList.add('hidden');
     const verdictEl = DOM.get('marketVerdict'); if (verdictEl) verdictEl.classList.add('hidden');
@@ -3477,7 +3467,6 @@ const App = {
     if (window.IsvCard) IsvCard.render();
     if (window.OppsCard) OppsCard.render();
     if (window.AnswerBar) AnswerBar.render();
-    if (window.Momentum) Momentum.render();
         if (window.ChartCaptions) ChartCaptions.update(App._chartView || 'treemap');
         if (window.MatchScope) MatchScope.init();
         if (this._reportIntent) { this._reportIntent = false; setTimeout(() => window.Editorial && Editorial.showInline(), 400); }
@@ -7450,7 +7439,6 @@ window.SyncCards = {
     if (window.IsvCard) IsvCard.render();
     if (window.OppsCard) OppsCard.render();
     if (window.AnswerBar) AnswerBar.render();
-    if (window.Momentum) Momentum.render();
     if (window.ChartCaptions) ChartCaptions.update(app._chartView || 'treemap');
     const ds = app.drillState || { level: 0 };
     const clean = (typeof Utils !== 'undefined' && Utils.cleanAgency) ? Utils.cleanAgency : (x => x);
@@ -9002,80 +8990,6 @@ window.AnswerBar = {
 })();
 </script>
 
-<script>
-// ═══ MOMENTUM — is money accelerating in this market? ═══
-// fedhoo shows what *is*; this shows what's *changing*. One extra call to
-// USAspending's spending_over_time endpoint (same proxy, different path),
-// fired after results render so it never delays the search.
-(function () {
-'use strict';
-const A = () => (typeof App !== 'undefined' && App) ? App : window.App;
-const money = (n) => { const x = Number(n) || 0;
-  if (x >= 1e9) return '$' + (x / 1e9).toFixed(1) + 'B';
-  if (x >= 1e6) return '$' + (x / 1e6).toFixed(1) + 'M';
-  if (x >= 1e3) return '$' + (x / 1e3).toFixed(0) + 'K';
-  return '$' + Math.round(x); };
-const iso = (d) => d.toISOString().split('T')[0];
-let _key = null, _busy = false;
 
-function monthsBack(n) { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - n); return d; }
-
-window.Momentum = {
-  clear() {
-    _key = null;
-    const el = document.getElementById('momentumLine');
-    if (el) el.remove();
-  },
-  async render() {
-    const app = A();
-    if (!app || !app.searchData || !app.searchData.loaded) return;
-    const base = app._lastSearchFilters;
-    if (!base) return;
-    const key = JSON.stringify(base);
-    if (key === _key || _busy) return;     // one shot per search
-    _key = key; _busy = true;
-    try {
-      // Six whole months, monthly buckets: compare the last three against the
-      // three before them. Whole months keep the comparison honest — a rolling
-      // 90-day window would straddle partial months on both ends.
-      const filters = Object.assign({}, base, {
-        time_period: [{ start_date: iso(monthsBack(6)), end_date: iso(new Date()) }],
-      });
-      const res = await API._post('/search/spending_over_time/', { group: 'month', filters, subawards: false });
-      const rows = (res && res.results) || [];
-      if (rows.length < 4) return;
-      const vals = rows.map(r => Number(r.aggregated_amount) || 0);
-      // drop the current partial month so we compare like with like
-      const series = vals.slice(0, -1);
-      if (series.length < 6) return;
-      const recent = series.slice(-3).reduce((s, v) => s + v, 0);
-      const prior = series.slice(-6, -3).reduce((s, v) => s + v, 0);
-      if (!recent && !prior) return;
-      const pct = prior > 0 ? Math.round((recent - prior) / prior * 100) : null;
-      const dir = pct === null ? 'new' : pct >= 8 ? 'up' : pct <= -8 ? 'down' : 'flat';
-      const arrow = dir === 'up' ? '\u25B2' : dir === 'down' ? '\u25BC' : '';
-      const verdict = dir === 'new' ? 'no obligations in the prior three months \u2014 this is new money'
-        : dir === 'flat' ? `steady against the prior three months (${pct >= 0 ? '+' : ''}${pct}%)`
-        : `${arrow} ${Math.abs(pct)}% ${dir === 'up' ? 'above' : 'below'} the prior three months`;
-      let el = document.getElementById('momentumLine');
-      if (!el) {
-        const bar = document.getElementById('answerBar');
-        if (!bar || !bar.parentNode) return;
-        el = document.createElement('div');
-        el.id = 'momentumLine';
-        el.className = 'momentum';
-        bar.parentNode.insertBefore(el, bar.nextSibling);
-      }
-      el.innerHTML = `<span class="mo-label">Money moved</span>
-        <strong>${money(recent)}</strong> obligated in the last three months,
-        <span class="mo-${dir}">${verdict}</span>.
-        <span class="mo-src">Transactions by action date \u00B7 USASpending.gov</span>`;
-    } catch (e) {
-      /* momentum is a bonus line: never let it disturb the page */
-    } finally { _busy = false; }
-  },
-};
-})();
-</script>
 </body>
 </html>
