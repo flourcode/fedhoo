@@ -3,17 +3,81 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Kill My Deal — five questions before your manager asks them</title>
-<meta name="description" content="Pressure-test a federal deal in five taps. Private by design. No customer names, no CRM, nothing leaves your phone.">
-<meta property="og:title" content="Kill My Deal — five questions before your manager asks them">
-<meta property="og:description" content="Find the hole in your deal before pipeline review does. One minute, no CRM, nothing saved.">
-<meta property="og:type" content="website">
-<meta name="twitter:card" content="summary_large_image">
+<title>Kill My Deal — qualify a federal deal in five questions</title>
+<meta name="description" content="Free pipeline-review tool for federal sellers and sales managers. Five questions — customer, money, power, path, now — scored in your browser. No login, no CRM, no customer data.">
+<link rel="canonical" href="https://killmydeal.com/">
+<meta name="robots" content="index,follow,max-snippet:-1,max-image-preview:large">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>😵</text></svg>">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://killmydeal.com/">
+<meta property="og:title" content="Kill My Deal — five questions before your manager asks them">
+<meta property="og:description" content="Pressure-test a federal deal in a minute. Customer, money, power, path, now. Nothing leaves your browser.">
+<meta property="og:site_name" content="Kill My Deal">
+<meta property="og:image" content="https://killmydeal.com/card.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Kill My Deal — five questions before your manager asks them: customer, money, power, path, now.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Kill My Deal — five questions before your manager asks them">
+<meta name="twitter:description" content="Pressure-test a federal deal in a minute. Nothing leaves your browser.">
+<meta name="twitter:image" content="https://killmydeal.com/card.jpg">
 <meta name="theme-color" content="#FEF7FF">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebApplication",
+      "name": "Kill My Deal",
+      "url": "https://killmydeal.com/",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Any",
+      "description": "Score a federal pursuit in five questions before your pipeline review. Runs entirely in the browser; no account, no CRM, no customer data.",
+      "image": "https://killmydeal.com/card.jpg",
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+      "author": { "@id": "https://killmydeal.com/#mark" }
+    },
+    {
+      "@type": "Person",
+      "@id": "https://killmydeal.com/#mark",
+      "name": "Mark Flournoy",
+      "jobTitle": "Federal sales advisor",
+      "description": "Six years leading Federal Partner Sales at AWS; prior roles at F5, Red Hat, STEC and Virident; 20 years a Marine officer.",
+      "url": "https://killmydeal.com/#mark",
+      "sameAs": ["https://fedhoo.com", "https://www.linkedin.com/in/markflournoy/"]
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        { "@type": "Question", "name": "Does anything I enter leave my device?",
+          "acceptedAnswer": { "@type": "Answer", "text": "No. The five answers are scored by JavaScript in your browser. No account, no database, nothing written to storage. The only network request is for the page font." } },
+        { "@type": "Question", "name": "Why doesn't Kill My Deal ask for the customer or dollar value?",
+          "acceptedAnswer": { "@type": "Answer", "text": "It does not need them, and asking would make the tool unusable for sellers whose employers restrict where pipeline detail can go. Qualification is about what you can prove, not who the customer is." } },
+        { "@type": "Question", "name": "Is Kill My Deal AI?",
+          "acceptedAnswer": { "@type": "Answer", "text": "No. It is a fixed rubric: each answer maps to a number, the numbers are weighted, caps apply, and thresholds produce the verdict. The weights are visible in the page source." } },
+        { "@type": "Question", "name": "What do the four verdicts mean?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Healthy means real, positioned and provable. Stable means probably real but assertions outnumber facts. On life support means do not carry a date until something is confirmed. Dead on arrival means the procurement does not hold up." } },
+        { "@type": "Question", "name": "Can sales managers use this in a pipeline review?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Yes. Ask the five questions out loud, tap the answers as the rep gives them, and the verdict appears in under a minute. Nothing is recorded." } }
+      ]
+    },
+    {
+      "@type": "HowTo",
+      "name": "How to qualify a federal deal in five questions",
+      "step": [
+        { "@type": "HowToStep", "name": "CUSTOMER", "text": "Confirm the customer has stated the problem in their own words." },
+        { "@type": "HowToStep", "name": "MONEY", "text": "Identify the funding source by name: appropriation, program line or O&M budget." },
+        { "@type": "HowToStep", "name": "POWER", "text": "Meet someone who can move the acquisition: program manager, contracting officer or budget holder." },
+        { "@type": "HowToStep", "name": "PATH", "text": "Name the buying mechanism: existing contract, GWAC, IDIQ, set-aside, recompete or sole source." },
+        { "@type": "HowToStep", "name": "NOW", "text": "Find the forcing function: expiring contract, end of life, mandate, incident or expiring money." }
+      ]
+    }
+  ]
+}
+</script>
 <style>
   :root {
     --primary:#6750A4; --on-primary:#FFF;
@@ -55,7 +119,7 @@
   .fine { font-size:12.5px; color:var(--on-surface-variant); line-height:1.5; }
 
   input { width:100%; background:var(--sc-high); color:var(--on-surface); border:0;
-    border-bottom:1px solid var(--outline); border-radius:6px 6px 0 0; font:inherit; font-size:17px;
+    border-bottom:1px solid var(--outline); border-radius:4px 4px 0 0; font:inherit; font-size:17px;
     padding:16px; outline:none; }
   input:focus { border-bottom:2px solid var(--primary); padding-bottom:15px; }
   label.fld { display:block; font-size:12.5px; letter-spacing:.3px; color:var(--on-surface-variant); margin:0 0 8px; }
@@ -65,12 +129,13 @@
   .dot.done { background:var(--primary); }
   .qnum { font-size:11.5px; letter-spacing:.7px; color:var(--on-surface-variant); text-transform:uppercase; }
   .qt { font-size:28px; font-weight:400; line-height:1.18; letter-spacing:-.3px; margin:8px 0 28px; }
-  .ans { display:block; width:100%; font:inherit; font-size:19px; font-weight:500; letter-spacing:.3px;
-    border:0; border-radius:20px; padding:22px; margin-bottom:12px; cursor:pointer; }
+  
+  .ans { display:flex; align-items:center; gap:12px; width:100%; font:inherit; font-size:19px; 
+    font-weight:500; letter-spacing:.3px; border:0; border-radius:100px; padding:22px; 
+    margin-bottom:12px; cursor:pointer; }
   .a-yes { background:var(--success-container); color:var(--on-success-container); }
   .a-sort { background:var(--warn-container); color:var(--on-warn-container); }
   .a-no { background:var(--error-container); color:var(--on-error-container); }
-  .ans { display:flex; align-items:center; gap:12px; }
   .sr { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden;
     clip:rect(0,0,0,0); white-space:nowrap; border:0; }
   .back { font:inherit; font-size:14px; font-weight:500; color:var(--on-surface-variant);
@@ -151,8 +216,7 @@
     background:var(--primary); color:var(--on-primary); text-decoration:none;
     font-size:15px; font-weight:500; letter-spacing:.3px; border-radius:100px;
     padding:15px 20px; white-space:normal; overflow-wrap:anywhere; }
-  .mark-fine { font-size:12.5px; color:var(--on-surface-variant); text-align:center; margin-top:8px; }
-  .mark-fine { font-size:12px; line-height:1.5; color:var(--on-surface-variant); margin-top:10px; }
+  .mark-fine { font-size:12px; line-height:1.5; color:var(--on-surface-variant); margin-top:10px; text-align:center; }
   @media (max-width:420px) { .markblk { grid-template-columns:1fr; } }
 
   /* ── M3: motion tokens (emphasized easing, standard durations) ── */
@@ -162,25 +226,23 @@
     --dur-short: 200ms; --dur-medium: 350ms;
     --state-hover: .08; --state-focus: .10; --state-press: .10;
   }
-  /* ── M3: icons ── */
 
-  /* ── M3: state layers. Every interactive surface gets hover/focus/press
-     overlays at the specified opacities, rather than ad-hoc filter tricks. ── */
-  .big, .ghost, .act, .ans, .mark-cta, .home-link, .mode {
+  /* ── M3: state layers. ── */
+  .big, .ghost, .act, .ans, .cta-a, .cta-b, .home-link, .mode {
     position:relative; overflow:hidden; isolation:isolate;
     transition:box-shadow var(--dur-short) var(--ease-emph); }
-  .big::after, .ghost::after, .act::after, .ans::after, .mark-cta::after,
+  .big::after, .ghost::after, .act::after, .ans::after, .cta-a::after, .cta-b::after,
   .home-link::after, .mode::after {
     content:''; position:absolute; inset:0; background:currentColor; opacity:0;
     transition:opacity var(--dur-short) var(--ease-emph); pointer-events:none; z-index:-1; }
   .big:hover::after, .ghost:hover::after, .act:hover::after, .ans:hover::after,
-  .mark-cta:hover::after, .home-link:hover::after, .mode:hover::after { opacity:var(--state-hover); }
+  .cta-a:hover::after, .cta-b:hover::after, .home-link:hover::after, .mode:hover::after { opacity:var(--state-hover); }
   .big:active::after, .ghost:active::after, .act:active::after, .ans:active::after,
-  .mark-cta:active::after, .home-link:active::after, .mode:active::after { opacity:var(--state-press); }
+  .cta-a:active::after, .cta-b:active::after, .home-link:active::after, .mode:active::after { opacity:var(--state-press); }
 
   /* ── M3: visible focus indicator, 3px, 2px offset ── */
   :focus-visible { outline:3px solid var(--primary); outline-offset:2px; border-radius:8px; }
-  .ans:focus-visible, .big:focus-visible, .act:focus-visible { outline-offset:3px; }
+  .ans:focus-visible, .big:focus-visible, .act:focus-visible, .cta-a:focus-visible, .cta-b:focus-visible { outline-offset:3px; }
 
   /* ── M3: respect reduced motion ── */
   @media (prefers-reduced-motion: reduce) {
@@ -204,7 +266,7 @@
     }
   }
 
-  /* compact signal list — the answers, not the questionnaire */
+  /* compact signal list */
   .signals { margin:22px 0; }
   .sig { display:flex; align-items:baseline; justify-content:space-between; gap:16px;
     padding:11px 0; border-bottom:1px solid var(--outline-variant); }
@@ -225,21 +287,239 @@
   .math { font-size:12.5px; opacity:.7; margin-top:8px; }
   .move-list { margin:10px 0 0; padding-left:20px; }
   .move-list li { font-size:16px; line-height:1.5; font-weight:500; margin-bottom:8px; }
+
+  /* ── page shell for the standalone site ── */
+  .band { padding:56px 0; border-top:1px solid var(--outline-variant); }
+  .band-inner { max-width:720px; margin:0 auto; padding:0 16px; }
+  .band h2 { font-size:28px; font-weight:400; line-height:1.2; letter-spacing:-.3px; margin:0 0 14px; }
+  .band h3 { font-size:19px; font-weight:500; margin:28px 0 6px; }
+  .band p { font-size:16px; line-height:1.6; color:var(--on-surface-variant); margin:0 0 14px; }
+  .band p strong, .band li strong { color:var(--on-surface); font-weight:500; }
+  .band ul { margin:0 0 14px; padding-left:22px; }
+  .band li { font-size:16px; line-height:1.6; color:var(--on-surface-variant); margin-bottom:8px; }
+  .lede { font-size:18px; line-height:1.55; color:var(--on-surface); }
+  .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(215px,1fr)); gap:14px; margin:22px 0; }
+  .card { background:var(--sc-low); border-radius:16px; padding:20px; }
+  .card h3 { margin:0 0 6px; font-size:17px; }
+  .card p { font-size:14.5px; margin:0; }
+  .card .k { font-size:11px; letter-spacing:.7px; text-transform:uppercase; color:var(--primary); font-weight:500; }
+  .faq { border-top:1px solid var(--outline-variant); }
+  .faq details { border-bottom:1px solid var(--outline-variant); }
+  .faq summary { font-size:17px; font-weight:500; padding:18px 0; cursor:pointer; list-style:none; }
+  .faq summary::-webkit-details-marker { display:none; }
+  .faq summary::after { content:'+'; float:right; color:var(--primary); font-weight:400; }
+  .faq details[open] summary::after { content:'–'; }
+  .faq .a { font-size:16px; line-height:1.6; color:var(--on-surface-variant); padding:0 0 18px; }
+  .who { display:grid; grid-template-columns:120px 1fr; gap:24px; align-items:start; }
+  .who.nophoto { grid-template-columns:1fr; }
+  .who img { width:120px; height:120px; border-radius:50%; object-fit:cover; }
+  .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:12px; margin:24px 0; }
+  .stat { background:var(--sc-low); border-radius:14px; padding:16px; }
+  .stat b { display:block; font-size:22px; font-weight:500; color:var(--primary); }
+  .stat span { font-size:13px; color:var(--on-surface-variant); line-height:1.4; }
+  .cta-row { display:flex; flex-wrap:wrap; gap:12px; margin-top:20px; }
+  .cta-a, .cta-b { flex:1 1 160px; box-sizing:border-box; text-align:center; text-decoration:none;
+    font-size:15px; font-weight:500; letter-spacing:.3px; border-radius:100px; padding:16px 18px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .cta-a { background:var(--primary); color:var(--on-primary); border:1px solid transparent; }
+  .cta-b { background:none; color:var(--primary); border:1px solid var(--outline); }
+  .cta-note { flex:1 1 100%; font-size:12.5px; line-height:1.5; color:var(--on-surface-variant);
+    text-align:center; margin-top:2px; }
+  .toc { display:flex; flex-wrap:wrap; gap:8px; margin:20px 0 0; }
+  .toc a { font-size:13.5px; color:var(--on-surface-variant); text-decoration:none;
+    border:1px solid var(--outline-variant); border-radius:8px; padding:7px 12px; }
+  .toc a:hover { border-color:var(--primary); color:var(--primary); }
+  .sitefoot { padding:36px 16px calc(40px + env(safe-area-inset-bottom)); text-align:center;
+    font-size:12.5px; line-height:1.6; color:var(--on-surface-variant); }
+  .sitefoot a { color:var(--primary); }
+  @media (max-width:560px) { .who { grid-template-columns:1fr; } .who img { width:96px; height:96px; } }
 </style>
 </head>
 <body>
+
 <div class="wrap">
   <header>
     <button class="logo" id="logoHome" aria-label="Kill My Deal — start over"><span class="logo-face" aria-hidden="true">😵</span> Kill My Deal</button>
   </header>
-  <div id="screen" aria-live="polite"></div>
-  <footer>
-    Built by <a href="https://fedhoo.com" target="_blank" rel="noopener">fedhoo</a>.
-    Scoring runs entirely on this device — no data ever leaves it. The only network request
-    this page makes is for its font. No account, no customer names. <span class="build">build 2026-09-17.1830</span>
-  </footer>
+  <div id="screen" aria-live="polite">
+    <h1>Five questions before your manager asks them.</h1>
+    <p class="dek">Find the hole in your deal before pipeline review does.<br>
+      One minute. No CRM. No sensitive deal data.</p>
+    <button class="big" id="prep">KILL MY DEAL</button>
+    <div class="peek">
+      <div class="peek-k mono">The five questions</div>
+      <div class="peek-row"><b>CUSTOMER</b> Do they actually want this?</div>
+      <div class="peek-row"><b>MONEY</b> Is there actually funding?</div>
+      <div class="peek-row"><b>POWER</b> Are you connected to someone who can make it happen?</div>
+      <div class="peek-row"><b>PATH</b> Do you know how they buy?</div>
+      <div class="peek-row"><b>NOW</b> Is something forcing action?</div>
+    </div>
+    <div class="private">Nothing is saved, sent, or stored. It runs entirely on your phone.
+      Close the tab and it's gone.</div>
+    <nav class="toc" aria-label="On this page">
+      <a href="#how">The five signals</a>
+      <a href="#review">Pipeline review patterns</a>
+      <a href="#managers">For managers</a>
+      <a href="#mark">Work with Mark</a>
+      <a href="#faq">Questions</a>
+    </nav></div>
 </div>
+<section class="band" id="how" aria-labelledby="how-h">
+  <div class="band-inner">
+    <h2 id="how-h">How to qualify a federal deal in five questions</h2>
+    <p class="lede">Most federal pipeline dies for one of five reasons, and a seller usually knows which one
+      before the meeting starts. The point of naming them is to stop pretending otherwise.</p>
 
+    <h3>CUSTOMER — has anyone said out loud that they want this?</h3>
+    <p>A requirement you inferred from a conversation is not a requirement. What you are looking for is the
+      customer describing the problem in their own words, ideally in writing. If the only person who has
+      articulated the need is you, the deal is a hypothesis.</p>
+
+    <h3>MONEY — where does the funding come from?</h3>
+    <p>Federal money has a name: an appropriation, a program line, an O&amp;M budget, a color of money with a
+      fiscal year attached. <strong>"They have budget"</strong> with no source is the most common thing a
+      seller believes and cannot defend. The question your manager will ask is who told you, and what is it
+      called.</p>
+
+    <h3>POWER — have you met anyone who can make it happen?</h3>
+    <p>Understanding the requirement and controlling the acquisition are different jobs, often different
+      people, sometimes different buildings. A technical evaluator can love you and still not move a dollar.
+      Progress means a program manager, a contracting officer, or a budget holder.</p>
+
+    <h3>PATH — how would they actually buy it?</h3>
+    <p>Every federal purchase arrives through a mechanism: an existing contract, a GWAC or IDIQ, a set-aside,
+      a recompete, a sole-source justification. If nobody has named the vehicle and the contracting office,
+      the timeline is guesswork, because acquisition lead time is the timeline.</p>
+
+    <h3>NOW — what forces action this year?</h3>
+    <p>Agencies are very good at doing nothing for another year. A forcing function is specific: a contract
+      expiring, a product going end of life, a mandate with a date, an incident, or money that expires
+      September 30. Without one, the deal is real and also not happening yet.</p>
+  </div>
+</section>
+
+<section class="band" id="review" aria-labelledby="review-h">
+  <div class="band-inner">
+    <h2 id="review-h">What actually happens in a pipeline review</h2>
+    <p>A pipeline review is not a status meeting. It is a manager testing whether the numbers on the board can
+      survive a question. Most sellers lose those meetings the same handful of ways.</p>
+    <div class="cards">
+      <div class="card"><div class="k">Pattern</div><h3>Happy ears</h3>
+        <p>An enthusiastic conversation gets recorded as intent. Nothing the customer said commits them to
+          anything.</p></div>
+      <div class="card"><div class="k">Pattern</div><h3>Phantom funding</h3>
+        <p>The deal is forecast at a date nobody can tie to an appropriation or a fiscal year.</p></div>
+      <div class="card"><div class="k">Pattern</div><h3>No acquisition path</h3>
+        <p>A real requirement with no vehicle, no contracting office, and therefore no plausible award date.</p></div>
+      <div class="card"><div class="k">Pattern</div><h3>Selling to the user</h3>
+        <p>Deep relationships one layer below anyone who can move money or start an acquisition.</p></div>
+    </div>
+    <p>The difference between a seller who survives the review and one who does not is rarely deal quality.
+      It is whether they walked in already knowing which of these applies to them.</p>
+  </div>
+</section>
+
+<section class="band" id="managers" aria-labelledby="mgr-h">
+  <div class="band-inner">
+    <h2 id="mgr-h">For sales managers</h2>
+    <p>Five questions, asked out loud, do more than a CRM field ever will. Run them on any deal in the review
+      and you get a shared vocabulary instead of an argument: <strong>"I'm good on customer and path, I'm
+      yellow on money and power."</strong></p>
+    <ul>
+      <li>Ask the same five every time. The consistency is what makes the answers comparable.</li>
+      <li>Let the rep answer before you react. Sort of is an honest answer and should be safe to give.</li>
+      <li>Weakest link first. The worst answer is the one that determines the forecast, not the average.</li>
+      <li>Nothing gets typed into a system. Nobody has to explain later why the pipeline looked bad in writing.</li>
+    </ul>
+    <p>The tool at the top of this page is the same five questions with the arithmetic done for you. It stores
+      nothing and sends nothing, which means it can be used in a room where the CRM cannot.</p>
+  </div>
+</section>
+
+<section class="band" id="mark" aria-labelledby="mark-h">
+  <div class="band-inner">
+    <div class="who">
+      <img src="mark.jpg" alt="Mark Flournoy" width="120" height="120" loading="lazy"
+           onerror="this.closest('.who').classList.add('nophoto'); this.remove();">
+      <div>
+        <h2 id="mark-h">I'm Mark.</h2>
+        <p>I spent six years leading Federal Partner Sales at AWS after sales roles at F5, Red Hat, STEC and
+          Virident. Before that I was a Marine officer for 20 years. I have been the seller, the manager, the
+          partner guy and the person explaining the forecast to somebody above me.</p>
+        <p>A lot of my career was Federal and public sector: the big systems integrators, businesses built from
+          scratch, and some time on the government side too. If the problem involves federal accounts,
+          partners, capture or contract paths, I can get oriented quickly.</p>
+        <p>I'm not running a consulting firm. It's just me.</p>
+      </div>
+    </div>
+    <div class="stats">
+      <div class="stat"><b>6 years</b><span>Leading federal sales at AWS</span></div>
+      <div class="stat"><b>$54M</b><span>Committed cloud deal closed</span></div>
+      <div class="stat"><b>$20M</b><span>Pipeline built from zero</span></div>
+      <div class="stat"><b>20 years</b><span>Marine officer</span></div>
+    </div>
+
+    <h3>Three ways to work together</h3>
+    <div class="cards">
+      <div class="card"><div class="k">Start here</div><h3>Talk it through</h3>
+        <p>30 minutes, free. Bring the deal you just scored, or the number and what's going on with the team.
+          I'll tell you what I'd look at first.</p></div>
+      <div class="card"><div class="k">One problem</div><h3>Work through one problem</h3>
+        <p>90 minutes, paid. One issue, properly. You get a short write-up afterward so there's something to
+          work from.</p></div>
+      <div class="card"><div class="k">Longer</div><h3>Keep me around a while</h3>
+        <p>A few weeks or monthly. I stay involved while you work through the pipeline, the people, the
+          partners or the plan. No giant consulting project required.</p></div>
+    </div>
+    <div class="cta-row">
+      <a class="cta-b" href="https://www.linkedin.com/in/markflournoy/" target="_blank" rel="noopener">DM ON LINKEDIN →</a>
+      <a class="cta-a" href="https://calendly.com/markflournoy/chat-with-mark?utm_source=killmydeal&amp;utm_medium=page&amp;utm_content=consulting" target="_blank" rel="noopener">BOOK 30 MINS →</a>
+      <div class="cta-note">Free, 30 minutes, no pitch. I also build
+        <a href="https://fedhoo.com" target="_blank" rel="noopener">fedhoo</a>,
+        a federal market research tool.</div>
+    </div>
+  </div>
+</section>
+
+<section class="band faq" id="faq" aria-labelledby="faq-h">
+  <div class="band-inner">
+    <h2 id="faq-h">Questions</h2>
+    <details><summary>Does anything I enter leave my device?</summary>
+      <div class="a">No. The five answers are scored by JavaScript running in your browser. There is no account,
+        no database, no analytics on your answers, and nothing is written to storage. The only network request
+        this page makes is for its font.</div></details>
+    <details><summary>Why doesn't it ask for the customer or the dollar value?</summary>
+      <div class="a">Because it doesn't need them, and asking would make the tool unusable for anyone whose
+        employer restricts where pipeline detail can go. Qualification is about what you can prove, not who the
+        customer is.</div></details>
+    <details><summary>Is this AI?</summary>
+      <div class="a">No. It's a fixed rubric: each answer maps to a number, the numbers are weighted, three caps
+        apply, and thresholds produce the verdict. The weights are visible in the page source. A language model
+        given five words would invent context, and confident wrong advice is worse than none.</div></details>
+    <details><summary>What do the four verdicts mean?</summary>
+      <div class="a"><strong>Healthy</strong> — real, positioned, and provable.
+        <strong>Stable</strong> — probably real, but assertions outnumber facts.
+        <strong>On life support</strong> — do not carry a date until something is confirmed.
+        <strong>Dead on arrival</strong> — the procurement itself doesn't hold up.</div></details>
+    <details><summary>Can managers use this in a pipeline review?</summary>
+      <div class="a">Yes, and that's the better use. Ask the five questions out loud, tap the answers as the rep
+        gives them, and the verdict lands in front of both of you in under a minute. Nothing is recorded.</div></details>
+    <details><summary>What does GRILL ME do?</summary>
+      <div class="a">It plays the manager. Three hard questions drawn from your weakest answer, one at a time,
+        and you tell it honestly whether you can answer each one. It's the rehearsal before the real
+        conversation.</div></details>
+  </div>
+</section>
+
+<footer class="sitefoot">
+  <p>Kill My Deal is a free tool by <a href="https://www.linkedin.com/in/markflournoy/" target="_blank" rel="noopener">Mark Flournoy</a>,
+    who also builds <a href="https://fedhoo.com" target="_blank" rel="noopener">fedhoo</a>, a federal market
+    research tool built on public spending data. Find him on
+    <a href="https://www.linkedin.com/in/markflournoy/" target="_blank" rel="noopener">LinkedIn</a>.</p>
+  <p>Scoring runs entirely in your browser. Nothing is stored or transmitted.
+    Not affiliated with the U.S. government.</p>
+  <p class="build">build 2026-09-17.1930</p>
+</footer>
 <script>
 'use strict';
 
@@ -296,9 +576,9 @@ function score(a) {
   if (a.money === 'no') { caps.push("you can't say where the money comes from"); total = Math.min(total, 55); }
   if (a.power === 'no') { caps.push("you haven't reached anyone who can act"); total = Math.min(total, 60); }
   if (a.customer === 'no') { caps.push("the customer hasn't confirmed they intend to act"); total = Math.min(total, 45); }
-  const label = total >= 75 ? ['READY TO DEFEND','ready'] :
-                total >= 55 ? ['NEEDS PROOF','proof'] :
-                total >= 35 ? ['PROVE IT FIRST','prove'] : ['DO NOT CARRY IT','dont'];
+  const label = total >= 75 ? ['HEALTHY','ready'] :
+                total >= 55 ? ['STABLE','proof'] :
+                total >= 35 ? ['ON LIFE SUPPORT','prove'] : ['DEAD ON ARRIVAL','dont'];
   // weakest pillar, money breaking ties because that is what gets attacked
   const ranked = [...P].map(p => ({ ...p, v:v(p.k) }))
     .sort((x,y) => x.v - y.v || (y.k === 'money') - (x.k === 'money'));
@@ -325,22 +605,11 @@ const setHome = () => {};
 
 /* ── screens ── */
 function home() {
-  mode = 'seller'; answers = {}; step = 0; nick = '';
+  answers = {}; step = 0;
   setHome(false);
-  el().innerHTML = `
-    <h1>Five questions before your manager asks them.</h1>
-    <p class="dek">Find the hole in your deal before pipeline review does.<br>
-      One minute. No CRM. No sensitive deal data.</p>
-    <button class="big" id="prep">KILL MY DEAL</button>
-    <div class="peek">
-      <div class="peek-k mono">The five questions</div>
-      ${P.map(p => `<div class="peek-row"><b>${p.n}</b> ${esc(p.short)}</div>`).join('')}
-    </div>
-    <div class="private">Nothing is saved, sent, or stored. It runs entirely on your phone.
-      Close the tab and it's gone.</div>`;
-  window.KMD_BUILD = '2026-09-17.1830';
-document.getElementById('logoHome').onclick = home;
-document.getElementById('prep').onclick = () => ask(0);
+  el().innerHTML = INTRO_HTML;
+  document.getElementById('prep').onclick = () => ask(0);
+  window.scrollTo({ top: 0 });
 }
 
 function nicknameUNUSED(which) {
@@ -496,23 +765,30 @@ function grillDone() {
 }
 
 
-/* ── Mark, after the work is done. One ask, no pitch. ── */
+/* ── Mark, after the work is done. ── */
 function mountMark() {
   if (document.getElementById('markBlock')) return;
   const w = document.createElement('div');
   w.id = 'markBlock';
   w.className = 'markblk';
   w.innerHTML = `
-    <div class="mark-name">Want another set of eyes on a real pursuit?</div>
-    <p class="mark-p">I'm Mark Flournoy. Six years leading Federal Partner Sales at AWS, before that
-      F5 and Red Hat. Bring the deal you just scored.</p>
-    <a class="mark-cta" href="https://calendly.com/markflournoy/chat-with-mark?utm_source=killmydeal&utm_medium=result&utm_content=after_score"
-       target="_blank" rel="noopener">TALK TO MARK →</a>
-    <div class="mark-fine">Free, 30 minutes, no pitch.</div>`;
+    <div class="mark-name">Got a hole in your deal? Let's fix it.</div>
+    <p class="mark-p">I'm Mark Flournoy. Six years leading Federal Partner Sales at AWS. 
+      Shoot me a sanitized one-liner about your weakest pillar on LinkedIn, or grab time to talk it through.</p>
+    <div class="cta-row" style="margin-top: 14px;">
+      <a class="cta-b" href="https://www.linkedin.com/in/markflournoy/" target="_blank" rel="noopener">DM ON LINKEDIN →</a>
+      <a class="cta-a" href="https://calendly.com/markflournoy/chat-with-mark?utm_source=killmydeal&utm_medium=result&utm_content=after_score" target="_blank" rel="noopener">BOOK 30 MINS →</a>
+    </div>
+    <div class="mark-fine">Free, no pitch. Just a second set of eyes.</div>`;
   el().appendChild(w);
 }
 
-home();
+/* The hero is real HTML in the page (so crawlers and no-JS visitors see it).
+   Capture it once, then home() restores it instead of re-rendering a second H1. */
+window.KMD_BUILD = '2026-09-17.1930';
+const INTRO_HTML = el().innerHTML;
+document.getElementById('prep').onclick = () => ask(0);
+document.getElementById('logoHome').onclick = home;
 </script>
 </body>
 </html>
