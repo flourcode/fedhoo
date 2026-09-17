@@ -287,7 +287,10 @@ async function judge(payload) {
   });
   if (!res.ok) {
     let msg = 'The judge is unavailable right now (' + res.status + ').';
-    try { const e = await res.json(); if (e && e.error) msg = e.error; } catch {}
+    try {
+      const e = await res.json();
+      if (e && e.error) msg = e.error + (e.detail ? ' — ' + String(e.detail).slice(0, 180) : '');
+    } catch {}
     throw new Error(msg);
   }
   const ct = res.headers.get('content-type') || '';
