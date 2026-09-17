@@ -44,7 +44,8 @@
     margin-bottom:12px; }
   .big.alt { background:var(--secondary-container); color:var(--on-secondary-container); box-shadow:none; }
   .ghost { width:100%; background:none; color:var(--primary); border:1px solid var(--outline);
-    border-radius:100px; font:inherit; font-size:15px; font-weight:500; padding:15px; cursor:pointer; }
+    border-radius:100px; font:inherit; font-size:15px; font-weight:500; padding:15px; cursor:pointer;
+    margin-top:10px; }
   .private { font-size:13px; color:var(--on-surface-variant); text-align:center; margin-top:18px; }
   .fine { font-size:12.5px; color:var(--on-surface-variant); line-height:1.5; }
 
@@ -205,12 +206,19 @@
   .sig-v.v-sort { color:var(--warn); }
   .sig-v.v-no { color:var(--error); }
   .do-first { background:var(--sc-low); border-radius:16px; padding:18px; margin-bottom:22px; }
+  .coachbox { display:none; background:var(--primary-container); color:var(--on-primary-container);
+    border-radius:16px; padding:18px; margin-top:14px; }
+  .coachbox.on { display:block; }
+  .coach-list { margin:8px 0 0; padding-left:20px; }
+  .coach-list li { font-size:16px; line-height:1.5; margin-bottom:8px; }
+  .coach-fine { font-size:12px; line-height:1.5; opacity:.8; margin-top:10px; }
   .do-t { font-size:17px; line-height:1.45; font-weight:500; margin-top:8px; }
   .acts-sub { display:flex; align-items:center; justify-content:center; gap:10px; margin:14px 0 4px; }
   .linkbtn { font:inherit; font-size:14.5px; font-weight:500; color:var(--primary);
     background:none; border:0; padding:12px 6px; cursor:pointer; }
   .sep { color:var(--outline); }
   .markblk { display:block; background:var(--sc-low); border-radius:20px; padding:20px; margin-top:32px; }
+  .build { opacity:.55; }
 </style>
 </head>
 <body>
@@ -221,7 +229,8 @@
   <div id="screen" aria-live="polite"></div>
   <footer>
     Built by <a href="https://fedhoo.com" target="_blank" rel="noopener">fedhoo</a>.
-    Everything runs on this device. Nothing is uploaded, no account, no customer names.
+    The score runs on this device. Optional coaching sends five words and nothing else.
+    No account, no customer names. <span class="build">build 2026-09-17.1815 · coach</span>
   </footer>
 </div>
 
@@ -317,8 +326,10 @@ function home() {
       <div class="peek-k mono">The five questions</div>
       ${P.map(p => `<div class="peek-row"><b>${p.n}</b> ${esc(p.short)}</div>`).join('')}
     </div>
-    <div class="private">Nothing is saved, sent, or stored. Close the tab and it's gone.</div>`;
-  document.getElementById('prep').onclick = () => ask(0);
+    <div class="private">Nothing is saved or stored. The score is computed on your phone. Only if you
+      tap COACH ME do your five answers leave the device — never a customer name, because it never asks.</div>`;
+  window.KMD_BUILD = '2026-09-17.1815';
+document.getElementById('prep').onclick = () => ask(0);
 }
 
 function nicknameUNUSED(which) {
@@ -379,6 +390,77 @@ function plainWhy(s) {
   return out;
 }
 
+
+/* ── Optional coaching ────────────────────────────────────────────────────
+   The verdict above is computed locally and never leaves this device. This
+   button is the one thing that touches the network, and all it sends is the
+   five answers — five words. No customer, no agency, no dollar value, no
+   notes, because the tool never asked for any. ── */
+const COACH_ENDPOINT = 'https://x6cdyrfcy43r5rpw6i6aiwsegi0effvy.lambda-url.us-east-1.on.aws/';
+
+async function coachMe(btn, s) {
+  btn.disabled = true;
+  btn.textContent = 'Thinking…';
+  const profile = P.map(p => `${p.n}: ${answers[p.k] === 'sort' ? 'PARTLY' : answers[p.k].toUpperCase()}`).join('\n');
+  const content = `Ignore your usual conversational style for this one task. You are a federal capture director talking to a seller who is about to walk into a pipeline review.
+
+Here is everything you know about their deal. You do not know the customer, the agency, the vendor, the product or the value, and you do not need them.
+
+${profile}
+
+Weakest link: ${s.weak.n}. Overall readiness: ${s.total} of 100.
+
+Reply with ONE JSON object and nothing else:
+{"coach":["","",""]}
+
+Three short imperative sentences. What to go find out, who to ask, in what order, hardest gap first. Name the artifact or the role, not a platitude. Plain American English, the way one seller talks to another. No consultant vocabulary, no hedging, no reference to scores or profiles.`;
+
+  try {
+    const res = await fetch(COACH_ENDPOINT, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ request_type: 'govhoo_chat',
+        market_data: { query: 'pursuit qualification', contracts: [] },
+        history: [{ role: 'user', content }], persona: 'mo' }),
+    });
+    if (!res.ok) throw new Error('Coaching is unavailable right now.');
+    const reader = res.body.getReader(), dec = new TextDecoder();
+    let buf = '', acc = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const lines = buf.split('\n'); buf = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        try { const m = JSON.parse(line.slice(6).trim()); if (m.t === 'chunk' && m.text) acc += m.text; } catch {}
+      }
+    }
+    let list = [];
+    try {
+      const t = acc.replace(/```json/gi, '').replace(/```/g, '');
+      const j = JSON.parse(t.slice(t.indexOf('{'), t.lastIndexOf('}') + 1));
+      list = Array.isArray(j.coach) ? j.coach : [];
+    } catch {
+      list = acc.split('\n').map(x => x.replace(/^\s*[-*\d.)]+\s*/, '').trim())
+               .filter(x => x.length > 12).slice(0, 3);
+    }
+    if (!list.length) throw new Error('Coaching came back empty. Try again.');
+    const box = document.getElementById('coachBox');
+    box.innerHTML = `<div class="ready-k">Coach</div>
+      <ol class="coach-list">${list.slice(0, 3).map(c => `<li>${esc(c)}</li>`).join('')}</ol>
+      <div class="coach-fine">Five words left this device: your five answers. Nothing else was sent.</div>`;
+    box.classList.add('on');
+    btn.remove();
+    box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  } catch (e) {
+    btn.disabled = false;
+    btn.textContent = 'COACH ME →';
+    const box = document.getElementById('coachBox');
+    box.innerHTML = `<div class="coach-fine">${esc(e.message)}</div>`;
+    box.classList.add('on');
+  }
+}
+
 function result() {
   const s = score(answers);
   lastScore = s;
@@ -406,6 +488,8 @@ function result() {
     </div>
 
     <button class="big" id="grill">GRILL ME →</button>
+    <button class="ghost" id="coach">COACH ME →</button>
+    <div class="coachbox" id="coachBox"></div>
     <div class="acts-sub">
       <button class="linkbtn" id="copy">Copy for review</button>
       <span class="sep">·</span>
@@ -416,6 +500,7 @@ function result() {
       <div class="body">${esc(plainWhy(s))}</div>
     </details>`;
   document.getElementById('grill').onclick = () => { grillStep = 0; grillOuch = 0; grill(); };
+  document.getElementById('coach').onclick = (e) => coachMe(e.currentTarget, s);
   document.getElementById('again').onclick = () => { answers = {}; ask(0); };
   document.getElementById('copy').onclick = () => {
     const txt = `${s.total} — ${s.label}\n${s.attack}\n`
