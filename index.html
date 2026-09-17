@@ -1015,8 +1015,6 @@ a, button, input, select { touch-action: manipulation; }
 .rows-toggle { display: block; width: 100%; font: inherit; font-size: 12px; font-weight: 700; color: var(--accent); background: none; border: none; padding: 10px 0 2px; cursor: pointer; text-align: left; }
 
 
-/* ── v10: unified Contracts card + retired cards ── */
-#expiringCard, #recentCard, #contractsCard { display: none !important; }
 .dl-sorts { display: flex; gap: 4px; background: var(--chip-bg, var(--bg-app)); border: 1px solid var(--border); border-radius: 9999px; padding: 3px; margin-left: auto; margin-right: 10px; }
 .dl-sort { font: inherit; font-size: 11px; font-weight: 700; color: var(--text-tertiary); background: none; border: none; border-radius: 9999px; padding: 5px 11px; cursor: pointer; white-space: nowrap; }
 .dl-sort.active { background: var(--bg-elevated); color: var(--accent); box-shadow: 0 1px 3px rgba(20,18,28,0.10); }
@@ -1046,7 +1044,7 @@ a, button, input, select { touch-action: manipulation; }
 
 
 /* ── v13: PF is the vendor card; decluttered market top ── */
-#primesCard, #subawardsCard { display: none !important; }
+#subawardsCard { display: none !important; }   /* data feeder, never shown */
 #marketVerdict, #marketAction { display: none; }
 #marketCard.analysis-open #marketVerdict:not(.hidden),
 #marketCard.analysis-open #marketAction:not(.hidden) { display: block; }
@@ -1163,7 +1161,6 @@ a, button, input, select { touch-action: manipulation; }
 .tempo { font-size: 9.5px; font-weight: 800; letter-spacing: 0.08em; border-radius: 4px; padding: 2px 6px; margin-left: 8px; vertical-align: 2px; }
 .tempo-awarded { background: rgba(70,68,110,0.10); color: var(--accent); }
 .tempo-open { background: #DCFCE7; color: #166534; }
-.tempo-stale { background: #FEF3C7; color: #92400E; }
 /* ── open solicitations card ── */
 .opp-row { padding: 16px 0; cursor: default; }
 .opp-row .dl-main { min-width: 0; }
@@ -1519,34 +1516,6 @@ a, button, input, select { touch-action: manipulation; }
       <div id="dealsList"></div>
     </div>
 
-    <!-- EXPIRING SOON CARD -->
-    <div class="app-card wide result-panel hidden" id="expiringCard">
-      <div class="card-header-row">
-        <h2 class="card-title card-title--flush">Expiring Soon</h2>
-        <button class="export-btn" onclick="App.exportExpiringCSV()" title="Export expiring contracts to CSV">Export CSV</button>
-      </div>
-      <div class="contract-list" id="expiringList"></div>
-    </div>
-
-    <!-- RECENT AWARDS CARD -->
-    <div class="app-card wide result-panel hidden" id="recentCard">
-      <div class="card-header-row">
-        <h2 class="card-title card-title--flush">Recent Awards</h2>
-      </div>
-      <div class="contract-list" id="recentList"></div>
-    </div>
-
-    <!-- TOP PRIMES CARD -->
-    <div class="app-card wide result-panel hidden" id="primesCard">
-      <div class="primes-header">
-        <div>
-          <h2 class="card-title">Top Primes</h2>
-        </div>
-        <button class="export-btn" id="exportCsvBtnPrimes" onclick="App.exportCSV()" title="Export all search data as CSV">Export CSV</button>
-      </div>
-      <div class="primes-list" id="primesList"></div>
-    </div>
-
     <!-- SUBAWARDS CARD -->
     <div class="app-card wide result-panel hidden" id="subawardsCard">
       <div class="card-header-row">
@@ -1557,15 +1526,6 @@ a, button, input, select { touch-action: manipulation; }
         <button class="export-btn" onclick="App.exportSubawardsCSV()" title="Export subawards to CSV">Export CSV</button>
       </div>
       <div class="contract-list" id="subawardsList"></div>
-    </div>
-
-    <!-- CONTRACTS CARD -->
-    <div class="app-card wide result-panel hidden" id="contractsCard">
-      <div class="card-header-row">
-        <h2 class="card-title card-title--flush">Contracts</h2>
-        <button class="export-btn" id="exportCsvBtnRecent" onclick="App.exportCSV()" title="Export all contracts as CSV">Export CSV</button>
-      </div>
-      <div class="contract-list" id="contractsList"></div>
     </div>
 
     <!-- FOOTER EXPLAINER — what the user is looking at -->
@@ -3345,9 +3305,6 @@ const App = {
     window.OppsCard?.reset();
     window.AnswerBar?.clear();
     window.Momentum?.clear();
-    DOM.hide('expiringCard');
-    DOM.hide('recentCard');
-    DOM.hide('primesCard');
     DOM.hide('bioCard');
     DOM.get('faceScale')?.classList.add('hidden');
     const verdictEl = DOM.get('marketVerdict'); if (verdictEl) verdictEl.classList.add('hidden');
@@ -3530,10 +3487,6 @@ const App = {
       // Render chart and panels immediately
       this._treemapVersion++;
       this.renderBubbleChart();
-      this.renderPrimes();
-      this.renderContracts();
-      this.renderExpiring();
-      this.renderRecent();
 
       // renderBridge builds the AI payload cache — defer so treemap paints first
       setTimeout(() => {
@@ -3690,10 +3643,6 @@ const App = {
       this.renderMarketSignals();
       this._treemapVersion++;
       this.renderBubbleChart();
-      this.renderPrimes();
-      this.renderContracts();
-      this.renderExpiring();
-      this.renderRecent();
       // Restore subawards panel if data is available
       if (this._subawardData && this._subawardData.length) {
         DOM.show('subawardsCard');
@@ -3729,10 +3678,6 @@ const App = {
     this._treemapVersion++;
     if (!preventRender) this.renderBubbleChart();
     this.renderBubbleBreadcrumb();
-    this.renderPrimes();
-    this.renderContracts();
-    this.renderExpiring();
-    this.renderRecent();
     DOM.hide('subawardsCard'); // subaward data is for full market, not a single agency drill
     // Keep Sankey in sync with drill state
     if (this.UI.sankeyContainer) { this.UI.sankeyContainer.innerHTML = ''; delete this.UI.sankeyContainer.dataset.rendered; if (this._chartView === 'sankey') this.renderSankey(); }
@@ -3756,10 +3701,6 @@ const App = {
 
     if (!preventRender) this.renderBubbleChart();
     this.renderBubbleBreadcrumb();
-    this.renderPrimes();
-    this.renderContracts();
-    this.renderExpiring();
-    this.renderRecent();
     DOM.hide('subawardsCard');
     if (this.UI.sankeyContainer) { this.UI.sankeyContainer.innerHTML = ''; delete this.UI.sankeyContainer.dataset.rendered; if (this._chartView === 'sankey') this.renderSankey(); }
     if (this.UI.subSankeyContainer) { this.UI.subSankeyContainer.innerHTML = ''; delete this.UI.subSankeyContainer.dataset.rendered; if (this._chartView === 'subsankey') this.renderSubSankey(); }
@@ -4507,63 +4448,6 @@ const App = {
     render(false);
   },
 
-  renderExpiring() {
-
-    // Card retired (hidden by CSS since v10). No-op keeps every call site
-
-    // safe while skipping a full dataset pass + innerHTML write per search.
-
-    return;
-    const nowTs = Date.now();
-    const cutoffTs = nowTs + 90 * 86400000;
-    const data = this.searchData.active
-      .filter(c => c._endTs > nowTs && c._endTs <= cutoffTs && (parseFloat(c['Award Amount'])||0) > 50000)
-      .sort((a, b) => a._endTs - b._endTs);
-    this._renderListCard(this.UI.expiringList, this.UI.expiringCard, data, c => {
-      const days = Math.ceil((c._endTs - nowTs) / 86400000);
-      const cls  = days <= 30 ? 'contract-urgency urgent' : days <= 60 ? 'contract-urgency warn' : 'contract-urgency';
-      const tenureYears = c._startTs ? (c._endTs - c._startTs) / (365.25 * 86400000) : 0;
-      const tenureHtml = tenureYears >= 2 ? `<span class="contract-meta">${Math.round(tenureYears)}yr tenure</span>` : '';
-      return this._buildContractRow(c, `<span class="${cls}">${days}d</span>${tenureHtml}`);
-    }, 'expiring contracts', '_renderExpiringAll');
-  },
-
-  renderRecent() {
-
-    // Card retired (hidden by CSS since v10). No-op keeps every call site
-
-    // safe while skipping a full dataset pass + innerHTML write per search.
-
-    return;
-    const nowTs = Date.now();
-    const cutoffTs = nowTs - 90 * 86400000;
-    const data = this.searchData.active
-      .filter(c => c._startTs >= cutoffTs && c._startTs <= nowTs)
-      .sort((a, b) => b._startTs - a._startTs);
-    this._renderListCard(this.UI.recentList, this.UI.recentCard, data, c => {
-      const d = Math.floor((nowTs - c._startTs) / 86400000);
-      const ago = d === 0 ? 'Today' : d === 1 ? 'Yesterday'
-        : d <= 7 ? `${d}d ago` : d <= 30 ? `${Math.ceil(d/7)}w ago` : `${Math.floor(d/30)}mo ago`;
-      return this._buildContractRow(c, `<span class="contract-date">${ago}</span>`);
-    }, 'recent awards', '_renderRecentAll');
-  },
-
-  renderContracts() {
-
-    // Card retired (hidden by CSS since v10). No-op keeps every call site
-
-    // safe while skipping a full dataset pass + innerHTML write per search.
-
-    return;
-    const data = [...this.searchData.active].sort((a, b) =>
-      (parseFloat(b['Award Amount']) || 0) - (parseFloat(a['Award Amount']) || 0)
-    );
-    this._renderListCard(this.UI.contractsList, this.UI.contractsCard, data, c => {
-      const end = c['End Date'] ? new Date(c['End Date']).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '';
-      return this._buildContractRow(c, end ? `<span class="contract-date">Ends ${end}</span>` : '');
-    }, 'contracts', '_renderContractsAll');
-  },
-
   async renderSubawards() {
     const card = DOM.get('subawardsCard');
     const list = DOM.get('subawardsList');
@@ -5013,90 +4897,6 @@ const App = {
         else if (this._chartView === 'sankey') this.switchChartView('treemap');
       }
     }, { passive: true });
-  },
-
-  renderPrimes() {
-
-    // Card retired (hidden by CSS since v10). No-op keeps every call site
-
-    // safe while skipping a full dataset pass + innerHTML write per search.
-
-    return;
-    const data = this.searchData.active;
-    const list = this.UI.primesList;
-    const card = this.UI.primesCard;
-    if (!list || !card) return;
-
-    const vendors = this.marketMetrics?.vendors || {};
-    const primes = Object.entries(vendors)
-      .sort((a, b) => b[1].spend - a[1].spend)
-      .slice(0, 10);
-
-    if (!primes.length) { card.classList.add('hidden'); return; }
-    card.classList.remove('hidden');
-
-    const totalSpend = primes.reduce((s, [, v]) => s + v.spend, 0);
-
-    // Pre-compute per-vendor agency list and top NAICS for enrichment
-    const vendorDetail = {};
-    data.forEach(c => {
-      const v = c['Recipient Name'] || '';
-      if (!vendorDetail[v]) vendorDetail[v] = { agencies: {}, naics: {} };
-      const ag = c['Awarding Agency'] || '';
-      const amt = parseFloat(c['Award Amount']) || 0;
-      if (ag) vendorDetail[v].agencies[ag] = (vendorDetail[v].agencies[ag] || 0) + amt;
-      const nc = c['NAICS'] ? (typeof c['NAICS'] === 'object' ? c['NAICS'].code : c['NAICS']) : '';
-      const nd = c['NAICS'] ? (typeof c['NAICS'] === 'object' && c['NAICS'].description ? c['NAICS'].description.split('(')[0].trim() : '') : '';
-      if (nc) vendorDetail[v].naics[nc] = { desc: nd, spend: (vendorDetail[v].naics[nc]?.spend || 0) + amt };
-    });
-
-    list.innerHTML = primes.map(([rawName, d], i) => {
-      const name = rawName;
-      const agencyCount = d.agencies.size;
-      const saLabel = VehicleDetector.getSetAsideLabel(d.setAside);
-
-      const shareOfMarket = totalSpend > 0 ? (d.spend / totalSpend) : 0;
-      let signal = '', signalClass = '';
-      if (shareOfMarket >= 0.25 || (shareOfMarket >= 0.15 && d.count >= 8)) {
-        signal = 'Dominant'; signalClass = 'prime-signal-dominant';
-      } else if (shareOfMarket >= 0.08 || d.count >= 5) {
-        signal = 'Established'; signalClass = 'prime-signal-established';
-      } else {
-        signal = 'Emerging'; signalClass = 'prime-signal-emerging';
-      }
-
-      // Agency detail — show top 2 agencies by spend
-      const vd = vendorDetail[rawName];
-      const topAgencies = vd ? Object.entries(vd.agencies).sort((a,b) => b[1] - a[1]).slice(0, 2).map(([a]) => Utils.cleanAgency(a)) : [];
-      const agencyLine = topAgencies.length > 0 ? topAgencies.join(', ') : '';
-
-      // Top NAICS description
-      const topNaics = vd ? Object.entries(vd.naics).sort((a,b) => b[1].spend - a[1].spend)[0] : null;
-      const naicsLine = topNaics && topNaics[1].desc ? Utils.titleCase(topNaics[1].desc.toLowerCase()).slice(0, 50) : '';
-
-      const clean = Utils.normalizeVendorName(name);
-      const quoted = encodeURIComponent(`"${clean}"`);
-      const plain  = encodeURIComponent(clean);
-      const liPeople = `https://www.linkedin.com/search/results/people/?keywords=${quoted}&origin=GLOBAL_SEARCH_HEADER`;
-      const liJobs   = `https://www.linkedin.com/jobs/search/?keywords=${plain}&location=United+States`;
-      const news     = `https://www.linkedin.com/search/results/content/?keywords=${quoted}`;
-
-      return `<div class="prime-row">
-        <span class="prime-rank">${i + 1}</span>
-        <div class="prime-body">
-          <div class="prime-name">${Html.escapeHtml(name)}${saLabel ? ` <span class="inline-tag">${Html.escapeHtml(saLabel)}</span>` : ''}</div>
-          <div class="prime-meta">${d.count} contract${d.count !== 1 ? 's' : ''} · ${agencyCount} agenc${agencyCount !== 1 ? 'ies' : 'y'}${agencyLine ? ' · ' + Html.escapeHtml(agencyLine) : ''}</div>
-          ${naicsLine ? `<div class="prime-meta" style="color:var(--text-quaternary);">${Html.escapeHtml(naicsLine)}</div>` : ''}
-        </div>
-        <span class="prime-signal ${signalClass}">${signal}</span>
-        <span class="prime-amount">${Utils.money(d.spend)}</span>
-        <div class="prime-links">
-          <a href="${liPeople}" target="_blank" rel="noopener" class="prime-link">People</a>
-          <a href="${liJobs}"   target="_blank" rel="noopener" class="prime-link">Jobs</a>
-          <a href="${news}"     target="_blank" rel="noopener" class="prime-link">News</a>
-        </div>
-      </div>`;
-    }).join('');
   },
 
   saveLensFromSheet() {
@@ -6538,14 +6338,6 @@ ${gemData.next_steps.map((step, i) => `<div class="ns-item"><span class="ns-num"
       marketCardDesc:       DOM.get('marketCardDesc'),
       marketHeroNumber:     DOM.get('marketHeroNumber'),
       // Result panels
-      primesCard:           DOM.get('primesCard'),
-      primesList:           DOM.get('primesList'),
-      recentCard:           DOM.get('recentCard'),
-      recentList:           DOM.get('recentList'),
-      expiringCard:         DOM.get('expiringCard'),
-      expiringList:         DOM.get('expiringList'),
-      contractsCard:        DOM.get('contractsCard'),
-      contractsList:        DOM.get('contractsList'),
       subawardsCard:        DOM.get('subawardsCard'),
       subawardsList:        DOM.get('subawardsList'),
       // Mo / AI
